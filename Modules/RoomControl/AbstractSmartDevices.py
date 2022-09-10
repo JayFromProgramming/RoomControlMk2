@@ -36,7 +36,8 @@ class AbstractRGB:
     def set_auto(self, auto: bool, mode: str):
         self.is_auto = auto
         self.auto_mode = mode
-        self.database.cursor.execute(
+        cursor = self.database.cursor()
+        cursor.execute(
             "UPDATE auto_lights SET device_id = ?, is_auto = ? WHERE current_mode = ?",
             (auto, mode, self.device_id))
         self.database.commit()

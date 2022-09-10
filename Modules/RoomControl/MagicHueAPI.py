@@ -101,7 +101,7 @@ class MagicDevice(AbstractRGB):
 
         if database is not None:
             cursor = database.cursor()
-            self.is_auto = cursor.execute("SELECT * FROM auto_lights WHERE device_id = ?", (macaddr,)).fetchone()[1]
+            self.is_auto = True if cursor.execute("SELECT * FROM auto_lights WHERE device_id = ?", (macaddr,)).fetchone()[1] == 1 else False
             self.auto_mode = cursor.execute("SELECT * FROM auto_lights WHERE device_id = ?", (macaddr,)).fetchone()[2]
             cursor.close()
 
