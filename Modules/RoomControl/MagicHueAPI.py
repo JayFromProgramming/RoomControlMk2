@@ -79,6 +79,10 @@ class MagicHome:
             all_status[device.macaddr] = device.get_status()
         return all_status
 
+    def refresh_all(self):
+        for device in self.devices:
+            device.refresh_info()
+
 
 class MagicDevice(AbstractRGB):
 
@@ -174,6 +178,15 @@ class MagicDevice(AbstractRGB):
                     "white_enabled": self.light.is_white
                 }
                 return status
+            except magichue.exceptions.MagicHueAPIError as e:
+                print(f"{self.macaddr} get status error: {e}")
+                self.online = False
+
+    @background
+    def refresh_info(self):
+        if self.online:
+            try:
+                self.light.update_status()
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} get status error: {e}")
                 self.online = False

@@ -11,7 +11,10 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(leve
 
 async def main():
     logging.info("Starting main")
-    await asyncio.sleep(600000)
+    while True:
+        await asyncio.sleep(5)
+        room_controller.refresh()
+
 
 
 asyncio.run(main())

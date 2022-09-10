@@ -114,3 +114,10 @@ class BluetoothDetector:
             cursor.execute("UPDATE bluetooth_occupancy SET in_room=?, last_changed=? WHERE uuid=?",
                            (in_room, datetime.datetime.now().timestamp(), uuid))
             self.database.commit()
+
+    def get_occupancy(self):
+        cursor = self.database.cursor()
+        cursor.execute("SELECT * FROM bluetooth_occupancy")
+        occupancy = cursor.fetchall()
+        cursor.close()
+        return occupancy

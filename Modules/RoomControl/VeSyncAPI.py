@@ -47,8 +47,10 @@ class VeSyncAPI:
     def get_all_devices(self):
         return self.devices
 
-    def update(self):
-        self.manager.update()
+    @background
+    def refresh(self):
+        for device in self.devices:
+            device.refresh_info()
 
 
 class VeSyncPlug(AbstractToggleDevice):

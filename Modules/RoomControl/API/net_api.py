@@ -6,7 +6,8 @@ import functools
 from aiohttp import web
 import hashlib
 
-from Modules.RoomControl.API.datagrams import APIMessageTX
+from Modules.RoomControl.API.action_handler import process_device_command
+from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.AbstractSmartDevices import background
 
 logging.getLogger(__name__)
@@ -15,9 +16,10 @@ logging.getLogger(__name__)
 class NetAPI:
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
-    def __init__(self, database, other_apis):
+    def __init__(self, database, device_controllers=None, occupancy_detector=None):
         self.database = database
-        self.other_apis = other_apis
+        self.other_apis = device_controllers
+        self.occupancy_detector = occupancy_detector
         self.init_database()
 
         self.app = web.Application()
@@ -27,6 +29,8 @@ class NetAPI:
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
             + [web.get('/get_all', self.handle_get_all)]
+            + [web.get('/occupancy', self.handle_occupancy)]
+            + [web.get('/set_auto/{mode}', self.handle_auto)]
         )
 
         # Set webserver address and port
@@ -79,7 +83,7 @@ class NetAPI:
             self.database.commit()
             self.authorized_cookies.append(api_secret)
             response = web.Response(text="Authorized")
-            response.set_cookie("auth", new_cookie, max_age=60*60*24*365)
+            response.set_cookie("auth", new_cookie, max_age=60 * 60 * 24 * 365)
             return response
         else:
             raise web.HTTPForbidden(text="Invalid API Key")
@@ -98,16 +102,21 @@ class NetAPI:
             timestamp=datetime.datetime.now().timestamp()
         )
         if device:
-            return web.Response(text=msg.__str__())
+            return web.Response(text=msg.__str__(), headers={"Refresh": "5"})
         else:
             return web.Response(text="Device not found")
 
     async def handle_set(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
         device_name = request.match_info['name']
         logging.info(f"Received SET request for {device_name}")
-        return web.Response(text="Hello, " + device_name)
+        data = request.query_string
+        logging.info(f"Received data: {data}")
+        msg = APIMessageRX(data)
+        device = self.get_device(device_name)
+        result = process_device_command(device, msg)
+        return web.Response(text=result.__str__())
 
     async def handle_get_all(self, request):
         if not self.check_auth(request):
@@ -122,8 +131,23 @@ class NetAPI:
                 for device in self.get_all_devices()
             ]
         )
-        return web.Response(text=msg.__str__())
+        return web.Response(text=msg.__str__(), headers={"Refresh": "5"})
 
     async def handle_web(self, request):
         logging.info("Received WEB request")
         return web.Response(text="Hello, World")
+
+    async def handle_occupancy(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received OCCUPANCY request")
+        return web.Response(text=str(self.occupancy_detector.get_occupancy()))
+
+    async def handle_auto(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        mode = request.match_info['mode']
+        logging.info(f"Received AUTO request for {mode}")
+        for api in self.other_apis:
+            api.set_auto_mode(mode)
+        return web.Response(text="OK")
