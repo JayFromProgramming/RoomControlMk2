@@ -23,6 +23,9 @@ def process_device_command(device: typing.Union[AbstractRGB, AbstractToggleDevic
             if hasattr(message, "on"):
                 device.set_on(message.on)
                 preformed_actions.append(f"set_on to {message.on}")
+            if hasattr(message, "auto"):
+                device.is_auto = message.auto
+                preformed_actions.append(f"set_auto to {message.auto}")
         elif isinstance(device, AbstractToggleDevice):
             if hasattr(message, "on"):
                 device.set_on(message.on)

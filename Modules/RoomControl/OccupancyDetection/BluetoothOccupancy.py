@@ -121,3 +121,6 @@ class BluetoothDetector:
         occupancy = cursor.fetchall()
         cursor.close()
         return occupancy
+
+    def is_occupied(self):
+        return any([x[1] for x in self.get_occupancy()])

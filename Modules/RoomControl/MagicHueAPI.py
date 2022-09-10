@@ -33,7 +33,7 @@ class MagicHome:
         for device in hw_devices:
             try:
                 print(f"Adding device: {device.macaddr}")
-                devices.append(MagicDevice(self.api, device.macaddr))
+                devices.append(MagicDevice(self.api, device.macaddr, database=self.database))
             except magichue.exceptions.MagicHueAPIError as e:
                 logging.error(f"\t{device.macaddr}: Error: {e}")
         return devices
@@ -53,6 +53,15 @@ class MagicHome:
             if device.online:
                 count += 1
         return count
+
+    def auto_on(self, on: bool):
+        for device in self.devices:
+            if device.is_auto:
+                if not on:
+                    device.set_color((1, 0, 0))
+                else:
+                    device.set_color((255, 255, 255))
+                    device.set_white(True)
 
     def total_devices(self):
         return len(self.devices)
@@ -86,8 +95,16 @@ class MagicHome:
 
 class MagicDevice(AbstractRGB):
 
-    def __init__(self, api, macaddr):
+    def __init__(self, api, macaddr, database=None):
+        super().__init__(macaddr, database=database)
         self.online = False
+
+        if database is not None:
+            cursor = database.cursor()
+            self.is_auto = cursor.execute("SELECT * FROM auto_lights WHERE device_id = ?", (macaddr,)).fetchone()[1]
+            self.auto_mode = cursor.execute("SELECT * FROM auto_lights WHERE device_id = ?", (macaddr,)).fetchone()[2]
+            cursor.close()
+
         try:
             self.light = magichue.RemoteLight(api=api, macaddr=macaddr)
             self.status = self.light.status

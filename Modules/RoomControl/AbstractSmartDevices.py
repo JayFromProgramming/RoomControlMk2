@@ -18,6 +18,30 @@ def background(func):
 
 class AbstractRGB:
 
+    def __init__(self, device_id, database=None):
+        self.device_id = device_id
+        self.is_auto = False
+        self.auto_mode = "Unknown"
+        self.database = database
+
+        if database is not None:
+            cursor = database.cursor()
+            # Check if device is in database
+            if cursor.execute("SELECT * FROM auto_lights WHERE device_id = ?", (device_id,)).fetchone() is None:
+                cursor.execute("INSERT INTO auto_lights VALUES (?, ?, ?)", (device_id, False, "Unknown"))
+                database.lock.acquire()
+                database.commit()
+                database.lock.release()
+
+    def set_auto(self, auto: bool, mode: str):
+        self.is_auto = auto
+        self.auto_mode = mode
+        self.database.cursor.execute(
+            "UPDATE auto_lights SET device_id = ?, is_auto = ? WHERE current_mode = ?",
+            (auto, mode, self.device_id))
+        self.database.commit()
+
+
     def get_type(self):
         return "abstract_rgb"
 
@@ -49,17 +73,15 @@ class AbstractRGB:
         return self.get_status()
 
     def get_status(self):
-        return {
-
-        }
+        return {}
 
     """
     :return: Dict of what the auto mode the device is in
     """
     def auto_state(self) -> dict:
         return {
-            "is_auto": False,
-            "auto_mode": None,
+            "is_auto": self.is_auto,
+            "auto_mode": self.auto_mode
         }
 
 

@@ -96,7 +96,9 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                 cursor.execute("UPDATE voicemonkey_devices SET current_state = ? WHERE device_name = ?",
                                (state_after, self.device_id))
                 cursor.close()
+                self.database.lock.acquire()
                 self.database.commit()
+                self.database.lock.release()
         else:
             logging.error(f"Monkey {monkey} failed to run, status code {resp.status_code}")
 
