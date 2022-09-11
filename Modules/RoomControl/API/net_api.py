@@ -46,6 +46,7 @@ class NetAPI:
 
     @background
     def run(self):
+        logging.info("Starting webserver")
         web.run_app(self.app, host=self.webserver_address, port=self.webserver_port)
 
     def init_database(self):

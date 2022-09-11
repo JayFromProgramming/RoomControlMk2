@@ -53,7 +53,7 @@ class RoomController:
         self.database.commit()
 
     def refresh(self):
-        logging.info("Refreshing devices")
+        # logging.info("Refreshing devices")
         self.magic_home.refresh_all()
         self.vesync.refresh()
 

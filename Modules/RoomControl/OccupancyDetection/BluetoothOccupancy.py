@@ -3,7 +3,11 @@ import json
 import logging
 import sqlite3
 
-import bluetooth
+try:
+    import bluetooth
+except ImportError:
+    logging.error("Bluetooth not available")
+    bluetooth = None
 
 from Modules.RoomControl.AbstractSmartDevices import background
 
