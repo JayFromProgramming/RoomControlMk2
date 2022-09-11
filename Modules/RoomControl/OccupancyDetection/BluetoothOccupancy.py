@@ -3,7 +3,7 @@ import json
 import logging
 import sqlite3
 
-from pybluez import bluetooth
+import bluetooth
 
 from Modules.RoomControl.AbstractSmartDevices import background
 
