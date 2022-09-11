@@ -57,8 +57,8 @@ class NetAPI:
 
     def get_device(self, device_name):
         for api in self.other_apis:
-            if device := api.get_device(device_name):
-                return device
+            if api.get_device(device_name):
+                return api.get_device(device_name)
         return None
 
     def get_all_devices(self):
