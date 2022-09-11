@@ -22,7 +22,7 @@ class MagicHome:
         self.api = magichue.RemoteAPI.login_with_user_password(user=username, password=password)
         self.devices = asyncio.run(self.fetch_all_devices())
 
-        self.state_changed = asyncio.Event()
+        # self.state_changed = asyncio.Event()
 
     async def fetch_all_devices(self):
         # Make a future to get all devices as the api call is blocking
