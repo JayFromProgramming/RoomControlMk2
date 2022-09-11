@@ -91,7 +91,7 @@ class MagicHome:
 
     def refresh_all(self):
         for device in self.devices:
-            device.refresh_info()
+            device.fetch_status()
 
 
 class MagicDevice(AbstractRGB):
@@ -99,6 +99,7 @@ class MagicDevice(AbstractRGB):
     def __init__(self, api, macaddr, database=None):
         super().__init__(macaddr, database=database)
         self.online = False
+        self.api = api
 
         if database is not None:
             cursor = database.cursor()
@@ -137,6 +138,7 @@ class MagicDevice(AbstractRGB):
                 self.light.rgb = color
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set color error: {e}")
+                self.offline_reason = str(e)
                 self.online = False
 
     @background
@@ -147,6 +149,9 @@ class MagicDevice(AbstractRGB):
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set brightness error: {e}")
                 self.online = False
+                self.offline_reason = str(e)
+        else:
+            print(f"{self.macaddr} is offline")
 
     @background
     def set_on(self, on: bool):
@@ -156,6 +161,9 @@ class MagicDevice(AbstractRGB):
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set brightness error: {e}")
                 self.online = False
+                self.offline_reason = str(e)
+        else:
+            print(f"{self.macaddr} is offline")
 
     @background
     def set_white(self, white: int):
@@ -166,16 +174,67 @@ class MagicDevice(AbstractRGB):
                 self.light.cw = white
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set brightness error: {e}")
+                self.offline_reason = str(e)
                 self.online = False
+        else:
+            print(f"{self.macaddr} is offline")
+
+    def is_white(self):
+        if self.online:
+            return self.light.is_white
+        else:
+            return False
 
     @background
     def toggle(self):
         if self.online:
             try:
-                self.light.toggle()
+                self.light.on = not self.light.on
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} toggle error: {e}")
+                self.offline_reason = str(e)
                 self.online = False
+        else:
+            print(f"{self.macaddr} is offline")
+
+    def get_color(self):
+        if self.online:
+            return self.light.rgb
+        else:
+            return 0, 0, 0
+
+    def get_brightness(self):
+        if self.online:
+            return self.light.brightness
+        else:
+            return 0
+
+    def get_hsv(self) -> tuple:
+        if self.online:
+            # Convert RGB to HSV
+            r, g, b = self.light.rgb
+            r, g, b = r / 255.0, g / 255.0, b / 255.0
+            mx = max(r, g, b)
+            mn = min(r, g, b)
+            df = mx - mn
+            if mx == mn:
+                h = 0
+            elif mx == r:
+                h = (60 * ((g - b) / df) + 360) % 360
+            elif mx == g:
+                h = (60 * ((b - r) / df) + 120) % 360
+            elif mx == b:
+                h = (60 * ((r - g) / df) + 240) % 360
+            else:
+                h = 0
+            if mx == 0:
+                s = 0
+            else:
+                s = df / mx
+            v = mx
+            return h, s, v  # h: 0-360, s: 0-1, v: 0-1
+        else:
+            return 0, 0, 0
 
     def is_on(self):
         if self.online:
@@ -186,25 +245,40 @@ class MagicDevice(AbstractRGB):
     def get_status(self):
         if self.online:
             try:
-                self.light.update_status()
                 status = {
                     "on": self.light.on,
                     "brightness": self.light.brightness,
                     "color": self.light.rgb,
                     "white": self.light.w,
                     "cold_white": self.light.cw,
-                    "white_enabled": self.light.is_white
+                    "white_enabled": self.light.is_white,
+                    "mode": self.light.mode._status_text(),
                 }
                 return status
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} get status error: {e}")
+                self.offline_reason = str(e)
                 self.online = False
+        return None
 
     @background
-    def refresh_info(self):
+    def fetch_status(self):
         if self.online:
             try:
                 self.light.update_status()
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} get status error: {e}")
+                self.offline_reason = str(e)
                 self.online = False
+        else:
+            # Attempt to reconnect
+            try:
+                self.light = magichue.RemoteLight(api=self.api, macaddr=self.macaddr)
+                self.online = True
+            except magichue.exceptions.MagicHueAPIError as e:
+                print(f"{self.macaddr} reconnect error: {e}")
+                self.offline_reason = str(e)
+                self.online = False
+
+    def is_online(self):
+        return self.online

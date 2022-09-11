@@ -19,10 +19,12 @@ def background(func):
 class AbstractRGB:
 
     def __init__(self, device_id, database=None):
+        self.online = None
         self.device_id = device_id
         self.is_auto = False
         self.auto_mode = "Unknown"
         self.database = database
+        self.offline_reason = "Unknown"
 
         if database is not None:
             cursor = database.cursor()
@@ -41,7 +43,6 @@ class AbstractRGB:
             "UPDATE auto_lights SET device_id = ?, is_auto = ? WHERE current_mode = ?",
             (auto, mode, self.device_id))
         self.database.commit()
-
 
     def get_type(self):
         return "abstract_rgb"
@@ -71,7 +72,25 @@ class AbstractRGB:
         return False
 
     def get_state(self):
-        return self.get_status()
+        return self.get_status() if self.online else {
+            "on": False,
+            "brightness": 0,
+            "color": [
+                0,
+                0,
+                0
+            ],
+            "white": 0,
+            "cold_white": 0,
+            "white_enabled": False,
+            "mode": "unknown"
+        }
+
+    def get_health(self) -> dict:
+        return {
+            "online": self.online,
+            "reason": "online" if self.online else self.offline_reason
+        }
 
     def get_status(self):
         return {}
@@ -79,6 +98,7 @@ class AbstractRGB:
     """
     :return: Dict of what the auto mode the device is in
     """
+
     def auto_state(self) -> dict:
         return {
             "is_auto": self.is_auto,
@@ -87,6 +107,9 @@ class AbstractRGB:
 
 
 class AbstractToggleDevice:
+
+    def __init__(self):
+        self.online = None
 
     def get_type(self):
         return "abstract_toggle_device"
@@ -98,10 +121,15 @@ class AbstractToggleDevice:
         raise NotImplementedError
 
     def get_state(self) -> bool:
-        raise False
+        return self.get_status() if self.online else None
 
     def get_status(self):
         raise {}
+
+    def get_health(self):
+        return {
+            "online": self.online
+        }
 
     def auto_state(self):
         return {

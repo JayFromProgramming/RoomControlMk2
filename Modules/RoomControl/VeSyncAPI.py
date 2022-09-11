@@ -56,9 +56,11 @@ class VeSyncAPI:
 class VeSyncPlug(AbstractToggleDevice):
 
     def __init__(self, device):
+        super().__init__()
         self.device = device
         self.device_name = device.device_name
         self.cached_details = {}
+        self.online = True
 
     def name(self):
         return self.device_name

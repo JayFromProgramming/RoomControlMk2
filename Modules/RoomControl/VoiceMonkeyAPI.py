@@ -48,6 +48,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
     """All voice monkey devices store their state in the database, so we don't need to query the device for its state"""
 
     def __init__(self, device_id, database, monkey_token, monkey_secret):
+        super().__init__()
         self.device_id = device_id
         self.database = database
         self.monkey_token = monkey_token
@@ -56,6 +57,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         self.disable_monkey = None
         self.current_state = None
         self.load_state()
+        self.online = True
 
     def load_state(self):
         cursor = self.database.cursor()

@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import json
 import logging
 import functools
 import sys
@@ -32,6 +33,7 @@ class NetAPI:
             + [web.get('/get_all', self.handle_get_all)]
             + [web.get('/occupancy', self.handle_occupancy)]
             + [web.get('/set_auto/{mode}', self.handle_auto)]
+            + [web.get('/get_schema', self.handle_schema)]
         )
 
         # Set webserver address and port
@@ -43,9 +45,7 @@ class NetAPI:
         self.authorized_cookies = [cookie[0] for cookie in cursor.execute("SELECT current_cookie FROM api_authorizations").fetchall()]
 
         self.runner = web.AppRunner(self.app)
-        self.run()
 
-    @background
     def run(self):
         logging.info("Starting webserver")
         web.run_app(self.app, host=self.webserver_address, port=self.webserver_port,
@@ -80,6 +80,7 @@ class NetAPI:
         cursor = self.database.cursor()
         api_secret = cursor.execute("SELECT * FROM api_authorizations WHERE api_secret = ?", (api_key,)).fetchone()
         if api_secret:
+            logging.info("API key is valid")
             # Make a new cookie based on a hash of the api_secret
             new_cookie = hashlib.sha256(api_secret[0].encode()).hexdigest()
             cursor.execute("UPDATE api_authorizations SET current_cookie = ? WHERE api_secret = ?", (new_cookie, api_key))
@@ -89,11 +90,12 @@ class NetAPI:
             response.set_cookie("auth", new_cookie, max_age=60 * 60 * 24 * 365)
             return response
         else:
+            logging.info("API key is invalid")
             raise web.HTTPForbidden(text="Invalid API Key")
 
     async def handle_get(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
 
         device_name = request.match_info['name']
         logging.info(f"Received GET request for {device_name}")
@@ -122,17 +124,20 @@ class NetAPI:
         return web.Response(text=result.__str__())
 
     async def handle_get_all(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
 
         logging.info("Received GET_ALL request")
-        msg = APIMessageTX(
-            devices=[{device.name(): {
-                "status": device.get_status(),
+        devices_raw = self.get_all_devices()
+        devices = {}
+        for device in devices_raw:
+            devices[device.name()] = {
+                "state": device.get_state(),
+                "health": device.get_health(),
                 "type": device.get_type(),
-                "auto_state": device.auto_state()}}
-                for device in self.get_all_devices()
-            ]
+                "auto_state": device.auto_state()}
+        msg = APIMessageTX(
+            devices=devices
         )
         return web.Response(text=msg.__str__(), headers={"Refresh": "5"})
 
@@ -141,16 +146,25 @@ class NetAPI:
         return web.Response(text="Hello, World")
 
     async def handle_occupancy(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
         logging.info("Received OCCUPANCY request")
         return web.Response(text=str(self.occupancy_detector.get_occupancy()))
 
     async def handle_auto(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
         mode = request.match_info['mode']
         logging.info(f"Received AUTO request for {mode}")
         for api in self.other_apis:
             api.set_auto_mode(mode)
         return web.Response(text="OK")
+
+    async def handle_schema(self, request):
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
+        logging.info("Received SCHEMA request")
+        with open("Modules/RoomControl/Configs/schema.json") as f:
+            schema = json.load(f)
+
+        return web.Response(text=json.dumps(schema))

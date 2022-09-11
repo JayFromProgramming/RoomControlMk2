@@ -1,0 +1,46 @@
+{
+  "schema": [
+      {
+        "slot": 0,
+        "type": "rgb_light",
+        "name": "Room Lights",
+        "device": "18B905D086A5"
+      },
+      {
+        "slot": 1,
+        "type": "rgb_light",
+        "name": "Loft Lights",
+        "device": "18B905D086A5"
+      },
+      {
+        "slot": 2,
+        "type": "rgb_light",
+        "name": "Door Lights",
+        "device": "B4E842136DA6"
+      },
+      {
+        "slot": 3,
+        "type": "vsync_plug",
+        "name": "Bed Fan",
+        "device": "plug_1"
+      },
+      {
+        "slot": 4,
+        "type": "combo_plug",
+        "name": "Big Wimd",
+        "device": [
+          "intake",
+          "exhaust"
+        ]
+      },
+      {
+        "slot": 5,
+        "type": "combo_plug",
+        "name": "Humidify",
+        "device": [
+          "plug_2",
+          "big_humid"
+        ]
+      }
+  ]
+}
