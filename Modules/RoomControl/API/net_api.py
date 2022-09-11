@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import logging
 import functools
+import sys
 
 from aiohttp import web
 import hashlib
@@ -10,7 +11,7 @@ from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.AbstractSmartDevices import background
 
-logging.getLogger(__name__)
+logging = logging.getLogger(__name__)
 
 
 class NetAPI:
@@ -47,9 +48,8 @@ class NetAPI:
     @background
     def run(self):
         logging.info("Starting webserver")
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        web.run_app(self.app, host=self.webserver_address, port=self.webserver_port)
+        web.run_app(self.app, host=self.webserver_address, port=self.webserver_port,
+                    access_log=logging)
 
     def init_database(self):
         cursor = self.database.cursor()

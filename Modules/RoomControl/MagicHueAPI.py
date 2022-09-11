@@ -6,7 +6,7 @@ from threading import Thread
 
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, background
 
-logging.getLogger(__name__)
+logging = logging.getLogger(__name__)
 
 
 class MagicHome:

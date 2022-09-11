@@ -6,7 +6,7 @@ import requests
 
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
 
-logging.getLogger(__name__)
+logging = logging.getLogger(__name__)
 
 template = "https://api.voicemonkey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
 

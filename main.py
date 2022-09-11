@@ -4,8 +4,11 @@ import logging
 import sqlite3
 
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S',
-                    handlers=[logging.FileHandler("logs.log"), logging.StreamHandler()])
+logging.basicConfig(level=logging.DEBUG,
+                    format=f"%(asctime)s - %(name)s - %(thread)s - %(levelname)s - %(message)s",
+                    datefmt='%H:%M:%S')
+
+logging = logging.getLogger(__name__)
 
 
 async def main():
