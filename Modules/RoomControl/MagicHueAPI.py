@@ -20,15 +20,16 @@ class MagicHome:
         cursor.close()
 
         self.api = magichue.RemoteAPI.login_with_user_password(user=username, password=password)
-        self.devices = asyncio.run(self.fetch_all_devices())
+        self.devices = []
+        self.fetch_all_devices()
 
         # self.state_changed = asyncio.Event()
 
-    async def fetch_all_devices(self):
+    @background
+    def fetch_all_devices(self):
         # Make a future to get all devices as the api call is blocking
-        future = asyncio.get_event_loop().run_in_executor(None, self.api.get_all_devices)
+        hw_devices = self.api.get_all_devices()
         # Wait for the future to complete
-        hw_devices = await future
         devices = []
         for device in hw_devices:
             try:
@@ -36,7 +37,7 @@ class MagicHome:
                 devices.append(MagicDevice(self.api, device.macaddr, database=self.database))
             except magichue.exceptions.MagicHueAPIError as e:
                 logging.error(f"\t{device.macaddr}: Error: {e}")
-        return devices
+        self.devices = devices
 
     def get_device(self, macaddr):
         for device in self.devices:

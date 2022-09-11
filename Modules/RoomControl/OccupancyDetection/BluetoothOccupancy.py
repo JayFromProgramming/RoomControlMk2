@@ -64,6 +64,10 @@ class BluetoothDetector:
     def connect(self, address):
         logging.debug(f"Connecting to {address}")
         print(f"Connecting to {address}")
+
+        if bluetooth is None:
+            return
+
         try:
             sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
             sock.settimeout(5)

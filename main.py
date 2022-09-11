@@ -3,7 +3,6 @@ import asyncio
 import logging
 import sqlite3
 
-room_controller = RoomControl.RoomController()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S',
                     handlers=[logging.FileHandler("logs.log"), logging.StreamHandler()])
@@ -11,6 +10,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(leve
 
 async def main():
     logging.info("Starting main")
+    room_controller = RoomControl.RoomController()
     while True:
         await asyncio.sleep(5)
         room_controller.refresh()
