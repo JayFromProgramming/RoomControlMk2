@@ -40,7 +40,7 @@
       {
         "slot": 5,
         "type": "combo_plug",
-        "name": "Humidify",
+        "name": "Humidifiers",
         "device": [
           "plug_2",
           "big_humid"
