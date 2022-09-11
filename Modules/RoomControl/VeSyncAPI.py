@@ -65,6 +65,9 @@ class VeSyncPlug(AbstractToggleDevice):
     def name(self):
         return self.device_name
 
+    def is_on(self):
+        return self.device.is_on
+
     @background
     def set_on(self, on: bool):
         logging.debug(f"Setting {self.device_name} to {on}")
@@ -75,7 +78,7 @@ class VeSyncPlug(AbstractToggleDevice):
         logging.debug(f"Refreshing {self.device_name} info")
         self.device.update()
 
-    def get_status(self):
+    def get_info(self):
         if len(self.device.details) > 1:
             details = self.device.details
             details.update({"connection": "online"})
@@ -84,7 +87,7 @@ class VeSyncPlug(AbstractToggleDevice):
             return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0, "connection": "offline"}
 
     def __str__(self):
-        return f"{self.device_name}: {self.get_status()}"
+        return f"{self.device_name}: {self.get_info()}"
 
     def __repr__(self):
         return self.__str__()

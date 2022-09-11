@@ -117,11 +117,21 @@ class AbstractToggleDevice:
     def name(self):
         raise "AbstractToggleDevice"
 
+    def is_on(self):
+        raise NotImplementedError
+
+    def get_state(self):
+        return {
+            "on": self.is_on()
+        }
+
     def set_on(self, on: bool):
         raise NotImplementedError
 
-    def get_state(self) -> bool:
-        return self.get_status() if self.online else None
+    def get_info(self) -> dict:
+        return {
+
+        }
 
     def get_status(self):
         raise {}
