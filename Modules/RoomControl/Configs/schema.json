@@ -4,7 +4,7 @@
         "slot": 0,
         "type": "rgb_light",
         "name": "Room Lights",
-        "device": "18B905D086A5"
+        "device": "B4E842D7A9F8"
       },
       {
         "slot": 1,
@@ -31,6 +31,10 @@
         "device": [
           "intake",
           "exhaust"
+        ],
+        "device_names": [
+          "Intake",
+          "Exhaust"
         ]
       },
       {
@@ -40,6 +44,10 @@
         "device": [
           "plug_2",
           "big_humid"
+        ],
+        "device_names": [
+          "L.Humid",
+          "B.Humid"
         ]
       }
   ]

@@ -102,10 +102,11 @@ class NetAPI:
         logging.info(f"Received GET request for {device_name}")
         device = self.get_device(device_name)
         msg = APIMessageTX(
-            device=device_name,
-            status=device.get_status(),
-            auto_state=device.auto_state(),
-            timestamp=datetime.datetime.now().timestamp()
+            state=device.get_state(),
+            info=device.get_info(),
+            health=device.get_health(),
+            type=device.get_type(),
+            auto_state=device.auto_state()
         )
         if device:
             return web.Response(text=msg.__str__(), headers={"Refresh": "5"})
@@ -117,7 +118,7 @@ class NetAPI:
         #     raise web.HTTPUnauthorized()
         device_name = request.match_info['name']
         logging.info(f"Received SET request for {device_name}")
-        data = request.query_string
+        data = await request.content.readexactly(request.content_length)
         logging.info(f"Received data: {data}")
         msg = APIMessageRX(data)
         device = self.get_device(device_name)
