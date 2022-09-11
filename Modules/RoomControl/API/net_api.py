@@ -47,6 +47,8 @@ class NetAPI:
     @background
     def run(self):
         logging.info("Starting webserver")
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
         web.run_app(self.app, host=self.webserver_address, port=self.webserver_port)
 
     def init_database(self):
