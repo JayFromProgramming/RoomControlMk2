@@ -31,12 +31,13 @@ class RoomController:
         self.lights = self.magic_home.devices
         self.plugs = self.vesync.devices
 
-        with open("Modules/RoomControl/Configs/bluetooth_targets.json", "r") as f:
-            bluetooth_targets = json.load(f)
-            for mac, target in bluetooth_targets.items():
-                self.blue_stalker.add_target(mac, target["name"], target["role"])
 
-            self.database.commit()
+        # with open("Modules/RoomControl/Configs/bluetooth_targets.json", "r") as f:
+        #     bluetooth_targets = json.load(f)
+        #     for mac, target in bluetooth_targets.items():
+        #         self.blue_stalker.add_target(mac, target["name"], target["role"])
+        #
+        #     self.database.commit()
 
         self.web_server = NetAPI(self.database,
                                  device_controllers=[self.magic_home, self.vesync, self.monkey],
