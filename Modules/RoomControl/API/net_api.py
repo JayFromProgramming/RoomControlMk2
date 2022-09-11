@@ -37,7 +37,7 @@ class NetAPI:
         )
 
         # Set webserver address and port
-        self.webserver_address = "localhost"
+        self.webserver_address = "wopr.eggs.loafclan.org"
         self.webserver_port = 47670
 
         # List of cookies that are authorized to access the API

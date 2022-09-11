@@ -276,7 +276,7 @@ class MagicDevice(AbstractRGB):
                 self.light = magichue.RemoteLight(api=self.api, macaddr=self.macaddr)
                 self.online = True
             except magichue.exceptions.MagicHueAPIError as e:
-                print(f"{self.macaddr} reconnect error: {e}")
+                # print(f"{self.macaddr} reconnect error: {e}")
                 self.offline_reason = str(e)
                 self.online = False
 
