@@ -92,6 +92,9 @@ class AbstractRGB:
             "reason": "online" if self.online else self.offline_reason
         }
 
+    def get_info(self) -> dict:
+        return {}
+
     def get_status(self):
         return {}
 
