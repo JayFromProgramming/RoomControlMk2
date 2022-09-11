@@ -34,6 +34,7 @@ class NetAPI:
             + [web.get('/occupancy', self.handle_occupancy)]
             + [web.get('/set_auto/{mode}', self.handle_auto)]
             + [web.get('/get_schema', self.handle_schema)]
+            + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
         )
 
         # Set webserver address and port
@@ -171,3 +172,15 @@ class NetAPI:
             schema = json.load(f)
 
         return web.Response(text=json.dumps(schema))
+
+    async def monkey_adder(self, request):
+        logging.info("Received MONKEY_ADDER request")
+        device_name = request.match_info['dev_name']
+        on_monkey = request.match_info['on_monkey']
+        off_monkey = request.match_info['off_monkey']
+        self.database.execute(
+            "INSERT INTO voicemonkey_devices (device_name, on_monkey, off_monkey) VALUES (?, ?, ?)",
+            (device_name, on_monkey, off_monkey))
+        self.database.commit()
+
+        return web.Response(text="Device added")
