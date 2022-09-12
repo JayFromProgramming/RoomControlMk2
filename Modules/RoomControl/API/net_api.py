@@ -36,6 +36,7 @@ class NetAPI:
             + [web.get('/get_schema', self.handle_schema)]
             + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
+            + [web.post('/set/{name}', self.handle_set_post)]
         )
 
         # Set webserver address and port
@@ -120,7 +121,19 @@ class NetAPI:
             raise web.HTTPUnauthorized()
         device_name = request.match_info['name']
         logging.info(f"Received SET request for {device_name}")
-        data = await request.content.readexactly(request.content_length)
+        data = request.query
+
+        msg = APIMessageRX(data)
+        device = self.get_device(device_name)
+        result = process_device_command(device, msg)
+        return web.Response(text=result.__str__())
+
+    async def handle_set_post(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        device_name = request.match_info['name']
+        logging.info(f"Received POST SET request for {device_name}")
+        data = await request.json()
         logging.info(f"Received data: {data}")
         msg = APIMessageRX(data)
         device = self.get_device(device_name)

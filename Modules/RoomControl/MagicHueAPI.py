@@ -59,10 +59,11 @@ class MagicHome:
         for device in self.devices:
             if device.is_auto:
                 if not on:
-                    device.set_color((1, 0, 0))
+                    device.set_color((15, 0, 0))
                 else:
                     device.set_color((255, 255, 255))
                     device.set_white(True)
+                    device.set_brightness(255)
 
     def total_devices(self):
         return len(self.devices)
