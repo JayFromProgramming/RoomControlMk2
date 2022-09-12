@@ -30,6 +30,8 @@ class VoiceMonkeyAPI:
             self.devices.append(
                 VoiceMonkeyDevice(device[0], self.database, self.api_key, self.api_secret))
 
+        self.periodic_refresh()
+
     def init_database(self):
         cursor = self.database.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS "
