@@ -123,13 +123,17 @@ class BluetoothDetector:
             # Check if the db state matches in_room, if it is, we don't need to update the database
             cursor.execute("INSERT INTO bluetooth_occupancy (uuid, in_room, last_changed) VALUES (?, ?, ?)",
                            (uuid, in_room, datetime.datetime.now().timestamp()))
+            self.database.lock.acquire()
             self.database.commit()
+            self.database.lock.release()
         else:
             if cursor.fetchone()[1] == in_room:
                 return
             cursor.execute("UPDATE bluetooth_occupancy SET in_room=?, last_changed=? WHERE uuid=?",
                            (in_room, datetime.datetime.now().timestamp(), uuid))
+            self.database.lock.acquire()
             self.database.commit()
+            self.database.lock.release()
 
     def get_occupancy(self):
         cursor = self.database.cursor()
