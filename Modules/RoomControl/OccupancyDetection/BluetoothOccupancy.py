@@ -104,12 +104,12 @@ class BluetoothDetector:
         except bluetooth.BluetoothError as e:
             logging.info(f"Connection to {address} is dead, reason: {e}")
             self.update_occupancy(address, False)
-            self.sockets.pop(connection)
+            self.sockets.pop(address)
         except OSError:
             logging.debug("Connection lost")
             connection.close()
             self.update_occupancy(address, False)
-            self.sockets.pop(connection)
+            self.sockets.pop(address)
         else:
             logging.debug(f"Connection to {address} is alive")
             self.update_occupancy(address, True)
