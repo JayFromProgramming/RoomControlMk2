@@ -134,7 +134,12 @@ class BluetoothDetector:
         targets = cursor.fetchall()
         cursor.close()
 
-        return [(next((x[1] for x in targets if x[0] == y[0]), "Unknown"), y[1]) for y in occupancy]
+        occupancy_info = {}
+        for target in targets:
+            for device in occupancy:
+                if target[0] == device[0]:
+                    occupancy_info[target[2]] = {"present": device[1], "last_changed": device[2]}
+
 
 
     def is_occupied(self):
