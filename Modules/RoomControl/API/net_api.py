@@ -300,4 +300,4 @@ class NetAPI:
 
         file = request.match_info['file']
         logging.info(f"Received CSS request for {file}")
-        return web.FileResponse(rf"{sys.path[0]}\Modules\RoomControl\API\pages\css\{file}")
+        return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/css/{file}")
