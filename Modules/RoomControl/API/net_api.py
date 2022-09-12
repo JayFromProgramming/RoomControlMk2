@@ -96,8 +96,8 @@ class NetAPI:
             raise web.HTTPForbidden(text="Invalid API Key")
 
     async def handle_get(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
 
         device_name = request.match_info['name']
         logging.info(f"Received GET request for {device_name}")
@@ -115,8 +115,8 @@ class NetAPI:
             return web.Response(text="Device not found")
 
     async def handle_set(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
         device_name = request.match_info['name']
         logging.info(f"Received SET request for {device_name}")
         data = await request.content.readexactly(request.content_length)
@@ -127,8 +127,8 @@ class NetAPI:
         return web.Response(text=result.__str__())
 
     async def handle_get_all(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
 
         logging.info("Received GET_ALL request")
         devices_raw = self.get_all_devices()
@@ -150,14 +150,14 @@ class NetAPI:
         return web.Response(text="Hello, World")
 
     async def handle_occupancy(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
         logging.info("Received OCCUPANCY request")
         return web.Response(text=str(self.occupancy_detector.get_occupancy()))
 
     async def handle_auto(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
         mode = request.match_info['mode']
         logging.info(f"Received AUTO request for {mode}")
         for api in self.other_apis:
@@ -165,8 +165,8 @@ class NetAPI:
         return web.Response(text="OK")
 
     async def handle_schema(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
         logging.info("Received SCHEMA request")
         with open("Modules/RoomControl/Configs/schema.json") as f:
             schema = json.load(f)
