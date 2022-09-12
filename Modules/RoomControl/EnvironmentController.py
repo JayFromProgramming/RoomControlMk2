@@ -36,6 +36,13 @@ class EnvironmentControllerHost:
                         source_name text,
                         enabled boolean
                         )""")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS
+                        enviv_control_devices (
+                        device_id text,
+                        lower_delta integer,
+                        upper_delta integer,
+                        control_source text
+                        )""")
         cursor.close()
         self.database.commit()
 
