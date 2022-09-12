@@ -57,11 +57,11 @@ class BluetoothDetector:
             logging.info("Scanning for bluetooth devices")
             targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
             for target in targets:
-                if target[1] in self.sockets:
-                    self.conn_is_alive(target[1])
+                if conn := self.sockets.get(target[1]):  # If the socket is already open
+                    self.conn_is_alive(conn, target[1])  # Check if the connection is still alive
                 else:
-                    self.connect(target[1])
-            self.last_update = datetime.datetime.now().timestamp()
+                    self.connect(target[1])  # Else attempt to connect to the device
+            self.last_update = datetime.datetime.now().timestamp() # Update the last update time
             time.sleep(60)
 
     @background
@@ -97,21 +97,22 @@ class BluetoothDetector:
             self.update_occupancy(address, True)
 
     @background
-    def conn_is_alive(self, connection):
-        logging.info(f"Checking if {connection} is alive")
+    def conn_is_alive(self, connection, address):
+        logging.info(f"Checking if {address} is alive")
         try:
             connection.getpeername()
         except bluetooth.BluetoothError as e:
-            logging.info(f"Connection to {connection} is dead, reason: {e}")
-            self.update_occupancy(connection, False)
+            logging.info(f"Connection to {address} is dead, reason: {e}")
+            self.update_occupancy(address, False)
             self.sockets.pop(connection)
         except OSError:
             logging.debug("Connection lost")
             connection.close()
+            self.update_occupancy(address, False)
             self.sockets.pop(connection)
         else:
-            logging.debug(f"Connection to {connection} is alive")
-            self.update_occupancy(connection, True)
+            logging.debug(f"Connection to {address} is alive")
+            self.update_occupancy(address, True)
 
     def detailed_status(self):
         return {

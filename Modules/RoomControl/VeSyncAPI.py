@@ -48,7 +48,7 @@ class VeSyncAPI:
         return self.devices
 
     @background
-    def refresh(self):
+    def refresh_all(self):
         for device in self.devices:
             device.refresh_info()
 

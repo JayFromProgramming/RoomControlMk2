@@ -5,6 +5,7 @@ import threading
 
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
+from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 
 logging.getLogger(__name__)
@@ -28,9 +29,7 @@ class RoomController:
         self.monkey = VoiceMonkeyAPI.VoiceMonkeyAPI(database=self.database)
         self.blue_stalker = BluetoothDetector(self.database)
 
-        self.lights = self.magic_home.devices
-        self.plugs = self.vesync.devices
-
+        self.controllers = [self.magic_home, self.vesync, self.monkey]
 
         # with open("Modules/RoomControl/Configs/bluetooth_targets.json", "r") as f:
         #     bluetooth_targets = json.load(f)
@@ -39,8 +38,14 @@ class RoomController:
         #
         #     self.database.commit()
 
+        self.environment_host = EnvironmentControllerHost(
+            self.database,
+            sources=None,
+            room_controllers=self.controllers
+        )
+
         self.web_server = NetAPI(self.database,
-                                 device_controllers=[self.magic_home, self.vesync, self.monkey],
+                                 device_controllers=self.controllers,
                                  occupancy_detector=self.blue_stalker)
 
     def init_database(self):
@@ -54,8 +59,9 @@ class RoomController:
 
     def refresh(self):
         # logging.info("Refreshing devices")
-        self.magic_home.refresh_all()
-        self.vesync.refresh()
+
+        for controller in self.controllers:
+            controller.refresh_all()
 
         if self.blue_stalker.is_occupied():
             self.magic_home.auto_on(True)

@@ -47,6 +47,11 @@ class VoiceMonkeyAPI:
     def get_all_devices(self):
         return self.devices
 
+    def refresh_all(self):
+        pass
+        # for device in self.devices:
+        #     device.refresh_info()
+
     @background
     def periodic_refresh(self):
         """Periodically sends a command that matches the current state of
@@ -58,7 +63,6 @@ class VoiceMonkeyAPI:
                 time.sleep(random.randint(15, 40))
                 device.refresh_state()
                 logging.debug(f"Refreshed VoiceMonkey device {device.device_id}")
-
 
 
 class VoiceMonkeyDevice(AbstractToggleDevice):
