@@ -62,11 +62,10 @@ class BluetoothDetector:
 
     @background
     def connect(self, address):
-        logging.debug(f"Connecting to {address}")
-        print(f"Connecting to {address}")
 
         if bluetooth is None:
             return
+        logging.info(f"Connecting to {address}...")
 
         try:
             sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -74,10 +73,16 @@ class BluetoothDetector:
             sock.connect((address, 1))
             sock.send("Hello")
         except bluetooth.btcommon.BluetoothError as e:
-            logging.error(f"Connection to address {address} was refused with error {e}")
-            # Because the connection was refused, we can assume that the device is in the room, so we update the database
-            self.update_occupancy(address, True)
-            return
+            if e == "timed out":
+                logging.warning(f"Connection to {address} timed out")
+            elif e == "Connection refused":
+                logging.error(f"Connection to address {address} was refused with error {e}")
+                # Because the connection was refused, we can assume that the device is in the room, so we update the database
+                self.update_occupancy(address, True)
+                return
+            else:
+                logging.error(f"Connection to address {address} failed with error {e}")
+                return
         except OSError as e:
             logging.error(f"Failed to connect to {address} with error {e}")
             return
@@ -88,20 +93,17 @@ class BluetoothDetector:
 
     @background
     def conn_is_alive(self, connection):
-        print(f"Checking if {connection} is alive")
+        logging.info(f"Checking if {connection} is alive")
         try:
             connection.send("ping")
             connection.recv(1024)
         except OSError:
             logging.debug("Connection lost")
-            print("Connection lost")
             connection.close()
             self.sockets.pop(connection)
 
     def detailed_status(self):
         return {
-            "occupancy": self.occupancy_info,
-            "targets": self.target_list,
             "last_update": self.last_update
         }
 
