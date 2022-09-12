@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import random
+import time
 
 import aiohttp
 import requests
@@ -42,6 +44,19 @@ class VoiceMonkeyAPI:
 
     def get_all_devices(self):
         return self.devices
+
+    @background
+    def periodic_refresh(self):
+        """Periodically sends a command that matches the current state of
+         the device so that if the device either missed its last command or
+         was turned on/off manually, it will update to the correct state"""
+        logging.info("Starting VoiceMonkey periodic refresh")
+        while True:
+            for device in self.devices:
+                time.sleep(random.randint(15, 40))
+                device.refresh_state()
+                logging.debug(f"Refreshed VoiceMonkey device {device.device_id}")
+
 
 
 class VoiceMonkeyDevice(AbstractToggleDevice):
@@ -112,3 +127,6 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
 
     def get_status(self):
         return True if self.current_state == 1 else False
+
+    def refresh_state(self):
+        self.run_monkey(self.enable_monkey if self.current_state else self.disable_monkey)
