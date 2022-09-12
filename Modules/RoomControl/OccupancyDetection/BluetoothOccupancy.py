@@ -69,9 +69,8 @@ class BluetoothDetector:
 
         try:
             sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            sock.settimeout(5)
+            # sock.settimeout(5)
             sock.connect((address, 1))
-            sock.send("Hello")
         except bluetooth.btcommon.BluetoothError as e:
             if e.__str__() == "timed out":
                 logging.warning(f"Connection to {address} timed out")
@@ -98,12 +97,18 @@ class BluetoothDetector:
     def conn_is_alive(self, connection):
         logging.info(f"Checking if {connection} is alive")
         try:
-            connection.send("ping")
-            connection.recv(1024)
+            connection.getpeername()
+        except bluetooth.BluetoothError as e:
+            logging.info(f"Connection to {connection} is dead, reason: {e}")
+            self.update_occupancy(connection, False)
+            self.sockets.pop(connection)
         except OSError:
             logging.debug("Connection lost")
             connection.close()
             self.sockets.pop(connection)
+        else:
+            logging.debug(f"Connection to {connection} is alive")
+            self.update_occupancy(connection, True)
 
     def detailed_status(self):
         return {
