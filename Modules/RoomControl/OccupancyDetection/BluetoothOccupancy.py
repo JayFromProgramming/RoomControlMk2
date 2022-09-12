@@ -159,7 +159,8 @@ class BluetoothDetector:
         for target in targets:
             for device in occupancy:
                 if target[0] == device[0]:
-                    occupancy_info[target[2]] = {"present": device[1], "last_changed": device[2]}
+                    present = True if device[1] == 1 else False
+                    occupancy_info[target[2]] = {"present": present, "last_changed": device[2]}
 
         return occupancy_info
 
