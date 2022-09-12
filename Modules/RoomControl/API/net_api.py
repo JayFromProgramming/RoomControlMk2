@@ -35,6 +35,7 @@ class NetAPI:
             + [web.get('/set_auto/{mode}', self.handle_auto)]
             + [web.get('/get_schema', self.handle_schema)]
             + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
+            + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
         )
 
         # Set webserver address and port
@@ -175,6 +176,8 @@ class NetAPI:
 
     async def monkey_adder(self, request):
         logging.info("Received MONKEY_ADDER request")
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
         device_name = request.match_info['dev_name']
         on_monkey = request.match_info['on_monkey']
         off_monkey = request.match_info['off_monkey']
@@ -184,3 +187,17 @@ class NetAPI:
         self.database.commit()
 
         return web.Response(text="Device added")
+
+    async def db_writer(self, request):
+        logging.info("Received DB_WRITER request")
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+
+        data = await request.content.readexactly(request.content_length)
+        logging.info(f"Received data: {data}")
+
+        cursor = self.database.cursor()
+        result = cursor.execute(data)
+        self.database.commit()
+
+        return web.Response(text=str(result.readlines()))
