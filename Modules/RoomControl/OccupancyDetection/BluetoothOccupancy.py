@@ -121,12 +121,12 @@ class BluetoothDetector:
         cursor.execute("SELECT * FROM bluetooth_occupancy WHERE uuid=?", (address,))
         if cursor.fetchone() is None:
             # Check if the db state matches in_room, if it is, we don't need to update the database
-            if cursor.fetchone()[1] == in_room:
-                return
             cursor.execute("INSERT INTO bluetooth_occupancy (uuid, in_room, last_changed) VALUES (?, ?, ?)",
                            (uuid, in_room, datetime.datetime.now().timestamp()))
             self.database.commit()
         else:
+            if cursor.fetchone()[1] == in_room:
+                return
             cursor.execute("UPDATE bluetooth_occupancy SET in_room=?, last_changed=? WHERE uuid=?",
                            (in_room, datetime.datetime.now().timestamp(), uuid))
             self.database.commit()
