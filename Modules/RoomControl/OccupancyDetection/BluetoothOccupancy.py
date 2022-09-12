@@ -164,4 +164,11 @@ class BluetoothDetector:
         return occupancy_info
 
     def is_occupied(self):
+        cursor = self.database.cursor()
+        cursor.execute("SELECT * FROM bluetooth_occupancy")
+        occupancy = cursor.fetchall()
+        cursor.close()
+        for device in occupancy:
+            if device[1] == 1:
+                return True
         return False
