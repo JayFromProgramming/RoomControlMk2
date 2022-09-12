@@ -128,16 +128,14 @@ class BluetoothDetector:
         cursor.execute("SELECT * FROM bluetooth_occupancy")
         occupancy = cursor.fetchall()
         cursor.close()
-        # Get the names of the devices and make this a dictionary
+        # Get the names of the devices combine this with the occupancy
         cursor = self.database.cursor()
         cursor.execute("SELECT * FROM bluetooth_targets")
         targets = cursor.fetchall()
         cursor.close()
-        # Make a dictionary of the targets
-        targets = {x[1]: x[2] for x in targets}
-        # Make a dictionary of the occupancy
-        occupancy = {targets[x[0]]: x[1] for x in occupancy}
-        return occupancy
+
+        return [(next((x[1] for x in targets if x[0] == y[0]), "Unknown"), y[1]) for y in occupancy]
+
 
     def is_occupied(self):
         return any([x[1] for x in self.get_occupancy()])
