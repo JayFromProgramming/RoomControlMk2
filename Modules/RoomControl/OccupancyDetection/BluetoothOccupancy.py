@@ -140,7 +140,7 @@ class BluetoothDetector:
                 if target[0] == device[0]:
                     occupancy_info[target[2]] = {"present": device[1], "last_changed": device[2]}
 
-
+        return occupancy_info
 
     def is_occupied(self):
-        return any([x[1] for x in self.get_occupancy()])
+        return False
