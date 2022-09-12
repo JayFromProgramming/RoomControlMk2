@@ -27,6 +27,18 @@ class EnvironmentControllerHost:
             self.enviv_controllers[controller[0]] = \
                 EnvironmentController(controller[0], self.database, room_controllers=self.room_controllers)
 
+    def database_init(self):
+        cursor = self.database.cursor()
+        cursor.execute("""CREATE TABLE IF NOT EXISTS 
+                        enviv_controllers (
+                        name text,
+                        current_set_point integer,
+                        source_name text,
+                        enabled boolean
+                        )""")
+        cursor.close()
+        self.database.commit()
+
 
 class EnvironmentController:
 
