@@ -153,7 +153,7 @@ class NetAPI:
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         logging.info("Received OCCUPANCY request")
-        return web.Response(text=str(self.occupancy_detector.get_occupancy()))
+        return web.Response(text=str(self.occupancy_detector.get_occupancy()), headers={"Refresh": "5"})
 
     async def handle_auto(self, request):
         if not self.check_auth(request):
