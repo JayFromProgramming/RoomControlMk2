@@ -197,7 +197,8 @@ class NetAPI:
         logging.info(f"Received data: {data}")
 
         cursor = self.database.cursor()
+        data = str(data, 'utf-8')
         result = cursor.execute(data)
         self.database.commit()
 
-        return web.Response(text=str(result.readlines()))
+        return web.Response(text=str(result))
