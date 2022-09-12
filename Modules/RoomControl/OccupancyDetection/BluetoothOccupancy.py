@@ -75,6 +75,7 @@ class BluetoothDetector:
         except bluetooth.btcommon.BluetoothError as e:
             if e == "timed out":
                 logging.warning(f"Connection to {address} timed out")
+                self.update_occupancy(address, False)
             elif e == "Connection refused":
                 logging.error(f"Connection to address {address} was refused with error {e}")
                 # Because the connection was refused, we can assume that the device is in the room, so we update the database
@@ -82,9 +83,11 @@ class BluetoothDetector:
                 return
             else:
                 logging.error(f"Connection to address {address} failed with error {e}")
+                self.update_occupancy(address, False)
                 return
         except OSError as e:
             logging.error(f"Failed to connect to {address} with error {e}")
+            self.update_occupancy(address, False)
             return
         else:
             logging.info(f"Connected to {address}")
@@ -117,6 +120,9 @@ class BluetoothDetector:
         cursor = self.database.cursor()
         cursor.execute("SELECT * FROM bluetooth_occupancy WHERE uuid=?", (address,))
         if cursor.fetchone() is None:
+            # Check if the db state matches in_room, if it is, we don't need to update the database
+            if cursor.fetchone()[1] == in_room:
+                return
             cursor.execute("INSERT INTO bluetooth_occupancy (uuid, in_room, last_changed) VALUES (?, ?, ?)",
                            (uuid, in_room, datetime.datetime.now().timestamp()))
             self.database.commit()
