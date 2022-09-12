@@ -73,7 +73,6 @@ class BluetoothDetector:
 
         try:
             sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            # sock.settimeout(5)
             sock.connect((address, 1))
         except bluetooth.btcommon.BluetoothError as e:
             if e.__str__() == "timed out":
@@ -136,7 +135,7 @@ class BluetoothDetector:
             self.database.commit()
             self.database.lock.release()
         else:
-            if cursor.fetchone()[1] == in_room:
+            if cursor.fetchone()[1] == (1 if in_room else 0):
                 return
             cursor.execute("UPDATE bluetooth_occupancy SET in_room=?, last_changed=? WHERE uuid=?",
                            (in_room, datetime.datetime.now().timestamp(), uuid))
