@@ -73,10 +73,10 @@ class BluetoothDetector:
             sock.connect((address, 1))
             sock.send("Hello")
         except bluetooth.btcommon.BluetoothError as e:
-            if e == "timed out":
+            if e.__str__() == "timed out":
                 logging.warning(f"Connection to {address} timed out")
                 self.update_occupancy(address, False)
-            elif e == "Connection refused":
+            elif e.__str__() == "Connection refused":
                 logging.error(f"Connection to address {address} was refused with error {e}")
                 # Because the connection was refused, we can assume that the device is in the room, so we update the database
                 self.update_occupancy(address, True)
