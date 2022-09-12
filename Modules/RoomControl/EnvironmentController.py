@@ -16,6 +16,7 @@ class EnvironmentControllerHost:
             sources = []
 
         self.database = database
+        self.database_init()
         self.room_controllers = room_controllers
         self.enviv_controllers = {}
         self.sources = sources
