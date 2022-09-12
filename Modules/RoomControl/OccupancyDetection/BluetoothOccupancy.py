@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import sqlite3
+import time
 
 try:
     import bluetooth
@@ -52,13 +53,16 @@ class BluetoothDetector:
 
     @background
     def refresh(self):
-        logging.info("Scanning for bluetooth devices")
-        targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
-        for target in targets:
-            if target[1] in self.sockets:
-                self.conn_is_alive(target[1])
-            else:
-                self.connect(target[1])
+        while True:
+            logging.info("Scanning for bluetooth devices")
+            targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
+            for target in targets:
+                if target[1] in self.sockets:
+                    self.conn_is_alive(target[1])
+                else:
+                    self.connect(target[1])
+            self.last_update = datetime.datetime.now().timestamp()
+            time.sleep(60)
 
     @background
     def connect(self, address):
@@ -75,7 +79,7 @@ class BluetoothDetector:
             if e.__str__() == "timed out":
                 logging.warning(f"Connection to {address} timed out")
                 self.update_occupancy(address, False)
-            elif e.__str__() == "Connection refused":
+            elif e.__str__() == "[Errno 111] Connection refused":
                 logging.error(f"Connection to address {address} was refused with error {e}")
                 # Because the connection was refused, we can assume that the device is in the room, so we update the database
                 self.update_occupancy(address, True)
