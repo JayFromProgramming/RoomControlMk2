@@ -101,7 +101,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         return self.device_id
 
     def is_on(self):
-        return self.current_state
+        return self.get_status()
 
     def set_on(self, on: bool):
         if on:
@@ -118,11 +118,11 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
             logging.info(f"Monkey {monkey} ran successfully")
             if state_after is not None:
                 self.current_state = state_after
+                self.database.lock.acquire()
                 cursor = self.database.cursor()
                 cursor.execute("UPDATE voicemonkey_devices SET current_state = ? WHERE device_name = ?",
                                (state_after, self.device_id))
                 cursor.close()
-                self.database.lock.acquire()
                 self.database.commit()
                 self.database.lock.release()
         else:

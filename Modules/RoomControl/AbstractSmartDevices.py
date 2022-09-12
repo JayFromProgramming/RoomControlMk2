@@ -113,6 +113,7 @@ class AbstractToggleDevice:
 
     def __init__(self):
         self.online = None
+        self.offline_reason = "Unknown"
 
     def get_type(self):
         return "abstract_toggle_device"
@@ -137,11 +138,12 @@ class AbstractToggleDevice:
         }
 
     def get_status(self):
-        raise {}
+        return {}
 
     def get_health(self):
         return {
-            "online": self.online
+            "online": self.online,
+            "reason": "online" if self.online else self.offline_reason
         }
 
     def auto_state(self):

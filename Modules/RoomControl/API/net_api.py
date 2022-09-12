@@ -8,6 +8,7 @@ import sys
 from aiohttp import web
 import hashlib
 
+from Modules.RoomControl.API import page_builder
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.AbstractSmartDevices import background
@@ -27,9 +28,13 @@ class NetAPI:
         self.app = web.Application()
         self.app.add_routes(
             [web.get('', self.handle_web)]
+            + [web.get('/login', self.handle_login)]
+            + [web.post('/login_auth', self.handle_login_auth)]
             + [web.get('/auth/{api_key}', self.handle_auth)]  # When visited it will set a cookie to allow access to the API
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
+            + [web.get('/web_control/{name}', self.handle_web_control)]
+            + [web.post('/web_control/{name}', self.handle_web_control)]
             + [web.get('/get_all', self.handle_get_all)]
             + [web.get('/occupancy', self.handle_occupancy)]
             + [web.get('/set_auto/{mode}', self.handle_auto)]
@@ -37,6 +42,7 @@ class NetAPI:
             + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
             + [web.post('/set/{name}', self.handle_set_post)]
+            + [web.get('/css/{file}', self.handle_css)]
         )
 
         # Set webserver address and port
@@ -48,6 +54,9 @@ class NetAPI:
         cursor = self.database.cursor()
         self.authorized_cookies = [cookie[0] for cookie in cursor.execute("SELECT current_cookie FROM api_authorizations").fetchall()]
 
+        # Load the schema
+        with open("Modules/RoomControl/Configs/schema.json") as f:
+            self.schema = json.load(f)
         self.runner = web.AppRunner(self.app)
 
     def run(self):
@@ -74,9 +83,49 @@ class NetAPI:
             devices += api.get_all_devices()
         return devices
 
+    def get_device_display_name(self, device_name):
+        """Get the display name for a device from the schema"""
+        if self.schema is None:
+            return device_name
+        for device in self.schema['schema']:
+            num = 0
+            for d in device["device"] if isinstance(device["device"], list) else [device["device"]]:
+                if d == device_name:
+                    return device["device_names"][num] if "device_names" in device else device["name"]
+                num += 1
+
     def check_auth(self, request):
         """Check if the request has a valid cookie"""
         return request.cookies.get("auth") in self.authorized_cookies
+
+    async def handle_login(self, request):
+        logging.info("Received LOGIN request")
+        # Load the login page from "{root}\pages\login_page.html"
+        # {root} is the directory that the python script is running from
+        with open(f"{sys.path[0]}/Modules/RoomControl/API/pages/login_page.html", "r") as file:
+            return web.Response(text=file.read(), content_type="text/html")
+
+    async def handle_login_auth(self, request):
+        logging.info("Received LOGIN AUTH request")
+        data = await request.post()
+        username = data['username']
+        password = data['password']
+        cursor = self.database.cursor()
+        user = cursor.execute("SELECT * FROM api_authorizations WHERE device_id = ?", (username,)).fetchone()
+        if user and user[1] == password:
+
+            new_cookie = hashlib.sha256(password.encode()).hexdigest()
+
+            cursor.execute("UPDATE api_authorizations SET current_cookie = ? WHERE api_secret = ?",
+                           (new_cookie, password))
+            response = web.Response(text="Authorized", status=200)
+            response.set_cookie("auth", new_cookie, max_age=60 * 60 * 24 * 365)
+            # Redirect to the main page
+            response.headers['Location'] = "/"
+            self.database.commit()
+            return response
+        else:
+            raise web.HTTPUnauthorized()
 
     async def handle_auth(self, request):
         logging.info("Received AUTH request")
@@ -160,8 +209,38 @@ class NetAPI:
         return web.Response(text=msg.__str__(), headers={"Refresh": "5"})
 
     async def handle_web(self, request):
-        logging.info("Received WEB request")
-        return web.Response(text="Hello, World")
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+
+        # Load the main page from "{root}\pages\main_view_page.html"
+
+        return page_builder.generate_main_page(self)
+
+    async def handle_web_control(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+
+        logging.info("Received WEB CONTROL request")
+
+        # Load the main page from "{root}\pages\main_view_page.html"
+        device = request.match_info['name']
+        hw_device = self.get_device(device)
+
+        return page_builder.generate_control_page(self, hw_device)
+
+    async def handle_web_control_post(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+
+        logging.info("Received WEB CONTROL POST request")
+
+        data = await request.post()
+        device_name = data['name']
+        logging.info(f"Received POST SET request for {device_name}")
+        msg = APIMessageRX(data)
+        device = self.get_device(device_name)
+        result = process_device_command(device, msg)
+        return web.Response(text=result.__str__())
 
     async def handle_occupancy(self, request):
         if not self.check_auth(request):
@@ -182,10 +261,8 @@ class NetAPI:
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         logging.info("Received SCHEMA request")
-        with open("Modules/RoomControl/Configs/schema.json") as f:
-            schema = json.load(f)
 
-        return web.Response(text=json.dumps(schema))
+        return web.Response(text=json.dumps(self.schema))
 
     async def monkey_adder(self, request):
         logging.info("Received MONKEY_ADDER request")
@@ -215,3 +292,12 @@ class NetAPI:
         self.database.commit()
 
         return web.Response(text=str(result))
+
+    async def handle_css(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received CSS request")
+
+        file = request.match_info['file']
+        logging.info(f"Received CSS request for {file}")
+        return web.FileResponse(rf"{sys.path[0]}\Modules\RoomControl\API\pages\css\{file}")
