@@ -54,7 +54,13 @@
         "slot": 6,
         "type": "environment_control",
         "name": "Temperature",
-        "device": "envi_control"
+        "device": "room_temp_control"
+      },
+      {
+        "slot": 7,
+        "type": "environment_control",
+        "name": "Humidity",
+        "device": "room_humid_control"
       }
   ]
 }
