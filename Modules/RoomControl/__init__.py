@@ -12,11 +12,37 @@ from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothD
 logging.getLogger(__name__)
 
 
+class CustomLock:
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.lock_count = 0
+        self.queued_lock_count = 0
+
+    def acquire(self, blocking=True, timeout=-1):
+        self.lock_count += 1
+        logging.debug(f"Acquiring lock #{self.lock_count} (Queued: {self.queued_lock_count})")
+        self.queued_lock_count += 1
+        acquired = self.lock.acquire(blocking, timeout)
+        if acquired:
+            logging.debug(f"Acquired lock #{self.lock_count}")
+            return True
+        else:
+            logging.debug(f"Failed to acquire lock #{self.lock_count}")
+            self.queued_lock_count -= 1
+            return False
+
+    def release(self):
+        logging.debug(f"Releasing lock #{self.lock_count} (Queued: {self.queued_lock_count})")
+        self.queued_lock_count -= 1
+        self.lock.release()
+
+
 class ConcurrentDatabase(sqlite3.Connection):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.lock = threading.Lock()
+        self.lock = CustomLock()
 
 
 class RoomController:
@@ -76,8 +102,3 @@ class RoomController:
 
         for controller in self.controllers:
             controller.refresh_all()
-
-        if self.blue_stalker.is_occupied():
-            self.magic_home.auto_on(True)
-        else:
-            self.magic_home.auto_on(False)

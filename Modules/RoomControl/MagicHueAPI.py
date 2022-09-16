@@ -259,7 +259,7 @@ class MagicDevice(AbstractRGB):
                     "white": self.light.w,
                     "cold_white": self.light.cw,
                     "white_enabled": self.light.is_white,
-                    "mode": self.light.mode._status_text(),
+                    "mode": self.light.mode._status_text() if not self.is_auto else "AUTOMATIC",
                 }
                 return status
             except magichue.exceptions.MagicHueAPIError as e:

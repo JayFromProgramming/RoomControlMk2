@@ -32,7 +32,7 @@ class BluetoothDetector:
         cursor.execute("CREATE TABLE IF NOT EXISTS bluetooth_targets"
                        " (uuid integer constraint table_name_pk primary key "
                        "autoincrement, address TEXT UNIQUE, name TEXT, role TEXT)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS bluetooth_occupancy (uuid INTEGER, in_room BOOLEAN, last_changed INTEGER)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS bluetooth_occupancy (uuid INTEGER UNIQUE, in_room BOOLEAN, last_changed INTEGER)")
         cursor.close()
 
     def add_target(self, address: str, name: str, role: str):
@@ -125,22 +125,23 @@ class BluetoothDetector:
         cursor.execute("SELECT uuid FROM bluetooth_targets WHERE address=?", (address,))
         uuid = cursor.fetchone()[0]
         cursor.close()
+        if uuid == 0:
+            logging.error(f"Failed to get UUID for {address}")
+            return
         # Check if an occupancy entry exists for the address
+        self.database.lock.acquire()
         cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM bluetooth_occupancy WHERE uuid=?", (address,))
+        cursor.execute("SELECT * FROM bluetooth_occupancy WHERE uuid=?", (uuid,))
         if cursor.fetchone() is None:
             # Check if the db state matches in_room, if it is, we don't need to update the database
             cursor.execute("INSERT INTO bluetooth_occupancy (uuid, in_room, last_changed) VALUES (?, ?, ?)",
                            (uuid, in_room, datetime.datetime.now().timestamp()))
-            self.database.lock.acquire()
+
             self.database.commit()
             self.database.lock.release()
         else:
-            if cursor.fetchone()[1] == (1 if in_room else 0):
-                return
             cursor.execute("UPDATE bluetooth_occupancy SET in_room=?, last_changed=? WHERE uuid=?",
                            (in_room, datetime.datetime.now().timestamp(), uuid))
-            self.database.lock.acquire()
             self.database.commit()
             self.database.lock.release()
 

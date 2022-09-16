@@ -1,3 +1,5 @@
+import time
+
 from Modules.RoomControl.API.datagrams import APIMessageRX
 from Modules.RoomControl.AbstractSmartDevices import background
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
@@ -23,13 +25,18 @@ class LightControllerHost:
         self.bluetooth_occupancy = bluetooth_occupancy
 
         cursor = self.database.cursor()
+        self.database.lock.acquire()
         cursor.execute("SELECT * FROM light_controllers")
         controllers = cursor.fetchall()
+        cursor.close()
+        self.database.lock.release()
         for controller in controllers:
             self.light_controllers[controller[0]] = \
                 LightController(controller[0], self.database, self.bluetooth_occupancy, room_controllers=self.room_controllers,
-                                active_state=controller[1], inactive_state=controller[2], enabled=controller[3])
-        cursor.close()
+                                active_state=controller[1], inactive_state=controller[2], enabled=controller[3], current_state=controller[4])
+
+        logging.info("Light Controller Host Initialized")
+        self.periodic_update()
 
     def database_init(self):
         cursor = self.database.cursor()
@@ -58,14 +65,17 @@ class LightControllerHost:
         return self.light_controllers.values()
 
     def get_device(self, device_id):
-        for device in self.light_controllers:
-            if device.name == device_id:
+        for device in self.light_controllers.values():
+            if device.name() == device_id:
                 return device
 
     @background
     def periodic_update(self):
-        for controller in self.light_controllers.values():
-            controller.update()
+        logging.info("Starting Light Controller Host Periodic Update")
+        while True:
+            for controller in self.light_controllers.values():
+                controller.update()
+            time.sleep(5)
 
     def refresh_all(self):
         pass
@@ -88,7 +98,8 @@ class LightController:
         self.inactive_state = APIMessageRX(inactive_state) if inactive_state else None
         self.enabled = True if enabled == 1 else False
 
-        self.current_state = current_state
+        self.online = True
+        self.current_state = True if current_state == 1 else False
 
         self.bluetooth_detector = bluetooth_detector
 
@@ -133,13 +144,19 @@ class LightController:
 
     def set_state(self, state_bool, state=None):
         if self.current_state != state_bool:
+            logging.info(f"LightController: {self.controller_name} is changing state to {state_bool}")
             self.current_state = state_bool
             for device in self.light_control_devices.values():
-                device.set_state(state)
+                if hasattr(state, "on"):
+                    device.set_on(state.on)
+                if hasattr(state, "brightness"):
+                    device.set_brightness(state.brightness)
+                if hasattr(state, "color"):
+                    device.set_color(state.color)
 
     def get_state(self):
         return {
-            "auto": self.enabled,
+            "on": self.enabled,
             "current_state": self.current_state
         }
 
@@ -177,6 +194,12 @@ class LightController:
     @on.setter
     def on(self, value):
         self.enabled = value
+        cursor = self.database.cursor()
+        self.database.lock.acquire()
+        cursor.execute("UPDATE light_controllers SET enabled=? WHERE name=?", (value, self.controller_name))
+        cursor.close()
+        self.database.lock.release()
+        self.database.commit()
         # Set all the assigned devices .is_auto to value
         for device in self.light_control_devices.values():
             if hasattr(device, "is_auto"):
@@ -184,3 +207,5 @@ class LightController:
             else:
                 logging.warning(f"Device {device} does not have is_auto attribute")
 
+    def set_on(self, value):
+        self.on = value

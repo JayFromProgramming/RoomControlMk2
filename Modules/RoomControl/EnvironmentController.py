@@ -51,10 +51,12 @@ class EnvironmentControllerHost:
         pass
 
     def get_device(self, device_id):
-        return self.enviv_controllers[device_id]
+        for device in self.enviv_controllers.values():
+            if device.name() == device_id:
+                return device
 
     def get_all_devices(self):
-        return self.enviv_controllers
+        return self.enviv_controllers.values()
 
 
 class EnvironmentController:
@@ -64,12 +66,14 @@ class EnvironmentController:
         if room_controllers is None:
             room_controllers = []
 
-        self.name = name
+        self.controller_name = name
         self.database = database
         self.room_controllers = room_controllers
 
+        self.online = True
+
         cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM enviv_controllers WHERE name=?", (self.name,))
+        cursor.execute("SELECT * FROM enviv_controllers WHERE name=?", (self.controller_name,))
         controller = cursor.fetchone()
         cursor.close()
         self.current_setpoint = controller[1]
@@ -78,7 +82,7 @@ class EnvironmentController:
 
         self.devices = []
         cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM enviv_control_devices WHERE control_source=?", (self.name,))
+        cursor.execute("SELECT * FROM enviv_control_devices WHERE control_source=?", (self.controller_name,))
         devices = cursor.fetchall()
         for device in devices:
             self.devices.append(ControlledDevice(device[0], self.get_device(device[0]), self.database))
@@ -104,6 +108,33 @@ class EnvironmentController:
                 time.sleep(60)
         else:
             logging.error(f"Source {self.source} does not have a get_current_value method")
+
+    def get_state(self):
+        return {
+            "on": self.enabled,
+            "current_setpoint": self.current_setpoint,
+            "source": self.source
+        }
+
+    def get_info(self):
+        return {
+            "name": self.controller_name,
+            "current_setpoint": self.current_setpoint,
+            "source": self.source,
+            "on": self.enabled
+        }
+
+    def get_health(self):
+        return {"online": False}
+
+    def get_type(self):
+        return "EnvironmentController"
+
+    def name(self):
+        return self.controller_name
+
+    def auto_state(self):
+        return {"is_auto": False}
 
 
 class ControlledDevice:

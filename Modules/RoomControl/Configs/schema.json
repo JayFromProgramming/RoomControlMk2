@@ -65,14 +65,16 @@
     {
       "slot": 8,
       "type": "light_controller",
-      "name": "Auto Lights",
+      "name": "A.Lights",
       "device": [
         "room_light_controller",
-        "loft_light_controller"
+        "loft_light_controller",
+        "door_light_controller"
       ],
       "device_names": [
           "Room",
-          "Loft"
+          "Loft",
+          "Door"
       ]
     }
 
