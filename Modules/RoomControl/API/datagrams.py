@@ -3,6 +3,8 @@ import typing
 
 __all__ = ["APIMessageTX", "APIMessageRX"]
 
+from json import JSONDecodeError
+
 from multidict import MultiDictProxy
 
 
@@ -51,7 +53,17 @@ class APIMessageRX:
 
     def __str__(self):
         """Dump the api content to json"""
-        return json.dumps(self.__dict__)
+
+        values = {}
+        # Remove all values that aren't JSON serializable
+        for key, value in self.__dict__.items():
+            try:
+                json.dumps(value)
+                values[key] = value
+            except TypeError as e:
+                print(f"TX error: {e}")
+                pass
+        return json.dumps(values)
 
     def encode(self, encoding):
         """Encode the api content to bytes"""

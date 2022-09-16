@@ -28,6 +28,10 @@ class VeSyncAPI:
         for device in self.manager.outlets:
             self.devices.append(VeSyncPlug(device))
 
+    def wait_for_ready(self):
+        while not len(self.devices) > 0:
+            pass
+
     def set_all_on(self, on: bool):
         for device in self.devices:
             device.set_on(on)

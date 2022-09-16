@@ -160,7 +160,7 @@ class BluetoothDetector:
             for device in occupancy:
                 if target[0] == device[0]:
                     present = True if device[1] == 1 else False
-                    occupancy_info[target[2]] = {"present": present, "last_changed": device[2]}
+                    occupancy_info[target[2]] = {"present": present, "last_changed": device[2], "uuid": target[0]}
 
         return occupancy_info
 
@@ -173,3 +173,37 @@ class BluetoothDetector:
             if device[1] == 1:
                 return True
         return False
+
+    def get_combined_target_info(self, uuid):
+
+        cursor = self.database.cursor()
+        cursor.execute("SELECT * FROM bluetooth_occupancy WHERE uuid=?", (uuid,))
+        device = cursor.fetchone()
+        cursor.close()
+        # Get the names of the devices combine this with the occupancy
+        cursor = self.database.cursor()
+        cursor.execute("SELECT * FROM bluetooth_targets WHERE uuid=?", (uuid,))
+        target = cursor.fetchone()
+        cursor.close()
+
+        present = True if device[1] == 1 else False
+        return {"present": present, "last_changed": device[2], "uuid": target[0]}
+
+    def is_here(self, uuid):
+        cursor = self.database.cursor()
+        cursor.execute("SELECT * FROM bluetooth_occupancy WHERE uuid=?", (uuid,))
+        device = cursor.fetchone()
+        if device is None:
+            return None
+        cursor.close()
+        return True if device[1] == 1 else False
+
+    def get_name(self, uuid):
+        cursor = self.database.cursor()
+        cursor.execute("SELECT * FROM bluetooth_targets WHERE uuid=?", (uuid,))
+        device = cursor.fetchone()
+        if device is None:
+            return None
+        cursor.close()
+        return device[2]
+

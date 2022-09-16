@@ -6,6 +6,7 @@ import threading
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
+from Modules.RoomControl.LightController import LightControllerHost
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 
 logging.getLogger(__name__)
@@ -38,11 +39,24 @@ class RoomController:
         #
         #     self.database.commit()
 
+        # Wait for the other room controllers to be ready
+        for controller in self.controllers:
+            controller.wait_for_ready()
+
         self.environment_host = EnvironmentControllerHost(
             self.database,
             sources=None,
             room_controllers=self.controllers
         )
+
+        self.light_controller_host = LightControllerHost(
+            self.database,
+            self.blue_stalker,
+            room_controllers=self.controllers
+        )
+
+        self.controllers.append(self.environment_host)
+        self.controllers.append(self.light_controller_host)
 
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,

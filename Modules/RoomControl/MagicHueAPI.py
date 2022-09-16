@@ -21,9 +21,14 @@ class MagicHome:
 
         self.api = magichue.RemoteAPI.login_with_user_password(user=username, password=password)
         self.devices = []
+        self.ready = False
         self.fetch_all_devices()
 
         # self.state_changed = asyncio.Event()
+
+    def wait_for_ready(self):
+        while not self.ready:
+            pass
 
     @background
     def fetch_all_devices(self):
@@ -38,6 +43,7 @@ class MagicHome:
             except magichue.exceptions.MagicHueAPIError as e:
                 logging.error(f"\t{device.macaddr}: Error: {e}")
         self.devices = devices
+        self.ready = True
 
     def get_device(self, macaddr):
         for device in self.devices:

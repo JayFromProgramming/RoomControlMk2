@@ -46,8 +46,8 @@ class NetAPI:
         )
 
         # Set webserver address and port
-        self.webserver_address = "wopr.eggs.loafclan.org"
-        # self.webserver_address = "localhost"
+        # self.webserver_address = "wopr.eggs.loafclan.org"
+        self.webserver_address = "localhost"
         self.webserver_port = 47670
 
         # List of cookies that are authorized to access the API
@@ -197,12 +197,15 @@ class NetAPI:
         devices_raw = self.get_all_devices()
         devices = {}
         for device in devices_raw:
-            devices[device.name()] = {
-                "state": device.get_state(),
-                "info": device.get_info(),
-                "health": device.get_health(),
-                "type": device.get_type(),
-                "auto_state": device.auto_state()}
+            if isinstance(device, str):
+                devices[device] = device
+            else:
+                devices[device.name()] = {
+                    "state": device.get_state(),
+                    "info": device.get_info(),
+                    "health": device.get_health(),
+                    "type": device.get_type(),
+                    "auto_state": device.auto_state()}
         msg = APIMessageTX(
             devices=devices
         )

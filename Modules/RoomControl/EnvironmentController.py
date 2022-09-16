@@ -47,6 +47,15 @@ class EnvironmentControllerHost:
         cursor.close()
         self.database.commit()
 
+    def refresh_all(self):
+        pass
+
+    def get_device(self, device_id):
+        return self.enviv_controllers[device_id]
+
+    def get_all_devices(self):
+        return self.enviv_controllers
+
 
 class EnvironmentController:
 
@@ -75,6 +84,9 @@ class EnvironmentController:
             self.devices.append(ControlledDevice(device[0], self.get_device(device[0]), self.database))
 
         self.periodic_check()
+
+    def get_all_devices(self):
+        return self.devices
 
     def get_device(self, device_name):
         for room_controller in self.room_controllers:
