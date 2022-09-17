@@ -65,7 +65,7 @@
     {
       "slot": 8,
       "type": "light_controller",
-      "name": "A.Lights",
+      "name": "Automatic Lights",
       "device": [
         "room_light_controller",
         "loft_light_controller",

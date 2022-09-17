@@ -304,3 +304,10 @@ class NetAPI:
         file = request.match_info['file']
         logging.info(f"Received CSS request for {file}")
         return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/css/{file}")
+
+    async def handle_scenes(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received SCENES request")
+
+        return web.Response(text=json.dumps(self.scenes))
