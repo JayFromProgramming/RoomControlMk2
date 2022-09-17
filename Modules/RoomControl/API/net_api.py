@@ -62,7 +62,7 @@ class NetAPI:
     def run(self):
         logging.info("Starting webserver")
         web.run_app(self.app, host=self.webserver_address, port=self.webserver_port,
-                    access_log=logging)
+                    access_log=None)
 
     def init_database(self):
         cursor = self.database.cursor()

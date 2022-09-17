@@ -16,3 +16,6 @@ class SceneController:
         cursor.close()
         for scene in scenes:
             pass
+
+    def execute_scene(self, scene_id):
+        pass
