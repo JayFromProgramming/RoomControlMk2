@@ -62,7 +62,7 @@ class BluetoothDetector:
                 else:
                     self.connect(target[1])  # Else attempt to connect to the device
             self.last_update = datetime.datetime.now().timestamp() # Update the last update time
-            time.sleep(60)
+            time.sleep(25)
 
     @background
     def connect(self, address):
