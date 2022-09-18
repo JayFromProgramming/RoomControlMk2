@@ -85,6 +85,8 @@ class BluetoothDetector:
             elif e.__str__() == "[Errno 115] Operation now in progress":
                 logging.info(f"Connection to {address} is in progress")
                 self.sockets[address] = sock
+                time.sleep(2.5)
+                self.conn_is_alive(sock, address)
                 return
             else:
                 logging.error(f"Connection to address {address} failed with error {e}")
