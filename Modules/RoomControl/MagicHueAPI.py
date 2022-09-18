@@ -176,6 +176,8 @@ class MagicDevice(AbstractRGB):
     def set_white(self, white: int):
         if self.online:
             try:
+                if white != 0:
+                    self.light.color = (white, white, white)
                 self.light.is_white = True
                 self.light.w = white
                 self.light.cw = white

@@ -153,6 +153,8 @@ class LightController:
                     device.set_brightness(state.brightness)
                 if hasattr(state, "color"):
                     device.set_color(state.color)
+                if hasattr(state, "white"):
+                    device.set_white(state.white)
 
     def get_state(self):
         return {
