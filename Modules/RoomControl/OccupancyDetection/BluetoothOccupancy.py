@@ -69,11 +69,9 @@ class BluetoothDetector:
 
         if bluetooth is None:
             return
-        logging.info(f"Connecting to {address}...")
-
+        sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         try:
-            sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            sock.settimeout(2.5)
+            logging.info(f"Connecting to {address}, timeout {sock.gettimeout()}")
             sock.connect((address, 1))
         except bluetooth.btcommon.BluetoothError as e:
             if e.__str__() == "timed out":
