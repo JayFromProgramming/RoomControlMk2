@@ -151,7 +151,7 @@ class NetAPI:
             raise web.HTTPUnauthorized()
 
         device_name = request.match_info['name']
-        logging.info(f"Received GET request for {device_name}")
+        logging.debug(f"Received GET request for {device_name}")
         device = self.get_device(device_name)
         msg = APIMessageTX(
             state=device.get_state(),
@@ -193,7 +193,7 @@ class NetAPI:
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
 
-        logging.info("Received GET_ALL request")
+        logging.debug("Received GET_ALL request")
         devices_raw = self.get_all_devices()
         devices = {}
         for device in devices_raw:
@@ -223,7 +223,7 @@ class NetAPI:
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
 
-        logging.info("Received WEB CONTROL request")
+        logging.debug("Received WEB CONTROL request")
 
         # Load the main page from "{root}\pages\main_view_page.html"
         device = request.match_info['name']
@@ -235,7 +235,7 @@ class NetAPI:
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
 
-        logging.info("Received WEB CONTROL POST request")
+        logging.debug("Received WEB CONTROL POST request")
 
         data = await request.post()
         device_name = data['name']
@@ -248,14 +248,14 @@ class NetAPI:
     async def handle_occupancy(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received OCCUPANCY request")
+        logging.debug("Received OCCUPANCY request")
         return web.Response(text=str(self.occupancy_detector.get_occupancy()), headers={"Refresh": "5"})
 
     async def handle_auto(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         mode = request.match_info['mode']
-        logging.info(f"Received AUTO request for {mode}")
+        logging.debug(f"Received AUTO request for {mode}")
         for api in self.other_apis:
             api.set_auto_mode(mode)
         return web.Response(text="OK")
@@ -263,12 +263,12 @@ class NetAPI:
     async def handle_schema(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received SCHEMA request")
+        logging.debug("Received SCHEMA request")
 
         return web.Response(text=json.dumps(self.schema))
 
     async def monkey_adder(self, request):
-        logging.info("Received MONKEY_ADDER request")
+        logging.debug("Received MONKEY_ADDER request")
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         device_name = request.match_info['dev_name']
