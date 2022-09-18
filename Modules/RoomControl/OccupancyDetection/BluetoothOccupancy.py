@@ -70,10 +70,9 @@ class BluetoothDetector:
             return
         sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         sock.setblocking(False)  # Set the socket to non-blocking
-        sock.settimeout(5)  # Set the timeout to 5 seconds
         try:
             logging.info(f"Connecting to {address}, timeout {sock.gettimeout()}")
-            sock.connect((address, 1))  # Connect to the device (Will fail if the device is not immediately available)
+            sock.connect((address, 1))
         except bluetooth.btcommon.BluetoothError as e:
             if e.__str__() == "timed out":
                 logging.warning(f"Connection to {address} timed out")
@@ -82,6 +81,10 @@ class BluetoothDetector:
                 logging.error(f"Connection to address {address} was refused with error {e}")
                 # Because the connection was refused, we can assume that the device is in the room, so we update the database
                 self.update_occupancy(address, True)
+                return
+            elif e.__str__() == "[Errno 115] Operation now in progress":
+                logging.info(f"Connection to {address} is in progress")
+                self.sockets[address] = sock
                 return
             else:
                 logging.error(f"Connection to address {address} failed with error {e}")
