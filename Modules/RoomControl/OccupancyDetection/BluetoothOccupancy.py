@@ -72,27 +72,24 @@ class BluetoothDetector:
         sock.setblocking(False)  # Set the socket to non-blocking
         try:
             logging.info(f"Connecting to {address}, timeout {sock.gettimeout()}")
-            sock.connect((address, 1))
+            sock.connect((address, 1))  # Start the connection (Will fail with EINPROGRESS)
         except bluetooth.btcommon.BluetoothError as e:
-            if e.__str__() == "timed out":
-                logging.warning(f"Connection to {address} timed out")
-                self.update_occupancy(address, False)
-            elif e.__str__() == "[Errno 111] Connection refused":
-                logging.error(f"Connection to address {address} was refused with error {e}")
-                # Because the connection was refused, we can assume that the device is in the room, so we update the database
+            if e.__str__() == "[Errno 111] Connection refused":  # Connection refused still counts as a connection as
+                # the device had to be in range to refuse the connection
+                logging.error(f"Connection to address {address} refused, device is in range")
                 self.update_occupancy(address, True)
                 return
-            elif e.__str__() == "[Errno 115] Operation now in progress":
+            elif e.__str__() == "[Errno 115] Operation now in progress":  # This is the error we expect to see
                 logging.info(f"Connection to {address} is in progress")
-                self.sockets[address] = sock
-                time.sleep(2.5)
-                self.conn_is_alive(sock, address)
+                self.sockets[address] = sock  # Add the socket to the list of sockets
+                time.sleep(2.5)  # Wait for the connection to complete
+                self.conn_is_alive(sock, address)  # Check if the connection is still alive
                 return
-            else:
+            else:  # Any other error is unexpected
                 logging.error(f"Connection to address {address} failed with error {e}")
                 self.update_occupancy(address, False)
                 return
-        except OSError as e:
+        except OSError as e:  # Any additional errors that the OS throws are caught here
             logging.error(f"Failed to connect to {address} with error {e}")
             self.update_occupancy(address, False)
             return
