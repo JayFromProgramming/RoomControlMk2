@@ -61,7 +61,7 @@ class BluetoothDetector:
                     self.conn_is_alive(conn, target[1])  # Check if the connection is still alive
                 else:
                     self.connect(target[1])  # Else attempt to connect to the device
-            self.last_update = datetime.datetime.now().timestamp() # Update the last update time
+            self.last_update = datetime.datetime.now().timestamp()  # Update the last update time
             time.sleep(30)
 
     @background
@@ -69,7 +69,7 @@ class BluetoothDetector:
         if bluetooth is None:
             return
         sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        sock.setblocking(False)  # Set the socket to non-blocking
+        sock.setblocking(True)  # Set the socket to non-blocking
         try:
             logging.info(f"Connecting to {address}, timeout {sock.gettimeout()}")
             sock.connect((address, 1))  # Start the connection (Will fail with EINPROGRESS)
