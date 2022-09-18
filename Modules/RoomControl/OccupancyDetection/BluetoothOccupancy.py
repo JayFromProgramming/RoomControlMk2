@@ -66,14 +66,14 @@ class BluetoothDetector:
 
     @background
     def connect(self, address):
-
         if bluetooth is None:
             return
         sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        sock.setblocking(False)  # Set the socket to non-blocking (I've got no idea exactly what this does)
+        sock.setblocking(False)  # Set the socket to non-blocking
+        sock.settimeout(5)  # Set the timeout to 5 seconds
         try:
             logging.info(f"Connecting to {address}, timeout {sock.gettimeout()}")
-            sock.connect((address, 1))
+            sock.connect((address, 1))  # Connect to the device (Will fail if the device is not immediately available)
         except bluetooth.btcommon.BluetoothError as e:
             if e.__str__() == "timed out":
                 logging.warning(f"Connection to {address} timed out")
