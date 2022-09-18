@@ -70,6 +70,7 @@ class BluetoothDetector:
         if bluetooth is None:
             return
         sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+        sock.setblocking(False)  # Set the socket to non-blocking (I've got no idea exactly what this does)
         try:
             logging.info(f"Connecting to {address}, timeout {sock.gettimeout()}")
             sock.connect((address, 1))
