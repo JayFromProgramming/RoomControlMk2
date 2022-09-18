@@ -73,6 +73,7 @@ class BluetoothDetector:
 
         try:
             sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+            sock.settimeout(1)
             sock.connect((address, 1))
         except bluetooth.btcommon.BluetoothError as e:
             if e.__str__() == "timed out":
