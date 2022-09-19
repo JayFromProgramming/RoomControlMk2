@@ -22,7 +22,7 @@ def generate_sys_info() -> APIMessageTX:
         if hasattr(psutil, "sensors_temperatures"):
             sys_temp = psutil.sensors_temperatures()
             if "cpu_thermal" in sys_temp:
-                sys_temp = sys_temp["cpu_thermal"][0].current
+                sys_temp = round(sys_temp["cpu_thermal"][0].current)
 
         sys_load = round(psutil.cpu_percent())
 
