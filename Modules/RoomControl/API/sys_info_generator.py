@@ -1,3 +1,5 @@
+import datetime
+
 from Modules.RoomControl.API.datagrams import APIMessageTX
 import logging
 
@@ -17,15 +19,16 @@ def generate_sys_info() -> APIMessageTX:
     sys_uptime = None
 
     if psutil is not None:
-        sys_temp = psutil.sensors_temperatures()
-        if "cpu_thermal" in sys_temp:
-            sys_temp = sys_temp["cpu_thermal"][0].current
+        if hasattr(psutil, "sensors_temperatures"):
+            sys_temp = psutil.sensors_temperatures()
+            if "cpu_thermal" in sys_temp:
+                sys_temp = sys_temp["cpu_thermal"][0].current
 
-        sys_load = psutil.cpu_percent()
+        sys_load = round(psutil.cpu_percent())
 
-        sys_mem = f"{psutil.virtual_memory().percent}%"
+        sys_mem = f"{psutil.virtual_memory().percent}"
 
-        sys_uptime = psutil.boot_time()
+        sys_uptime = round(datetime.datetime.now().timestamp() - psutil.boot_time())
 
     return APIMessageTX(
         sys_temp=sys_temp,

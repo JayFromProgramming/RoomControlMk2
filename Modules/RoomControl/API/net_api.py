@@ -367,13 +367,9 @@ class NetAPI:
 
         return web.Response(text=msg.__str__())
 
-
     async def handle_sys_info(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         logging.info("Received SYS_INFO request")
 
-        msg = APIMessageTX(sys_info=generate_sys_info())
-        return web.Response(text=msg.__str__())
-
-
+        return web.Response(text=generate_sys_info().__str__())
