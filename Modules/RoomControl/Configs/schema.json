@@ -76,6 +76,11 @@
           "Loft",
           "Door"
       ]
+    },
+    {
+      "slot": 9,
+      "type": "action_center",
+      "name": "Actions"
     }
 
   ]

@@ -8,6 +8,7 @@ from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
+from Modules.RoomControl.SceneController import SceneController
 
 logging.getLogger(__name__)
 
@@ -44,6 +45,10 @@ class ConcurrentDatabase(sqlite3.Connection):
         super().__init__(*args, **kwargs)
         self.lock = CustomLock()
 
+def get_local_ip():
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    raise NotImplementedError
 
 class RoomController:
 
@@ -84,9 +89,17 @@ class RoomController:
         self.controllers.append(self.environment_host)
         self.controllers.append(self.light_controller_host)
 
+        self.scene_controller = SceneController(self.database, self.controllers)
+        self.command_controller = None  # Not implemented yet
+
+        address = "wopr.eggs.loafclan.org"
+        # address = "localhost"
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,
-                                 occupancy_detector=self.blue_stalker)
+                                 occupancy_detector=self.blue_stalker,
+                                 scene_controller=self.scene_controller,
+                                 command_controller=self.command_controller,
+                                 webserver_address=address)
 
     def init_database(self):
         cursor = self.database.cursor()

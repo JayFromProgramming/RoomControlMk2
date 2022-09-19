@@ -11,6 +11,7 @@ import hashlib
 from Modules.RoomControl.API import page_builder
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
+from Modules.RoomControl.API.sys_info_generator import generate_sys_info
 from Modules.RoomControl.AbstractSmartDevices import background
 
 logging = logging.getLogger(__name__)
@@ -19,10 +20,15 @@ logging = logging.getLogger(__name__)
 class NetAPI:
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
-    def __init__(self, database, device_controllers=None, occupancy_detector=None):
-        self.database = database
+    def __init__(self, database, device_controllers=None, occupancy_detector=None,
+                 scene_controller=None, command_controller=None, webserver_address="localhost"):
+        self.database = database  # type: ConcurrentDatabase
         self.other_apis = device_controllers
-        self.occupancy_detector = occupancy_detector
+        self.occupancy_detector = occupancy_detector  # type: BluetoothDetector
+
+        self.scene_controller = scene_controller  # type: SceneController
+        self.command_controller = command_controller  # type: CommandController
+
         self.init_database()
 
         self.app = web.Application()
@@ -40,14 +46,18 @@ class NetAPI:
             + [web.get('/set_auto/{mode}', self.handle_auto)]
             + [web.get('/get_schema', self.handle_schema)]
             + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
+            + [web.get('/get_scenes', self.handle_get_scenes)]
+            + [web.get('/set_scene/{name}', self.handle_set_scene)]
+            + [web.get('/get_commands', self.handle_get_commands)]
+            + [web.get('/run_command/{name}', self.handle_run_command)]
+            + [web.get('/sys_info', self.handle_sys_info)]
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
             + [web.post('/set/{name}', self.handle_set_post)]
             + [web.get('/css/{file}', self.handle_css)]
         )
 
         # Set webserver address and port
-        self.webserver_address = "wopr.eggs.loafclan.org"
-        # self.webserver_address = "localhost"
+        self.webserver_address = webserver_address
         self.webserver_port = 47670
 
         # List of cookies that are authorized to access the API
@@ -305,9 +315,65 @@ class NetAPI:
         logging.info(f"Received CSS request for {file}")
         return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/css/{file}")
 
-    async def handle_scenes(self, request):
+    async def handle_get_scenes(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received SCENES request")
+        logging.info("Received GET_SCENES request")
 
-        return web.Response(text=json.dumps(self.scenes))
+        if self.scene_controller is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            msg = APIMessageTX(scenes=self.scene_controller.get_scenes())
+
+        return web.Response(text=msg.__str__())
+
+    async def handle_set_scene(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received SET_SCENE request")
+
+        if self.scene_controller is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            scene_name = request.match_info['name']
+            self.scene_controller.execute_scene(scene_name)
+            msg = APIMessageTX()
+
+        return web.Response(text=msg.__str__())
+
+    async def handle_get_commands(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received GET_COMMANDS request")
+
+        if self.command_controller is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            msg = APIMessageTX(commands=self.command_controller.get_commands())
+
+        return web.Response(text=msg.__str__())
+
+    async def handle_run_command(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received RUN_COMMAND request")
+
+        if self.command_controller is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            command_name = request.match_info['name']
+            self.command_controller.run_command(command_name)
+            msg = APIMessageTX()
+
+        return web.Response(text=msg.__str__())
+
+
+    async def handle_sys_info(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received SYS_INFO request")
+
+        msg = APIMessageTX(sys_info=generate_sys_info())
+        return web.Response(text=msg.__str__())
+
+

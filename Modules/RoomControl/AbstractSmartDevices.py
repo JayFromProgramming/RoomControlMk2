@@ -56,20 +56,55 @@ class AbstractRGB:
     def get_color(self) -> list:
         return [0, 0, 0]
 
+    @property
+    def color(self) -> list:
+        return self.get_color()
+
+    @color.setter
+    def color(self, color: tuple):
+        self.set_color(color)
+
     def set_brightness(self, brightness: int):
         raise NotImplementedError
 
     def get_brightness(self) -> int:
         return 0
 
+    @property
+    def brightness(self) -> int:
+        return self.get_brightness()
+
+    @brightness.setter
+    def brightness(self, brightness: int):
+        self.set_brightness(brightness)
+
     def set_on(self, on: bool):
         raise NotImplementedError
+
+    def get_on(self) -> bool:
+        return False
+
+    @property
+    def on(self) -> bool:
+        return self.get_on()
+
+    @on.setter
+    def on(self, on: bool):
+        self.set_on(on)
 
     def set_white(self, white: int):
         raise NotImplementedError
 
     def get_white(self):
         return False
+
+    @property
+    def white(self):
+        return self.get_white()
+
+    @white.setter
+    def white(self, white: int):
+        self.set_white(white)
 
     def get_state(self):
         return self.get_status() if self.online else {
@@ -123,6 +158,14 @@ class AbstractToggleDevice:
 
     def is_on(self):
         raise NotImplementedError
+
+    @property
+    def on(self):
+        return self.is_on()
+
+    @on.setter
+    def on(self, on: bool):
+        self.set_on(on)
 
     def get_state(self):
         return {
