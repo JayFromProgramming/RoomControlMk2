@@ -5,6 +5,7 @@ import threading
 
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
+from Modules.RoomControl.CommandController import CommandController
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
@@ -90,10 +91,10 @@ class RoomController:
         self.controllers.append(self.light_controller_host)
 
         self.scene_controller = SceneController(self.database, self.controllers)
-        self.command_controller = None  # Not implemented yet
+        self.command_controller = CommandController(self.controllers)
 
-        address = "wopr.eggs.loafclan.org"
-        # address = "localhost"
+        # address = "wopr.eggs.loafclan.org"
+        address = "localhost"
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,
                                  occupancy_detector=self.blue_stalker,
