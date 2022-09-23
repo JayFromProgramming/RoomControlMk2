@@ -10,6 +10,7 @@ from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
+from Modules.SensorHost import SensorHost
 
 logging.getLogger(__name__)
 
@@ -75,9 +76,11 @@ class RoomController:
         for controller in self.controllers:
             controller.wait_for_ready()
 
+        self.sensor_host = SensorHost()
+
         self.environment_host = EnvironmentControllerHost(
             self.database,
-            sources=None,
+            sensor_host=self.sensor_host,
             room_controllers=self.controllers
         )
 

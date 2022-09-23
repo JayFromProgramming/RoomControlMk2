@@ -1,5 +1,8 @@
 import logging
 import os
+import time
+
+from Modules.RoomControl.AbstractSmartDevices import background
 
 logging = logging.getLogger(__name__)
 
@@ -42,9 +45,9 @@ class CommandController:
 
     def _reboot(self):
         logging.info("Rebooting system")
-        for device in self.devices:
-            if hasattr(device, "on"):
-                device.on = False
+        # for device in self.devices:
+        #     if hasattr(device, "on"):
+        #         device.on = False
         # Send reboot command to room controller
         os.system("sudo reboot")
 
@@ -59,10 +62,12 @@ class CommandController:
         os.system("git pull")
         os.system("sudo systemctl restart room_controller.service")
 
+    @background
     def _power_off(self):
         logging.info("Powering off all devices")
         for device in self.devices:
             if hasattr(device, "on"):
                 device.on = False
+                time.sleep(0.2)
 
         os.system("sudo shutdown -h now")

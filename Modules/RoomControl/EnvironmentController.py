@@ -8,25 +8,25 @@ logging = logging.getLogger(__name__)
 
 class EnvironmentControllerHost:
 
-    def __init__(self, database, sources=None, room_controllers=None):
+    def __init__(self, database, sensor_host=None, room_controllers=None):
 
         if room_controllers is None:
             room_controllers = []
-        if sources is None:
-            sources = []
+
+        self.sensor_host = sensor_host
 
         self.database = database
         self.database_init()
         self.room_controllers = room_controllers
         self.enviv_controllers = {}
-        self.sources = sources
 
         cursor = self.database.cursor()
         cursor.execute("SELECT * FROM enviv_controllers")
         controllers = cursor.fetchall()
         for controller in controllers:
             self.enviv_controllers[controller[0]] = \
-                EnvironmentController(controller[0], self.database, room_controllers=self.room_controllers)
+                EnvironmentController(controller[0], self.database, room_controllers=self.room_controllers,
+                                      sensor_host=self.sensor_host)
 
     def database_init(self):
         cursor = self.database.cursor()
@@ -61,7 +61,7 @@ class EnvironmentControllerHost:
 
 class EnvironmentController:
 
-    def __init__(self, name, database, room_controllers=None):
+    def __init__(self, name, database, room_controllers=None, sensor_host=None):
 
         if room_controllers is None:
             room_controllers = []
@@ -69,6 +69,7 @@ class EnvironmentController:
         self.controller_name = name
         self.database = database
         self.room_controllers = room_controllers
+        self.sensor_host = sensor_host
 
         self.online = True
 
@@ -77,7 +78,7 @@ class EnvironmentController:
         controller = cursor.fetchone()
         cursor.close()
         self.current_setpoint = controller[1]
-        self.source = controller[2]
+        self.source = self.sensor_host.get_sensor(controller[2])
         self.enabled = (False if controller[3] == 0 else True)
 
         self.devices = []
@@ -101,34 +102,39 @@ class EnvironmentController:
     @background
     def periodic_check(self):
 
-        if hasattr(self.source, "get_current_value"):
+        if hasattr(self.source, "get_value"):
             while True:
-                for device in self.devices:
-                    device.check(self.source.get_current_value(), self.current_setpoint)
-                time.sleep(60)
+                if not self.source.get_fault():
+                    for device in self.devices:
+                        device.check(self.source.get_value(), self.current_setpoint)
+                else:
+                    logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
+                time.sleep(30)
         else:
-            logging.error(f"Source {self.source} does not have a get_current_value method")
+            logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
 
     def get_state(self):
         return {
             "on": self.enabled,
-            "current_setpoint": self.current_setpoint,
-            "source": self.source
+            "target_value": self.current_setpoint,
+            "current_value": self.source.get_value(),
         }
 
     def get_info(self):
         return {
             "name": self.controller_name,
-            "current_setpoint": self.current_setpoint,
-            "source": self.source,
-            "on": self.enabled
+            "sensor": self.source.get_name(),
+            "units": self.source.get_unit()
         }
 
     def get_health(self):
-        return {"online": False}
+        return {
+            "online": self.online,
+            "fault": self.source.get_fault()
+        }
 
     def get_type(self):
-        return "EnvironmentController"
+        return "environment_controller"
 
     def name(self):
         return self.controller_name

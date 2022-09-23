@@ -52,15 +52,15 @@
     },
     {
       "slot": 6,
-      "type": "environment_control",
+      "type": "environment_controller",
       "name": "Temperature",
-      "device": "room_temp_control"
+      "device": "temperature_control"
     },
     {
       "slot": 7,
-      "type": "environment_control",
+      "type": "environment_controller",
       "name": "Humidity",
-      "device": "room_humid_control"
+      "device": "humidity_control"
     },
     {
       "slot": 8,
