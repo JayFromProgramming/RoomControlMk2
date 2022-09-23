@@ -169,6 +169,8 @@ class ControlledDevice:
 
     def check(self, current_value, setpoint):
         if current_value > setpoint + self.upper_hysteresis:
-            self.device.set_on(False)
+            if not self.device.on:
+                self.device.on = True
         elif current_value < setpoint - self.lower_hysteresis:
-            self.device.set_on(True)
+            if self.device.on:
+                self.device.on = False
