@@ -10,7 +10,7 @@ from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
-from SensorHost import SensorHost
+from Modules.RoomControl.SensorHost import SensorHost
 
 logging.getLogger(__name__)
 
