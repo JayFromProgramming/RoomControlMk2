@@ -43,7 +43,7 @@ def process_device_command(device: typing.Union[AbstractRGB, AbstractToggleDevic
                 preformed_actions.append(f"setpoint to {message.setpoint}")
             if hasattr(message, "on"):
                 device.mode = message.on
-                preformed_actions.append(f"mode to {message.on}")
+                preformed_actions.append(f"on to {message.on}")
         else:
             raise TypeError(f"Unknown device type {type(device)}")
     except Exception as e:

@@ -158,6 +158,7 @@ class EnvironmentController:
         cursor.execute("UPDATE enviv_controllers SET enabled=? WHERE name=?", (int(value), self.controller_name))
         cursor.close()
         self.database.commit()
+        logging.info(f"EnvironmentController ({self.controller_name}): Enabled set to {value}")
 
     @property
     def setpoint(self):
