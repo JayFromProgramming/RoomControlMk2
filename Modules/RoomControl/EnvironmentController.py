@@ -129,7 +129,7 @@ class EnvironmentController:
             "units": self.source.get_unit()
         }
         # logging.info(f"EnvironmentController ({self.controller_name}): Info requested ({value})")
-        return
+        return value
 
     def get_health(self):
         return {
