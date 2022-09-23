@@ -60,6 +60,7 @@ class SensorValue:
             self.value = value
 
     def set_fault(self, fault):
+        logging.warning(f"SensorValue ({self.name}): Setting fault to {fault}")
         self._fault = fault
 
     def get_fault(self):
