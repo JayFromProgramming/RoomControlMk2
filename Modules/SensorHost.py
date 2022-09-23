@@ -107,6 +107,16 @@ class EnvironmentSensor(Sensor):
 
         # self.read_sensor()
 
+    @property
+    def fault(self):
+        return self.fault
+
+    @fault.setter
+    def fault(self, value):
+        self.fault = value
+        for value in self.values.values():
+            value.set_fault(value)
+
     @background
     def read_sensor(self):
         # Read the sensor and set the value and last_updated
@@ -119,8 +129,11 @@ class EnvironmentSensor(Sensor):
                     if humidity == 0 and temperature == 0:
                         logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned 0")
                         self.fault = True
-                        self.values["temperature"].set_fault(True)
-                        self.values["humidity"].set_fault(True)
+
+                    elif humidity is None or temperature is None:
+                        logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned None")
+                        self.fault = True
+
                     else:
                         self.values["temperature"].set_value(convert_cel_to_fahr(temperature))
                         self.values["humidity"].set_value(humidity)
@@ -129,15 +142,11 @@ class EnvironmentSensor(Sensor):
                 except RuntimeError as error:
                     self.fault = True
                     logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor read failed - {error}")
-                    self.values["temperature"].set_fault(True)
-                    self.values["humidity"].set_fault(True)
                     print(error.args[0])
             else:
                 self.fault = True
                 logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor read failed "
                               f"- DHT22 sensor not initialised")
-                self.values["temperature"].set_fault(True)
-                self.values["humidity"].set_fault(True)
                 break  # If the sensor is not initialised, stop trying to read it
             # Wait 5 seconds before reading again
             time.sleep(5)
