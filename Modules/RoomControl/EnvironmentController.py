@@ -40,8 +40,9 @@ class EnvironmentControllerHost:
         cursor.execute("""CREATE TABLE IF NOT EXISTS
                         enviv_control_devices (
                         device_id text,
-                        lower_delta integer,
-                        upper_delta integer,
+                        lower_delta float,
+                        upper_delta float,
+                        action_direction integer,
                         control_source text
                         )""")
         cursor.close()
@@ -154,6 +155,10 @@ class EnvironmentController:
     @on.setter
     def on(self, value):
         self.enabled = value
+
+        for device in self.devices:
+            device.device.auto = value
+
         cursor = self.database.cursor()
         cursor.execute("UPDATE enviv_controllers SET enabled=? WHERE name=?", (int(value), self.controller_name))
         cursor.close()
@@ -184,18 +189,28 @@ class ControlledDevice:
         cursor.execute("SELECT * FROM enviv_control_devices WHERE device_id=?", (self.name,))
         device = cursor.fetchone()
         cursor.close()
-        self.control_source = device[3]
-        self.lower_hysteresis = float(device[1])
-        self.upper_hysteresis = float(device[2])
+        self.control_source = device[4]
+        self.action_direction = int(device[3])  # 1 if this device causes the source to increase, -1 if it causes it to decrease
+        # The action direction changes what the following values do
+        self.lower_hysteresis = float(device[1])  # Threshold for turning the device on if the action direction is positive and off if it is negative
+        self.upper_hysteresis = float(device[2])  # Threshold for turning the device off if the action direction is positive and on if it is negative
 
     """
     Checks if this particular device should be on or off 
     """
 
     def check(self, current_value, setpoint):
-        if current_value > setpoint + self.upper_hysteresis:
-            if not self.device.on:
-                self.device.on = True
-        elif current_value < setpoint - self.lower_hysteresis:
-            if self.device.on:
-                self.device.on = False
+        if self.action_direction == 1:
+            if current_value < setpoint - self.lower_hysteresis:
+                if not self.device.on:
+                    self.device.on = True
+            if current_value > setpoint - self.upper_hysteresis:
+                if self.device.on:
+                    self.device.on = False
+        else:
+            if current_value > setpoint + self.lower_hysteresis:
+                if not self.device.on:
+                    self.device.on = True
+            if current_value < setpoint + self.upper_hysteresis:
+                if self.device.on:
+                    self.device.on = False

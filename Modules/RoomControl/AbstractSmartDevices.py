@@ -149,6 +149,7 @@ class AbstractToggleDevice:
     def __init__(self):
         self.online = None
         self.offline_reason = "Unknown"
+        self._auto = False
 
     def get_type(self):
         return "abstract_toggle_device"
@@ -189,8 +190,16 @@ class AbstractToggleDevice:
             "reason": "online" if self.online else self.offline_reason
         }
 
+    @property
+    def auto(self):
+        return self._auto
+
+    @auto.setter
+    def auto(self, auto: bool):
+        self._auto = auto
+
     def auto_state(self):
         return {
-            "is_auto": False,
+            "is_auto": self._auto,
             "auto_mode": None,
         }
