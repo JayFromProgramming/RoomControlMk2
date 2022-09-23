@@ -100,7 +100,8 @@ class EnvironmentSensor(Sensor):
         try:  # If the controller is not running on a Raspberry Pi, this will fail
             logging.info(f"EnvironmentSensor ({self.name}): Initialising DHT22 sensor")
             import Adafruit_DHT
-            self.dht_sensor = Adafruit_DHT
+            self.adafruit_library = Adafruit_DHT
+            self.dht_sensor = Adafruit_DHT.DHT22
         except ImportError as e:
             logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor could not be initialised - {e}")
             self.dht_sensor = None
@@ -122,10 +123,10 @@ class EnvironmentSensor(Sensor):
         # Read the sensor and set the value and last_updated
         logging.info(f"EnvironmentSensor ({self.name}): Starting background update task")
         while True:
-            if self.dht_sensor:
+            if self.adafruit_library is not None:
                 try:
                     logging.info(f"EnvironmentSensor ({self.name}): Reading sensor")
-                    humidity, temperature = self.dht_sensor.read_retry(self.dht_sensor.DHT22, 4)
+                    humidity, temperature = self.adafruit_library.read_retry(self.dht_sensor.DHT22, 4)
                     if humidity == 0 and temperature == 0:
                         logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned 0")
                         self.fault = True
