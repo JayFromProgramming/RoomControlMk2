@@ -215,10 +215,10 @@ class ControlledDevice:
                     logging.info(f"ControlledDevice ({self.name}): Turning on")
         else:  # If the action direction is negative (the device causes the source to decrease)
             if self.device.on:  # If the device is on check if it should be turned off
-                if current_value < setpoint - self.lower_hysteresis:  # If the current value is below the setpoint minus the upper hysteresis
+                if current_value < setpoint + self.lower_hysteresis:  # If the current value is below the setpoint minus the upper hysteresis
                     self.device.on = False
                     logging.info(f"ControlledDevice ({self.name}): Turning off")
             else:
-                if current_value > setpoint - self.upper_hysteresis:
+                if current_value > setpoint + self.upper_hysteresis:
                     self.device.on = True
                     logging.info(f"ControlledDevice ({self.name}): Turning on")
