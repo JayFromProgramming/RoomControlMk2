@@ -51,6 +51,11 @@ class SensorValue:
         return self.name
 
     def set_value(self, value):
+
+        # Cap the incoming value to no more than 2 units above/below the current value (to prevent spikes)
+        value = min(self.value + 2, value)
+        value = max(self.value - 2, value)
+
         if self.roll_avg:
             self.roll_avg_values.append(value)
             if len(self.roll_avg_values) > self.roll_avg_len:
