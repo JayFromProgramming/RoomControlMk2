@@ -171,6 +171,7 @@ class EnvironmentController:
 
     @setpoint.setter
     def setpoint(self, value):
+        value = float(value)  # Make sure it's an integer because sometimes the api sends a string
         self.current_setpoint = value
         cursor = self.database.cursor()
         cursor.execute("UPDATE enviv_controllers SET current_set_point=? WHERE name=?", (value, self.controller_name))
