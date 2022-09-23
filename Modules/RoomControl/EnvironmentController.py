@@ -119,7 +119,7 @@ class EnvironmentController:
             "target_value": self.current_setpoint,
             "current_value": self.source.get_value(),
         }
-        logging.info(f"EnvironmentController ({self.controller_name}): State requested ({value})")
+        # logging.info(f"EnvironmentController ({self.controller_name}): State requested ({value})")
         return value
 
     def get_info(self):
@@ -128,13 +128,14 @@ class EnvironmentController:
             "sensor": self.source.get_name(),
             "units": self.source.get_unit()
         }
-        logging.info(f"EnvironmentController ({self.controller_name}): Info requested ({value})")
+        # logging.info(f"EnvironmentController ({self.controller_name}): Info requested ({value})")
         return
 
     def get_health(self):
         return {
             "online": self.online,
-            "fault": self.source.get_fault()
+            "fault": bool(self.source.get_fault()),
+            "reason": "Unknown"
         }
 
     def get_type(self):
