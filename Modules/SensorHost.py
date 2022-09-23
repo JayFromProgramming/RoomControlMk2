@@ -152,4 +152,4 @@ class EnvironmentSensor(Sensor):
                               f"- DHT22 sensor not initialised")
                 break  # If the sensor is not initialised, stop trying to read it
             # Wait 5 seconds before reading again
-            time.sleep(5)
+            time.sleep(20)
