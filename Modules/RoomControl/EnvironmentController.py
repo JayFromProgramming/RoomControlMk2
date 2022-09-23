@@ -89,6 +89,9 @@ class EnvironmentController:
         for device in devices:
             self.devices.append(ControlledDevice(device[0], self.get_device(device[0]), self.database))
 
+        for device in self.devices:
+            device.device.auto = self.enabled
+
         self.periodic_check()
 
     def get_all_devices(self):
