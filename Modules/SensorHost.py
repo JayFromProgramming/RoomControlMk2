@@ -60,7 +60,7 @@ class SensorValue:
             self.value = value
 
     def set_fault(self, fault):
-        logging.warning(f"SensorValue ({self.name}): Setting fault to {fault}")
+        # logging.warning(f"SensorValu/e ({self.name}): Setting fault to {fault}")
         self._fault = fault
 
     def get_fault(self):
@@ -114,10 +114,10 @@ class EnvironmentSensor(Sensor):
         return self._fault
 
     @fault.setter
-    def fault(self, value: bool):
-        self._fault = value
+    def fault(self, set_value: bool):
+        self._fault = set_value
         for value in self.values.values():
-            value.set_fault(value)
+            value.set_fault(set_value)
 
     @background
     def read_sensor(self):
