@@ -205,16 +205,20 @@ class ControlledDevice:
 
     def check(self, current_value, setpoint):
         if self.action_direction == 1:
-            if current_value < setpoint - self.lower_hysteresis:
-                if not self.device.on:
-                    self.device.on = True
-            if current_value > setpoint - self.upper_hysteresis:
-                if self.device.on:
+            if self.device.on:  # If the device is on check if it should be turned off
+                if current_value > setpoint + self.upper_hysteresis:
                     self.device.on = False
+                    logging.info(f"ControlledDevice ({self.name}): Turning off")
+            else:  # If the device is off check if it should be turned on
+                if current_value < setpoint + self.lower_hysteresis:
+                    self.device.on = True
+                    logging.info(f"ControlledDevice ({self.name}): Turning on")
         else:
-            if current_value > setpoint + self.lower_hysteresis:
-                if not self.device.on:
-                    self.device.on = True
-            if current_value < setpoint + self.upper_hysteresis:
-                if self.device.on:
+            if self.device.on:
+                if current_value < setpoint - self.upper_hysteresis:
                     self.device.on = False
+                    logging.info(f"ControlledDevice ({self.name}): Turning off")
+            else:
+                if current_value > setpoint - self.lower_hysteresis:
+                    self.device.on = True
+                    logging.info(f"ControlledDevice ({self.name}): Turning on")
