@@ -105,7 +105,7 @@ class EnvironmentSensor(Sensor):
             logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor could not be initialised - {e}")
             self.dht_sensor = None
 
-        self.read_sensor()
+        # self.read_sensor()
 
     @background
     def read_sensor(self):
@@ -116,10 +116,16 @@ class EnvironmentSensor(Sensor):
                 try:
                     logging.debug("Reading dht22 sensor")
                     humidity, temperature = self.dht_sensor.read_retry(self.dht_sensor.DHT22, 4)
-                    self.values["temperature"].set_value(convert_cel_to_fahr(temperature))
-                    self.values["humidity"].set_value(humidity)
-                    self.last_updated = datetime.datetime.now()
-                    self.fault = False
+                    if humidity == 0 and temperature == 0:
+                        logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned 0")
+                        self.fault = True
+                        self.values["temperature"].set_fault(True)
+                        self.values["humidity"].set_fault(True)
+                    else:
+                        self.values["temperature"].set_value(convert_cel_to_fahr(temperature))
+                        self.values["humidity"].set_value(humidity)
+                        self.last_updated = datetime.datetime.now()
+                        self.fault = False
                 except RuntimeError as error:
                     self.fault = True
                     logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor read failed - {error}")
