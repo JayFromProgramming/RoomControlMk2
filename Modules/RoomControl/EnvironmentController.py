@@ -114,18 +114,22 @@ class EnvironmentController:
             logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
 
     def get_state(self):
-        return {
-            "on": self.enabled,
-            "target_value": self.current_setpoint,
-            "current_value": self.source.get_value(),
-        }
-
-    def get_info(self):
-        return {
+        value = {
             "name": self.controller_name,
             "sensor": self.source.get_name(),
             "units": self.source.get_unit()
         }
+        logging.info(f"EnvironmentController ({self.controller_name}): State requested ({value})")
+        return value
+
+    def get_info(self):
+        value = {
+            "name": self.controller_name,
+            "sensor": self.source.get_name(),
+            "units": self.source.get_unit()
+        }
+        logging.info(f"EnvironmentController ({self.controller_name}): Info requested ({value})")
+        return
 
     def get_health(self):
         return {
