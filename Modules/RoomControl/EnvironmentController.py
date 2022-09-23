@@ -154,9 +154,9 @@ class ControlledDevice:
         cursor.execute("SELECT * FROM enviv_control_devices WHERE device_id=?", (self.name,))
         device = cursor.fetchone()
         cursor.close()
-        self.control_source = device[1]
-        self.lower_hysteresis = float(device[2])
-        self.upper_hysteresis = float(device[3])
+        self.control_source = device[3]
+        self.lower_hysteresis = float(device[1])
+        self.upper_hysteresis = float(device[2])
 
     """
     Checks if this particular device should be on or off 

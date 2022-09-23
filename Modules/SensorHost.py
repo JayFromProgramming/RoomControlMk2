@@ -105,6 +105,8 @@ class EnvironmentSensor(Sensor):
             logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor could not be initialised - {e}")
             self.dht_sensor = None
 
+        self.read_sensor()
+
     @background
     def read_sensor(self):
         # Read the sensor and set the value and last_updated
