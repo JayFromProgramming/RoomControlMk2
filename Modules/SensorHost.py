@@ -39,7 +39,7 @@ class SensorValue:
         self.roll_avg = rolling_average  # type: bool
         self.roll_avg_len = rolling_average_length  # type: int
         self.roll_avg_values = []  # type: list
-        self.fault = False  # type: bool
+        self._fault = False  # type: bool
 
     def get_value(self):
         return self.value
@@ -60,10 +60,10 @@ class SensorValue:
             self.value = value
 
     def set_fault(self, fault):
-        self.fault = fault
+        self._fault = fault
 
     def get_fault(self):
-        return self.fault
+        return self._fault
 
 
 class Sensor:
@@ -109,11 +109,11 @@ class EnvironmentSensor(Sensor):
 
     @property
     def fault(self):
-        return self.fault
+        return self._fault
 
     @fault.setter
     def fault(self, value):
-        self.fault = value
+        self._fault = value
         for value in self.values.values():
             value.set_fault(value)
 
