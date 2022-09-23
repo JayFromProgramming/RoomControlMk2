@@ -126,7 +126,7 @@ class EnvironmentSensor(Sensor):
             if self.adafruit_library is not None:
                 try:
                     logging.info(f"EnvironmentSensor ({self.name}): Reading sensor")
-                    humidity, temperature = self.adafruit_library.read_retry(self.dht_sensor.DHT22, 4)
+                    humidity, temperature = self.adafruit_library.read_retry(self.dht_sensor, 4)
                     if humidity == 0 and temperature == 0:
                         logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned 0")
                         self.fault = True
