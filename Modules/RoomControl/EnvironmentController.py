@@ -147,6 +147,30 @@ class EnvironmentController:
     def auto_state(self):
         return {"is_auto": False}
 
+    @property
+    def on(self):
+        return self.enabled
+
+    @on.setter
+    def on(self, value):
+        self.enabled = value
+        cursor = self.database.cursor()
+        cursor.execute("UPDATE enviv_controllers SET enabled=? WHERE name=?", (int(value), self.controller_name))
+        cursor.close()
+        self.database.commit()
+
+    @property
+    def setpoint(self):
+        return self.current_setpoint
+
+    @setpoint.setter
+    def setpoint(self, value):
+        self.current_setpoint = value
+        cursor = self.database.cursor()
+        cursor.execute("UPDATE enviv_controllers SET current_set_point=? WHERE name=?", (value, self.controller_name))
+        cursor.close()
+        self.database.commit()
+
 
 class ControlledDevice:
 

@@ -6,6 +6,7 @@ from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, AbstractToggle
 
 import logging
 
+from Modules.RoomControl.EnvironmentController import EnvironmentController
 from Modules.RoomControl.LightController import LightController
 
 logging = logging.getLogger(__name__)
@@ -36,6 +37,13 @@ def process_device_command(device: typing.Union[AbstractRGB, AbstractToggleDevic
             if hasattr(message, "on"):
                 device.set_on(message.on)
                 preformed_actions.append(f"set_on to {message.on}")
+        elif isinstance(device, EnvironmentController):
+            if hasattr(message, "setpoint"):
+                device.setpoint = message.setpoint
+                preformed_actions.append(f"setpoint to {message.setpoint}")
+            if hasattr(message, "on"):
+                device.mode = message.on
+                preformed_actions.append(f"mode to {message.on}")
         else:
             raise TypeError(f"Unknown device type {type(device)}")
     except Exception as e:
