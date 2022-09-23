@@ -155,8 +155,8 @@ class ControlledDevice:
         device = cursor.fetchone()
         cursor.close()
         self.control_source = device[1]
-        self.lower_hysteresis = device[2]
-        self.upper_hysteresis = device[3]
+        self.lower_hysteresis = float(device[2])
+        self.upper_hysteresis = float(device[3])
 
     """
     Checks if this particular device should be on or off 
