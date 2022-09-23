@@ -124,7 +124,7 @@ class EnvironmentSensor(Sensor):
         while True:
             if self.dht_sensor:
                 try:
-                    logging.debug("Reading dht22 sensor")
+                    logging.info(f"EnvironmentSensor ({self.name}): Reading sensor")
                     humidity, temperature = self.dht_sensor.read_retry(self.dht_sensor.DHT22, 4)
                     if humidity == 0 and temperature == 0:
                         logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned 0")
@@ -138,6 +138,7 @@ class EnvironmentSensor(Sensor):
                         self.values["temperature"].set_value(convert_cel_to_fahr(temperature))
                         self.values["humidity"].set_value(humidity)
                         self.last_updated = datetime.datetime.now()
+                        logging.info(f"EnvironmentSensor ({self.name}): Sensor read successful")
                         self.fault = False
                 except RuntimeError as error:
                     self.fault = True
