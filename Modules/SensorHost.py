@@ -88,7 +88,7 @@ class Sensor:
 
 
 def convert_cel_to_fahr(cel):
-    return cel * 9 / 5 + 32
+    return round(cel * 9 / 5 + 32, 2)
 
 
 class EnvironmentSensor(Sensor):
@@ -113,7 +113,7 @@ class EnvironmentSensor(Sensor):
         return self._fault
 
     @fault.setter
-    def fault(self, value):
+    def fault(self, value: bool):
         self._fault = value
         for value in self.values.values():
             value.set_fault(value)
@@ -125,7 +125,7 @@ class EnvironmentSensor(Sensor):
         while True:
             if self.adafruit_library is not None:
                 try:
-                    logging.info(f"EnvironmentSensor ({self.name}): Reading sensor")
+                    # logging.info(f"EnvironmentSensor ({self.name}): Reading sensor")
                     humidity, temperature = self.adafruit_library.read_retry(self.dht_sensor, 4)
                     if humidity == 0 and temperature == 0:
                         logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned 0")
@@ -137,9 +137,9 @@ class EnvironmentSensor(Sensor):
 
                     else:
                         self.values["temperature"].set_value(convert_cel_to_fahr(temperature))
-                        self.values["humidity"].set_value(humidity)
+                        self.values["humidity"].set_value(round(humidity, 2))
                         self.last_updated = datetime.datetime.now()
-                        logging.info(f"EnvironmentSensor ({self.name}): Sensor read successful")
+                        # logging.info(f"EnvironmentSensor ({self.name}): Sensor read successful")
                         self.fault = False
                 except RuntimeError as error:
                     self.fault = True
