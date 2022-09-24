@@ -97,7 +97,7 @@ class SceneController:
                         device.color = value
                     if action == "white" and hasattr(device, "white"):
                         device.white = value
-                    if action == "setpoint" and hasattr(device, "setpoint"):
+                    if action == "target_value" and hasattr(device, "setpoint"):
                         device.setpoint = value
 
 
