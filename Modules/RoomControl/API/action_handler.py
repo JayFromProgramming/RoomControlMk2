@@ -12,40 +12,30 @@ from Modules.RoomControl.LightController import LightController
 logging = logging.getLogger(__name__)
 
 
-def process_device_command(device: typing.Union[AbstractRGB, AbstractToggleDevice], message: APIMessageRX) -> APIMessageTX:
+def process_device_command(device: typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message: APIMessageRX) -> APIMessageTX:
     preformed_actions = []
     try:
         if device is None:
             raise ValueError("Device not found")
-        elif isinstance(device, AbstractRGB):
-            if hasattr(message, "color"):
+        else:
+            if hasattr(message, "color") and hasattr(device, "color"):
                 device.set_color(message.color)
                 preformed_actions.append(f"set_color to {message.color}")
-            if hasattr(message, "brightness"):
+            if hasattr(message, "brightness") and hasattr(device, "brightness"):
                 device.set_brightness(message.brightness)
                 preformed_actions.append(f"set_brightness to {message.brightness}")
-            if hasattr(message, "white"):
+            if hasattr(message, "white") and hasattr(device, "white"):
                 device.set_white(message.white)
                 preformed_actions.append(f"set_white to {message.white}")
-            if hasattr(message, "on"):
-                device.set_on(message.on)
+            if hasattr(message, "on") and hasattr(device, "on"):
+                device.on = message.on
                 preformed_actions.append(f"set_on to {message.on}")
-            if hasattr(message, "auto"):
+            if hasattr(message, "auto") and hasattr(device, "auto"):
                 device.set_auto(message.auto, "api")
                 preformed_actions.append(f"set_auto to {message.auto}")
-        elif isinstance(device, AbstractToggleDevice) or isinstance(device, LightController):
-            if hasattr(message, "on"):
-                device.set_on(message.on)
-                preformed_actions.append(f"set_on to {message.on}")
-        elif isinstance(device, EnvironmentController):
-            if hasattr(message, "setpoint"):
-                device.setpoint = message.setpoint
-                preformed_actions.append(f"setpoint to {message.setpoint}")
-            if hasattr(message, "on"):
-                device.on = message.on
-                preformed_actions.append(f"on to {message.on}")
-        else:
-            raise TypeError(f"Unknown device type {type(device)}")
+            if hasattr(message, "target_value") and hasattr(device, "setpoint"):
+                device.setpoint = message.target_value
+                preformed_actions.append(f"set_target_value to {message.target_value}")
     except Exception as e:
         logging.error(f"Error processing device command: {e}")
         return APIMessageTX(
