@@ -336,8 +336,8 @@ class NetAPI:
             msg = APIMessageTX(error="Scene controller not found")
         else:
             scene_name = request.match_info['name']
-            self.scene_controller.execute_scene(scene_name)
-            msg = APIMessageTX()
+            result = self.scene_controller.execute_trigger(scene_name)
+            msg = APIMessageTX(result=result)
 
         return web.Response(text=msg.__str__())
 

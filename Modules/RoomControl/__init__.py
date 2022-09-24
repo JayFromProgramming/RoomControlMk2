@@ -96,8 +96,8 @@ class RoomController:
         self.scene_controller = SceneController(self.database, self.controllers)
         self.command_controller = CommandController(self.controllers)
 
-        address = "wopr.eggs.loafclan.org"
-        # address = "localhost"
+        # address = "wopr.eggs.loafclan.org"
+        address = "localhost"
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,
                                  occupancy_detector=self.blue_stalker,

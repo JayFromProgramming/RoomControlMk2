@@ -111,6 +111,7 @@ class EnvironmentSensor(Sensor):
             self.dht_sensor = Adafruit_DHT.DHT22
         except ImportError as e:
             logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor could not be initialised - {e}")
+            self.adafruit_library = None
             self.dht_sensor = None
 
         # self.read_sensor()

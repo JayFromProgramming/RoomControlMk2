@@ -114,6 +114,8 @@ class EnvironmentController:
                             device.check(self.source.get_value(), self.current_setpoint)
                     else:
                         logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
+                        for device in self.devices:
+                            device.fault_encountered()
                 time.sleep(30)
         else:
             logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
@@ -143,14 +145,15 @@ class EnvironmentController:
             "reason": "Unknown"
         }
 
-    def get_type(self):
+    @staticmethod
+    def get_type():
         return "environment_controller"
 
     def name(self):
         return self.controller_name
 
     def auto_state(self):
-        return {"is_auto": False}
+        return {"is_auto": self.enabled}
 
     @property
     def on(self):
@@ -223,3 +226,12 @@ class ControlledDevice:
                 if current_value > setpoint + self.upper_hysteresis:
                     self.device.on = True
                     logging.info(f"ControlledDevice ({self.name}): Turning on")
+
+    def fault_encountered(self):
+        """
+        Called when the temperature sensor encounters a fault
+        The device will be turned off and will not be turned on until the fault is resolved
+        or the device is manually turned on
+        """
+        if self.device.auto and self.device.on:
+            self.device.on = False
