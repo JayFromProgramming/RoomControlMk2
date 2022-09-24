@@ -108,11 +108,12 @@ class EnvironmentController:
 
         if hasattr(self.source, "get_value"):
             while True:
-                if not self.source.get_fault():
-                    for device in self.devices:
-                        device.check(self.source.get_value(), self.current_setpoint)
-                else:
-                    logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
+                if self.enabled:
+                    if not self.source.get_fault():
+                        for device in self.devices:
+                            device.check(self.source.get_value(), self.current_setpoint)
+                    else:
+                        logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
                 time.sleep(30)
         else:
             logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
