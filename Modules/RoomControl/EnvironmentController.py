@@ -73,6 +73,7 @@ class EnvironmentController:
         self.sensor_host = sensor_host
 
         self.online = True
+        self._reason = "Unknown"
 
         cursor = self.database.cursor()
         cursor.execute("SELECT * FROM enviv_controllers WHERE name=?", (self.controller_name,))
@@ -112,13 +113,16 @@ class EnvironmentController:
                     if not self.source.get_fault():
                         for device in self.devices:
                             device.check(self.source.get_value(), self.current_setpoint)
+                        self._reason = "Unknown"
                     else:
                         logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
                         for device in self.devices:
                             device.fault_encountered()
+                        self._reason = "Source is offline"
                 time.sleep(30)
         else:
             logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
+            self._reason = "Source is not a sensor"
 
     def get_state(self):
         value = {
@@ -142,7 +146,7 @@ class EnvironmentController:
         return {
             "online": self.online,
             "fault": bool(self.source.get_fault()),
-            "reason": "Unknown"
+            "reason": self.source.get_reason() if self.source.get_fault() else self._reason
         }
 
     @staticmethod
@@ -184,6 +188,18 @@ class EnvironmentController:
         cursor.execute("UPDATE enviv_controllers SET current_set_point=? WHERE name=?", (value, self.controller_name))
         cursor.close()
         self.database.commit()
+
+    @property
+    def current_value(self):
+        return round(self.source.get_value(), 2)
+
+    @property
+    def fault(self):
+        return self.source.get_fault()
+
+    @property
+    def unit(self):
+        return self.source.get_unit()
 
 
 class ControlledDevice:

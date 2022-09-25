@@ -4,7 +4,7 @@ from aiohttp import web
 
 
 def light_color_stringify(data):
-    return f"On: {data['on']}, Brightness: {data['brightness']}" \
+    return f"On: {data['on']}, Brightness: {str(data['brightness']).zfill(3)}" \
            f"\r\nColor: {data['color']}"
 
 
@@ -13,9 +13,12 @@ def state_to_string(device):
         case 'abstract_rgb':
             return light_color_stringify(device.get_state())
         case 'abstract_toggle_device':
-            return f"On: {device.is_on()}"
+            return f"On: {device.is_on()}, Auto: {device.auto_state()['is_auto']}"
         case 'VoiceMonkeyDevice':
-            return f"On: {device.is_on()}"
+            return f"On: {device.is_on()}, Auto: {device.auto_state()['is_auto']}"
+        case 'environment_controller':
+            return f"Current Value: {device.current_value}{device.unit}, Setpoint: {device.setpoint}{device.unit}, " \
+                   f"{'Enabled' if device.on else 'Disabled'}"
 
 
 def generate_device_buttons(device):
@@ -28,7 +31,7 @@ def generate_device_buttons(device):
     match device.get_type():
         case 'abstract_rgb':
             controls += f"""
-                <input type="slider" name="brightness" value="{device.get_state()['brightness']}" min="0" max="255">
+                <input type="slider" name="brightness" value="{device.get_state()['brightness'].zpad(3)}" min="0" max="255">
                 <input type="color" name="color" value="{device.get_state()['color']}">
                 <
             """
@@ -38,6 +41,15 @@ def generate_device_buttons(device):
             pass
 
     return controls
+
+
+def health_message(device):
+    if "fault" in device.get_health() and device.get_health()["fault"] is True:
+        return f"FAULT: {device.get_health()['reason']}"
+    elif device.get_health()["online"]:
+        return "ONLINE"
+    else:
+        return f"OFFLINE: {device.get_health()['reason']}"
 
 
 def generate_main_page(self):
@@ -58,7 +70,7 @@ def generate_main_page(self):
 
         for device in self.get_all_devices():
             # For offline devices, have the text be red
-            if not device.online:
+            if not device.online or ("fault" in device.get_health() and device.get_health()["fault"] is True):
                 table += f"<tr style='color:red'>"
             else:
                 table += "<tr>"
@@ -69,7 +81,7 @@ def generate_main_page(self):
                     <input type="submit" value="Open Device" {'DISABLED' if not device.get_health()["online"] else ''}>
                 </form></td>
                 <td>{state_to_string(device)}</td>
-                <td>{'ONLINE' if device.get_health()["online"] else f'OFFLINE: {device.get_health()["reason"]}'}</td>
+                <td>{health_message(device)}</td>
             </tr>
             """
 

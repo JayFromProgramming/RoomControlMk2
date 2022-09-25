@@ -40,6 +40,7 @@ class SensorValue:
         self.roll_avg_len = rolling_average_length  # type: int
         self.roll_avg_values = []  # type: list
         self._fault = False  # type: bool
+        self._reason = "Unknown"  # type: str
 
     def get_value(self):
         return self.value
@@ -65,12 +66,16 @@ class SensorValue:
         else:
             self.value = value
 
-    def set_fault(self, fault):
+    def set_fault(self, fault, reason="Unknown"):
         # logging.warning(f"SensorValu/e ({self.name}): Setting fault to {fault}")
         self._fault = fault
+        self._reason = reason
 
     def get_fault(self):
         return self._fault
+
+    def get_reason(self):
+        return self._reason
 
 
 class Sensor:
@@ -126,6 +131,11 @@ class EnvironmentSensor(Sensor):
         for value in self.values.values():
             value.set_fault(set_value)
 
+    def set_fault(self, set_value: bool, reason="Unknown"):
+        self._fault = set_value
+        for value in self.values.values():
+            value.set_fault(set_value, reason)
+
     @background
     def read_sensor(self):
         # Read the sensor and set the value and last_updated
@@ -137,11 +147,12 @@ class EnvironmentSensor(Sensor):
                     humidity, temperature = self.adafruit_library.read_retry(self.dht_sensor, 4)
                     if humidity == 0 and temperature == 0:
                         logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned 0")
-                        self.fault = True
+                        self.set_fault(True, "Sensor returned 0")
 
                     elif humidity is None or temperature is None:
                         logging.warning(f"EnvironmentSensor ({self.name}): Sensor returned None")
                         self.fault = True
+                        self.set_fault(True, "Sensor returned None")
 
                     else:
                         self.values["temperature"].set_value(convert_cel_to_fahr(temperature))
@@ -150,11 +161,11 @@ class EnvironmentSensor(Sensor):
                         # logging.info(f"EnvironmentSensor ({self.name}): Sensor read successful")
                         self.fault = False
                 except RuntimeError as error:
-                    self.fault = True
+                    self.set_fault(True, error.__str__())
                     logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor read failed - {error}")
                     print(error.args[0])
             else:
-                self.fault = True
+                self.set_fault(True, "Sensor failed initialisation")
                 logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor read failed "
                               f"- DHT22 sensor not initialised")
                 break  # If the sensor is not initialised, stop trying to read it
