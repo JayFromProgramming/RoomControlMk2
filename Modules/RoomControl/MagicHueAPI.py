@@ -130,7 +130,7 @@ class MagicDevice(AbstractRGB):
             cursor.close()
 
         try:
-            self.light = magichue.RemoteLight(api=api, macaddr=macaddr, allow_fading=False)
+            self.light = magichue.RemoteLight(api=api, macaddr=macaddr, allow_fading=True)
             logging.info(f"MagicHomeDevice: {macaddr} is ready, bulb type is "
                          f"{bulb_type_to_string(self.light.status.bulb_type)}")
             self.status = self.light.status
