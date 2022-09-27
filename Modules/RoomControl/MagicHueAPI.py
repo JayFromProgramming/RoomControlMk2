@@ -20,8 +20,8 @@ def bulb_type_to_string(bulb_type: magichue.light.bulb_types):
 
 
 class bulb_types:
-    RGB = 6
-    RGBW = 51
+    RGB = 51
+    RGBW = 6
 
 
 class MagicHome:
