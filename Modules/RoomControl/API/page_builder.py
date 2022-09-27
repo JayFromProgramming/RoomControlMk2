@@ -77,7 +77,7 @@ def generate_main_page(self):
 
             table += f"""
                 <td>{self.get_device_display_name(device.name())}</td>
-                <td><a href="/set/{device.name()}?on={str(not device.on).lower()}?redirect=true">
+                <td><a href="/set/{device.name()}?on={str(not device.on).lower()}">
                 {'Turn on' if not device.on else 'Turn off'}</a></td>
                 <td>{state_to_string(device)}</td>
                 <td>{health_message(device)}</td>

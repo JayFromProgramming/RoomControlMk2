@@ -182,13 +182,13 @@ class NetAPI:
         logging.info(f"Received SET request for {device_name}")
         data = request.query
 
-        if "redirect" in data:
-            redirect = data["redirect"]
+        # if "redirect" in data:
+        #     redirect = data["redirect"]
 
         msg = APIMessageRX(data)
         device = self.get_device(device_name)
         result = process_device_command(device, msg)
-        return web.Response(text=result.__str__())
+        return web.Response(text=result.__str__(), headers={"Redirect": "/"})
 
     async def handle_set_post(self, request):
         if not self.check_auth(request):
