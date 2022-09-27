@@ -202,6 +202,8 @@ class MagicDevice(AbstractRGB):
     def set_white(self, white: int):
         if self.online:
             try:
+                if not self.light.on:
+                    self.light.on = True
                 # Check if the light supports warm white
                 if self.bulb_type == bulb_types.RGBW:
                     self.light.is_white = True
