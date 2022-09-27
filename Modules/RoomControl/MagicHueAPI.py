@@ -210,6 +210,7 @@ class MagicDevice(AbstractRGB):
                     self.light.is_white = True
                     self.light.w = white
                 else:
+                    self.light.is_white = True
                     self.light.color = (white, white, white)
                 # self.light.cw = white
             except magichue.exceptions.MagicHueAPIError as e:
