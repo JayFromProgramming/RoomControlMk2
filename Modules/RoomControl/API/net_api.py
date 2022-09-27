@@ -188,7 +188,10 @@ class NetAPI:
         msg = APIMessageRX(data)
         device = self.get_device(device_name)
         result = process_device_command(device, msg)
-        return web.Response(text=result.__str__(), headers={"Redirect": "/"})
+        # Add a redirect to the response to the main page
+        response = web.Response(text=result.__str__())
+        response.headers['Location'] = "/"
+        return response
 
     async def handle_set_post(self, request):
         if not self.check_auth(request):
