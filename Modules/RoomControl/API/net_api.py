@@ -182,6 +182,9 @@ class NetAPI:
         logging.info(f"Received SET request for {device_name}")
         data = request.query
 
+        if "redirect" in data:
+            redirect = data["redirect"]
+
         msg = APIMessageRX(data)
         device = self.get_device(device_name)
         result = process_device_command(device, msg)

@@ -64,7 +64,7 @@ def generate_main_page(self):
         table = ""
 
         # Add table header
-        table += "<tr><th>Device Name</th><th>Control Device</th><th>Device Status</th><th>Device Health</th></tr>"
+        table += "<tr><th>Device Name</th><th>Toggle Device</th><th>Device Status</th><th>Device Health</th></tr>"
         # Add borders to the table
         table += "<style>table, th, td {border: 1px solid black;}</style>"
 
@@ -77,9 +77,8 @@ def generate_main_page(self):
 
             table += f"""
                 <td>{self.get_device_display_name(device.name())}</td>
-                <td><form action="/web_control/{device.name()}" method="get">
-                    <input type="submit" value="Open Device" {'DISABLED' if not device.get_health()["online"] else ''}>
-                </form></td>
+                <td><a href="/set/{device.name()}?on={str(not device.on).lower()}?redirect=true">
+                {'Turn on' if not device.on else 'Turn off'}</a></td>
                 <td>{state_to_string(device)}</td>
                 <td>{health_message(device)}</td>
             </tr>

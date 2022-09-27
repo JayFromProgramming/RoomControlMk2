@@ -9,6 +9,21 @@ from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, background
 logging = logging.getLogger(__name__)
 
 
+def bulb_type_to_string(bulb_type: magichue.light.bulb_types):
+    match bulb_type:
+        case 6:
+            return "RGB"
+        case 51:
+            return "RGBW"
+        case _:
+            return "Unknown"
+
+
+class bulb_types:
+    RGB = 51
+    RGBW = 6
+
+
 class MagicHome:
 
     def __init__(self, database):
@@ -38,10 +53,10 @@ class MagicHome:
         devices = []
         for device in hw_devices:
             try:
-                print(f"Adding device: {device.macaddr}")
+                logging.info(f"MagicHome: Found device {device.macaddr}, creating device object")
                 devices.append(MagicDevice(self.api, device.macaddr, database=self.database))
             except magichue.exceptions.MagicHueAPIError as e:
-                logging.error(f"\t{device.macaddr}: Error: {e}")
+                logging.error(f"MagicHome: Error creating device object for {device.macaddr}: {e}")
         self.devices = devices
         self.ready = True
 
@@ -115,10 +130,13 @@ class MagicDevice(AbstractRGB):
             cursor.close()
 
         try:
-            self.light = magichue.RemoteLight(api=api, macaddr=macaddr)
+            self.light = magichue.RemoteLight(api=api, macaddr=macaddr, allow_fading=False)
+            logging.info(f"MagicHomeDevice: {macaddr} is ready, bulb type is "
+                         f"{bulb_type_to_string(self.light.status.bulb_type)}")
             self.status = self.light.status
+            self.bulb_type = self.light.status.bulb_type
         except magichue.exceptions.MagicHueAPIError as e:
-            logging.error(f"{macaddr} creation error: {e}")
+            logging.error(f"MagicHomeDevice: Error creating device object for {macaddr}: {e}")
             self.light = None
         else:
             self.online = True
@@ -141,8 +159,16 @@ class MagicDevice(AbstractRGB):
     def set_color(self, color: tuple):
         if self.online:
             try:
-                self.light.is_white = False
-                self.light.rgb = color
+                if self.bulb_type == bulb_types.RGBW:
+                    r, g, b = color
+                    if r == g == b:
+                        self.light.is_white = True
+                        self.light.w = r
+                    else:
+                        self.light.is_white = False
+                        self.light.rgb = color
+                else:
+                    self.light.rgb = color
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set color error: {e}")
                 self.offline_reason = str(e)
@@ -176,11 +202,13 @@ class MagicDevice(AbstractRGB):
     def set_white(self, white: int):
         if self.online:
             try:
-                if white != 0:
+                # Check if the light supports warm white
+                if self.bulb_type == bulb_types.RGBW:
+                    self.light.is_white = True
+                    self.light.w = white
+                else:
                     self.light.color = (white, white, white)
-                self.light.is_white = True
-                self.light.w = white
-                self.light.cw = white
+                # self.light.cw = white
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set brightness error: {e}")
                 self.offline_reason = str(e)
