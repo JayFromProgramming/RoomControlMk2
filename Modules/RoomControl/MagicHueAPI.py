@@ -159,7 +159,7 @@ class MagicDevice(AbstractRGB):
     def set_color(self, color: tuple):
         if self.online:
             try:
-                if self.bulb_type == bulb_types.RGBW:
+                if self.bulb_type == bulb_types.RGBW and False:
                     r, g, b = color
                     if r == g == b and False:
                         self.light.is_white = True
