@@ -11,17 +11,17 @@ logging = logging.getLogger(__name__)
 
 def bulb_type_to_string(bulb_type: magichue.light.bulb_types):
     match bulb_type:
-        case 6:
-            return "RGB"
         case 51:
+            return "RGB"
+        case 6:
             return "RGBW"
         case _:
             return "Unknown"
 
 
 class bulb_types:
-    RGB = 51
-    RGBW = 6
+    RGB = 6
+    RGBW = 51
 
 
 class MagicHome:
