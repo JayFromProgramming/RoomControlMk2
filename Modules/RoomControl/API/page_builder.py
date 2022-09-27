@@ -19,6 +19,8 @@ def state_to_string(device):
         case 'environment_controller':
             return f"Current Value: {device.current_value}{device.unit}, Setpoint: {device.setpoint}{device.unit}, " \
                    f"{'Enabled' if device.on else 'Disabled'}"
+        case _:
+            return "Device type not implemented"
 
 
 def generate_device_buttons(device):
