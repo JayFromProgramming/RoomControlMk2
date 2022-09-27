@@ -161,7 +161,7 @@ class MagicDevice(AbstractRGB):
             try:
                 if self.bulb_type == bulb_types.RGBW:
                     r, g, b = color
-                    if r == g == b:
+                    if r == g == b and False:
                         self.light.is_white = True
                         self.light.w = r
                     else:
