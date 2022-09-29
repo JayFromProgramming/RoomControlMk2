@@ -3,7 +3,9 @@ import datetime
 import json
 import logging
 import functools
+import random
 import sys
+import time
 
 from aiohttp import web
 import hashlib
@@ -15,6 +17,10 @@ from Modules.RoomControl.API.sys_info_generator import generate_sys_info
 from Modules.RoomControl.AbstractSmartDevices import background
 
 logging = logging.getLogger(__name__)
+
+
+def login_redirect():
+    return web.HTTPFound("/login")
 
 
 class NetAPI:
@@ -62,7 +68,10 @@ class NetAPI:
 
         # List of cookies that are authorized to access the API
         cursor = self.database.cursor()
-        self.authorized_cookies = [cookie[0] for cookie in cursor.execute("SELECT current_cookie FROM api_authorizations").fetchall()]
+        cursor.execute("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))
+        self.authorized_cookies = [cookie[0] for cookie in cursor.fetchall()]
+        cursor.execute("SELECT current_cookie FROM api_authorizations")
+        self.authorized_cookies += [cookie[0] for cookie in cursor.fetchall()]
 
         # Load the schema
         with open("Modules/RoomControl/Configs/schema.json") as f:
@@ -78,6 +87,9 @@ class NetAPI:
         cursor = self.database.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS "
                        "api_authorizations (device_id TEXT, api_secret TEXT, current_cookie TEXT)")
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS login_auth_relations (user_id TEXT UNIQUE REFERENCES api_authorizations(device_id),
+        device_name TEXT, current_cookie TEXT, expires INTEGER)""")
         cursor.close()
         self.database.commit()
 
@@ -111,6 +123,11 @@ class NetAPI:
 
     async def handle_login(self, request):
         logging.info("Received LOGIN request")
+
+        # Check if the user is already logged in
+        if request.cookies.get("auth") in self.authorized_cookies:
+            return web.HTTPFound("/")
+
         # Load the login page from "{root}\pages\login_page.html"
         # {root} is the directory that the python script is running from
         with open(f"{sys.path[0]}/Modules/RoomControl/API/pages/login_page.html", "r") as file:
@@ -121,21 +138,30 @@ class NetAPI:
         data = await request.post()
         username = data['username']
         password = data['password']
+        logging.info(f"Username: {username}, Password: {password}")
         cursor = self.database.cursor()
-        user = cursor.execute("SELECT * FROM api_authorizations WHERE device_id = ?", (username,)).fetchone()
+        user = cursor.execute("SELECT * FROM api_authorizations WHERE device_id=?", (username,)).fetchone()
+        logging.info(f"User: {user[0]}, Password: {user[1]}")
         if user and user[1] == password:
 
-            new_cookie = hashlib.sha256(password.encode()).hexdigest()
+            new_cookie = hashlib.sha256(f"{password}: {random.random()}".encode()).hexdigest()
+            browser = request.headers.get("User-Agent")
 
-            cursor.execute("UPDATE api_authorizations SET current_cookie = ? WHERE api_secret = ?",
-                           (new_cookie, password))
-            response = web.Response(text="Authorized", status=200)
+            cursor.execute("""INSERT OR REPLACE INTO login_auth_relations (user_id, device_name, current_cookie, expires) 
+                           VALUES (?, ?, ?, ?)""", (username, browser, new_cookie, int(time.time()) + 60 * 60 * 24 * 7))
+            logging.info(f"User {username} logged in from {browser}")
+            response = web.Response(text="Authorized", status=302)
             response.set_cookie("auth", new_cookie, max_age=60 * 60 * 24 * 365)
-            # Redirect to the main page
-            response.headers['Location'] = "/"
+
+            self.authorized_cookies.append(new_cookie)
+
+            cursor.close()
             self.database.commit()
+            # Redirect to the main page
+            response.headers["Location"] = "/"
             return response
         else:
+            cursor.close()
             raise web.HTTPUnauthorized()
 
     async def handle_auth(self, request):
@@ -159,7 +185,7 @@ class NetAPI:
 
     async def handle_get(self, request):
         if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+            return login_redirect()
 
         device_name = request.match_info['name']
         logging.debug(f"Received GET request for {device_name}")
@@ -230,7 +256,7 @@ class NetAPI:
 
     async def handle_web(self, request):
         if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+            return login_redirect()
 
         # Load the main page from "{root}\pages\main_view_page.html"
 
