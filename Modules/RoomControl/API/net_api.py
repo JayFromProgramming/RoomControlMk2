@@ -119,13 +119,19 @@ class NetAPI:
 
     def check_auth(self, request):
         """Check if the request has a valid cookie"""
-        return request.cookies.get("auth") in self.authorized_cookies
+        logging.info("NetAPI: Checking auth, cookies: %s", request.cookies)
+        if "auth" in request.cookies and request.cookies["auth"] in self.authorized_cookies:
+            logging.info("NetAPI: Auth passed")
+            return True
+        else:
+            logging.info("NetAPI: Auth failed")
+            return False
 
     async def handle_login(self, request):
         logging.info("Received LOGIN request")
 
         # Check if the user is already logged in
-        if request.cookies.get("auth") in self.authorized_cookies:
+        if self.check_auth(request):
             return web.HTTPFound("/")
 
         # Load the login page from "{root}\pages\login_page.html"
