@@ -20,9 +20,16 @@
     },
     {
       "slot": 3,
-      "type": "vsync_plug",
-      "name": "Bed Fan",
-      "device": "plug_1"
+      "type": "combo_plug",
+      "name": "Fans",
+      "device": [
+        "bed_fan",
+        "rad_fan"
+      ],
+      "device_names": [
+        "Bed Fan",
+        "Radiator"
+      ]
     },
     {
       "slot": 4,
@@ -80,7 +87,8 @@
     {
       "slot": 9,
       "type": "action_center",
-      "name": "Actions"
+      "name": "Actions",
+      "device": "Action Center"
     }
 
   ]

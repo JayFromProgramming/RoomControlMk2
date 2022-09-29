@@ -8,14 +8,29 @@ def light_color_stringify(data):
            f"\r\nColor: {data['color']}"
 
 
+def state_description(device):
+    if device.is_on() and device.auto_state()["is_auto"]:
+        return "AUTO"
+    elif device.is_on() and not device.auto_state()["is_auto"]:
+        return "ON"
+    elif not device.is_on() and device.auto_state()["is_auto"]:
+        return "IDLE"
+    elif not device.is_on() and not device.auto_state()["is_auto"]:
+        return "OFF"
+    elif device.get_health()["fault"]:
+        return "FAULT"
+    else:
+        return "OFFLINE"
+
+
 def state_to_string(device):
     match device.get_type():
         case 'abstract_rgb':
             return light_color_stringify(device.get_state())
         case 'abstract_toggle_device':
-            return f"On: {device.is_on()}, Auto: {device.auto_state()['is_auto']}"
+            return f"State: {state_description(device)}"
         case 'VoiceMonkeyDevice':
-            return f"On: {device.is_on()}, Auto: {device.auto_state()['is_auto']}"
+            return f"State: {state_description(device)}"
         case 'environment_controller':
             return f"Current Value: {device.current_value}{device.unit}, Setpoint: {device.setpoint}{device.unit}, " \
                    f"{'Enabled' if device.on else 'Disabled'}"
@@ -49,7 +64,7 @@ def health_message(device):
     if "fault" in device.get_health() and device.get_health()["fault"] is True:
         return f"FAULT: {device.get_health()['reason']}"
     elif device.get_health()["online"]:
-        return "ONLINE"
+        return "<span style='color:green'>ONLINE</span>"
     else:
         return f"OFFLINE: {device.get_health()['reason']}"
 

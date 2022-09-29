@@ -26,7 +26,7 @@ class VeSyncAPI:
 
         self.devices = []
         for device in self.manager.outlets:
-            self.devices.append(VeSyncPlug(device))
+            self.devices.append(VeSyncPlug(device, self.database))
 
     def wait_for_ready(self):
         while not len(self.devices) > 0:
@@ -59,12 +59,33 @@ class VeSyncAPI:
 
 class VeSyncPlug(AbstractToggleDevice):
 
-    def __init__(self, device):
+    def __init__(self, device, database):
         super().__init__()
         self.device = device
         self.device_name = device.device_name
         self.cached_details = {}
         self.online = True
+        self.fault = False
+        self.database = database
+
+        self.upper_bounds = None
+        self.lower_bounds = None
+        self.get_bounds()
+
+    def get_bounds(self):
+        """Gets expected power draw bounds from the DB"""
+        cursor = self.database.cursor()
+        cursor.execute("SELECT upper_bound, lower_bound FROM vesync_device_bounds WHERE device_name = ?", (self.device_name,))
+        bounds = cursor.fetchone()
+        cursor.close()
+        if bounds:
+            logging.info(f"VeSyncAPI ({self.device_name}): Bounds found in DB: {bounds}")
+            self.upper_bounds = bounds[0]
+            self.lower_bounds = bounds[1]
+        else:
+            logging.info(f"VeSyncAPI ({self.device_name}): No bounds found in DB, setting to None")
+            self.upper_bounds = None
+            self.lower_bounds = None
 
     def name(self):
         return self.device_name
@@ -81,6 +102,19 @@ class VeSyncPlug(AbstractToggleDevice):
     def refresh_info(self):
         logging.debug(f"Refreshing {self.device_name} info")
         self.device.update()
+        if self.upper_bounds and self.lower_bounds:
+            state = self.get_info()
+            if state["active_time"] < 2:  # If the device has been on for less than 2 minutes
+                self.fault = False
+                return    # Its power draw is probably not accurate
+            if state['power'] > self.upper_bounds:
+                self.fault = True
+                logging.warning(f"VeSyncAPI ({self.device_name}): Power draw is above upper bounds")
+            elif state['power'] < self.lower_bounds:
+                self.fault = True
+                logging.warning(f"VeSyncAPI ({self.device_name}): Power draw is below lower bounds")
+            else:
+                self.fault = False
 
     def get_info(self):
         if len(self.device.details) > 1:

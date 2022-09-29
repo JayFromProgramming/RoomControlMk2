@@ -2,6 +2,7 @@ import json
 import logging
 import sqlite3
 import threading
+import os
 
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
@@ -96,8 +97,14 @@ class RoomController:
         self.scene_controller = SceneController(self.database, self.controllers)
         self.command_controller = CommandController(self.controllers)
 
-        address = "wopr.eggs.loafclan.org"
-        # address = "localhost"
+        # Check what the operating system is to determine if we should run in dev mode
+        if os.name == "nt":  # Windows
+            address = "localhost"
+            logging.info("Running in dev mode, using localhost")
+        else:  # Anything else
+            address = "wopr.eggs.loafclan.org"
+            logging.info("Running in prod mode, using wopr.eggs.loafclan.org")
+
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,
                                  occupancy_detector=self.blue_stalker,
