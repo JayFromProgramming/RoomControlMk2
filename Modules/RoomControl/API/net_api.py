@@ -222,7 +222,7 @@ class NetAPI:
         device = self.get_device(device_name)
         result = process_device_command(device, msg)
         # Add a redirect to the response to the main page
-        response = web.Response(text=result.__str__())
+        response = web.Response(text=result.__str__(), status=302)
         response.headers['Location'] = "/"
         return response
 
