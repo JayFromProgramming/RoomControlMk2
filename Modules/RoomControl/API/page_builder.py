@@ -9,6 +9,10 @@ def light_color_stringify(data):
 
 
 def state_description(device):
+    if "fault" in device.get_health() and device.get_health()["fault"] is True:
+        return "FAULT"
+    elif device.get_health()["online"] is False:
+        return "OFFLINE"
     if device.is_on() and device.auto_state()["is_auto"]:
         return "AUTO"
     elif device.is_on() and not device.auto_state()["is_auto"]:
@@ -17,10 +21,6 @@ def state_description(device):
         return "IDLE"
     elif not device.is_on() and not device.auto_state()["is_auto"]:
         return "OFF"
-    elif device.get_health()["fault"]:
-        return "FAULT"
-    else:
-        return "OFFLINE"
 
 
 def state_to_string(device):
