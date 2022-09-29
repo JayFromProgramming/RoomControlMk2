@@ -189,7 +189,7 @@ class AbstractToggleDevice:
         return {
             "online": self.online,
             "fault": self.fault,
-            "reason": "online" if self.online else self.offline_reason
+            "reason": "online" if self.online and not self.fault else self.offline_reason
         }
 
     @property
