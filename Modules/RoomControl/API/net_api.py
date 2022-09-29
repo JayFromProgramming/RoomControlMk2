@@ -103,6 +103,7 @@ class NetAPI:
                 if d == device_name:
                     return device["device_names"][num] if "device_names" in device else device["name"]
                 num += 1
+        return device_name
 
     def check_auth(self, request):
         """Check if the request has a valid cookie"""
