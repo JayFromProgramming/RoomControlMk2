@@ -109,9 +109,11 @@ class VeSyncPlug(AbstractToggleDevice):
                 return    # Its power draw is probably not accurate
             if state['power'] > self.upper_bounds:
                 self.fault = True
+                self.offline_reason = f"Power draw exceeded"
                 logging.warning(f"VeSyncAPI ({self.device_name}): Power draw is above upper bounds")
             elif state['power'] < self.lower_bounds:
                 self.fault = True
+                self.offline_reason = f"Insufficient power draw"
                 logging.warning(f"VeSyncAPI ({self.device_name}): Power draw is below lower bounds")
             else:
                 self.fault = False
