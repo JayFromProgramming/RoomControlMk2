@@ -82,7 +82,7 @@ class AbstractRGB:
         raise NotImplementedError
 
     def get_on(self) -> bool:
-        return False
+        raise NotImplementedError
 
     @property
     def on(self) -> bool:

@@ -187,6 +187,12 @@ class MagicDevice(AbstractRGB):
         else:
             print(f"{self.macaddr} is offline")
 
+    def get_on(self) -> bool:
+        if self.online:
+            return self.light.on
+        else:
+            return False
+
     @background
     def set_on(self, on: bool):
         if self.online:
