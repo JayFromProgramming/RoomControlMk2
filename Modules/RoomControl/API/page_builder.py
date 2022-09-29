@@ -12,7 +12,7 @@ def state_description(device):
     if "fault" in device.get_health() and device.get_health()["fault"] is True:
         return "FAULT"
     elif device.get_health()["online"] is False:
-        return "OFFLINE"
+        return "DOWN"
     if device.is_on() and device.auto_state()["is_auto"]:
         return "AUTO"
     elif device.is_on() and not device.auto_state()["is_auto"]:
