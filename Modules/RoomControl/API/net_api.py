@@ -60,6 +60,11 @@ class NetAPI:
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
             + [web.post('/set/{name}', self.handle_set_post)]
             + [web.get('/css/{file}', self.handle_css)]
+            + [web.get('/js/{file}', self.handle_js)]
+            + [web.get('/img/{file}', self.handle_img)]
+            + [web.get('/name/{device_id}', self.handle_name)]
+            + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
+            + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
         )
 
         # Set webserver address and port
@@ -354,6 +359,24 @@ class NetAPI:
         logging.info(f"Received CSS request for {file}")
         return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/css/{file}")
 
+    async def handle_js(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received JS request")
+
+        file = request.match_info['file']
+        logging.info(f"Received JS request for {file}")
+        return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/js/{file}")
+
+    async def handle_img(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received IMG request")
+
+        file = request.match_info['file']
+        logging.info(f"Received IMG request for {file}")
+        return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/img/{file}")
+
     async def handle_get_scenes(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
@@ -412,3 +435,29 @@ class NetAPI:
         logging.info("Received SYS_INFO request")
 
         return web.Response(text=generate_sys_info().__str__())
+
+    async def handle_name(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received NAME request")
+        device_id = request.match_info['device_id']
+        device_name = self.get_device_display_name(device_id)
+        return web.Response(text=device_name)
+
+    async def handle_status_string(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received STATUS_STRING request")
+        device_id = request.match_info['device_id']
+        device = self.get_device(device_id)
+        device_status = page_builder.state_to_string(device)
+        return web.Response(text=device_status)
+
+    async def handle_health_string(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received HEALTH_STRING request")
+        device_id = request.match_info['device_id']
+        device = self.get_device(device_id)
+        device_health = page_builder.health_message(device)
+        return web.Response(text=device_health)

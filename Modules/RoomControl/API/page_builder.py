@@ -103,7 +103,7 @@ def generate_main_page(self):
 
         page = file.read().replace("{device_table}", table)
 
-        return web.Response(text=page, content_type="text/html", headers={"Refresh": "5"})
+        return web.Response(text=page, content_type="text/html")
 
 
 def generate_control_page(self, device):
