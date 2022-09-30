@@ -440,7 +440,7 @@ class NetAPI:
     async def handle_name(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received NAME request")
+        # logging.info("Received NAME request")
         device_id = request.match_info['device_id']
         device_name = self.get_device_display_name(device_id)
         return web.Response(text=device_name)
@@ -448,7 +448,7 @@ class NetAPI:
     async def handle_status_string(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received STATUS_STRING request")
+        # logging.info("Received STATUS_STRING request")
         device_id = request.match_info['device_id']
         device = self.get_device(device_id)
         device_status = page_builder.state_to_string(device)
@@ -457,7 +457,7 @@ class NetAPI:
     async def handle_health_string(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received HEALTH_STRING request")
+        # logging.info("Received HEALTH_STRING request")
         device_id = request.match_info['device_id']
         device = self.get_device(device_id)
         device_health = page_builder.health_message(device)
@@ -466,7 +466,7 @@ class NetAPI:
     async def handle_action_string(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received ACTION_STRING request")
+        # logging.info("Received ACTION_STRING request")
         device_id = request.match_info['device_id']
         device = self.get_device(device_id)
         device_action = page_builder.generate_actions(device)
