@@ -65,6 +65,7 @@ class NetAPI:
             + [web.get('/name/{device_id}', self.handle_name)]
             + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
             + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
+            + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
         )
 
         # Set webserver address and port
@@ -461,3 +462,12 @@ class NetAPI:
         device = self.get_device(device_id)
         device_health = page_builder.health_message(device)
         return web.Response(text=device_health)
+
+    async def handle_action_string(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received ACTION_STRING request")
+        device_id = request.match_info['device_id']
+        device = self.get_device(device_id)
+        device_action = page_builder.generate_actions(device)
+        return web.Response(text=device_action)

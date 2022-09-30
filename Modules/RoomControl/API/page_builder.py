@@ -62,11 +62,16 @@ def generate_device_buttons(device):
 
 def health_message(device):
     if "fault" in device.get_health() and device.get_health()["fault"] is True:
-        return f"FAULT: {device.get_health()['reason']}"
+        return f"<span style='color:red'>FAULT: {device.get_health()['reason']}</span>"
     elif device.get_health()["online"]:
         return "<span style='color:green'>ONLINE</span>"
     else:
-        return f"OFFLINE: {device.get_health()['reason']}"
+        return f"<span style='color:red'>OFFLINE: {device.get_health()['reason']}</span>"
+
+
+def generate_actions(device):
+    return f"""<td> <a href="/set/{device.name()}?on={str(not device.on).lower()}">
+    {'Turn on' if not device.on else 'Turn off'} </a></td>"""
 
 
 def generate_main_page(self):
@@ -94,8 +99,7 @@ def generate_main_page(self):
 
             table += f"""
                 <td>{self.get_device_display_name(device.name())}</td>
-                <td><a href="/set/{device.name()}?on={str(not device.on).lower()}">
-                {'Turn on' if not device.on else 'Turn off'}</a></td>
+                
                 <td>{state_to_string(device)}</td>
                 <td>{health_message(device)}</td>
             </tr>
