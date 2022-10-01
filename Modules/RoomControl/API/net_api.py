@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import functools
+import os
 import random
 import sys
 import time
@@ -226,8 +227,10 @@ class NetAPI:
 
         msg = APIMessageRX(data)
         device = self.get_device(device_name)
-        result = process_device_command(device, msg)
+        result, success = process_device_command(device, msg)
         # Add a redirect to the response to the main page
+        if not success:
+            return web.Response(text=result, status=503)
         response = web.Response(text=result.__str__(), status=302)
         response.headers['Location'] = "/"
         return response
@@ -241,7 +244,9 @@ class NetAPI:
         logging.info(f"Received data: {data}")
         msg = APIMessageRX(data)
         device = self.get_device(device_name)
-        result = process_device_command(device, msg)
+        result, success = process_device_command(device, msg)
+        if not success:
+            return web.Response(text=result, status=503)
         return web.Response(text=result.__str__())
 
     async def handle_get_all(self, request):
@@ -358,7 +363,13 @@ class NetAPI:
 
         file = request.match_info['file']
         logging.info(f"Received CSS request for {file}")
-        return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/css/{file}")
+        # Check if the file exists
+        file_path = rf"{sys.path[0]}/Modules/RoomControl/API/pages/css/{file}"
+        if not os.path.isfile(file_path) or True:
+            return web.FileResponse(file_path)
+        else:
+            logging.error(f"CSS file {file_path} not found")
+            return web.HTTPNotFound()
 
     async def handle_js(self, request):
         if not self.check_auth(request):
@@ -367,7 +378,11 @@ class NetAPI:
 
         file = request.match_info['file']
         logging.info(f"Received JS request for {file}")
-        return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/js/{file}")
+        # Check if the file exists
+        if os.path.isfile(rf"{sys.path[0]}/Modules/RoomControl/API/pages/js/{file}"):
+            return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/js/{file}")
+        else:
+            return web.HTTPNotFound()
 
     async def handle_img(self, request):
         if not self.check_auth(request):
@@ -376,7 +391,11 @@ class NetAPI:
 
         file = request.match_info['file']
         logging.info(f"Received IMG request for {file}")
-        return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/img/{file}")
+        # Check if the file exists
+        if os.path.isfile(rf"{sys.path[0]}/Modules/RoomControl/API/pages/img/{file}"):
+            return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/img/{file}")
+        else:
+            return web.HTTPNotFound()
 
     async def handle_get_scenes(self, request):
         if not self.check_auth(request):

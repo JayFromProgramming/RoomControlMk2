@@ -1,5 +1,6 @@
 import traceback
 import typing
+from typing import Tuple
 
 from Modules.RoomControl.API.datagrams import APIMessageRX, APIMessageTX
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, AbstractToggleDevice
@@ -12,11 +13,12 @@ from Modules.RoomControl.LightController import LightController
 logging = logging.getLogger(__name__)
 
 
-def process_device_command(device: typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message: APIMessageRX) -> APIMessageTX:
+def process_device_command(device:
+typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message: APIMessageRX) -> tuple[APIMessageTX, bool] | APIMessageTX:
     preformed_actions = []
     try:
         if device is None:
-            raise ValueError("Device not found")
+            raise ValueError(f"Device ({device}) not found")
         else:
             if hasattr(message, "color") and hasattr(device, "color"):
                 device.set_color(message.color)
@@ -38,13 +40,13 @@ def process_device_command(device: typing.Union[AbstractRGB, AbstractToggleDevic
                 preformed_actions.append(f"set_target_value to {message.target_value}")
     except Exception as e:
         logging.error(f"Error processing device command: {e}")
-        return APIMessageTX(
+        return (APIMessageTX(
             success=False,
             error=f"Error: {e}\n{traceback.format_exc()}"
-        )
+        ), False)
     else:
         logging.info(f"Device {device} preformed actions: {preformed_actions}")
-        return APIMessageTX(
+        return (APIMessageTX(
             success=True,
             preformed_actions=preformed_actions
-        )
+        ), True)

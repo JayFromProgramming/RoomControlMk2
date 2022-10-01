@@ -54,6 +54,35 @@ function getAction(id){
     return action;
 }
 
+// A class to handle sending a command to the server without refreshing the page
+class ActionButton {
+    constructor(name, action) {
+      this.name = name;
+      this.action = action; // String of the api action
+      this.button = document.createElement("button");
+      this.button.innerHTML = this.name;
+      this.button.onclick = this.onClick;
+      this.button.name = this.action;
+    }
+
+    onClick() {
+       $.ajax({
+          url: "/set/" + this.name,
+          type: "get",
+          success: function(result) {
+
+          },
+          error: function(result) {
+
+          }
+        })
+    }
+
+    getButton() {
+      return this.button;
+    }
+
+ }
 
 
 function device_table() {
@@ -69,8 +98,18 @@ function device_table() {
                for (var device in devices) {
                     var device_data = devices[device];
                     var device_row = $('<tr>');
-                    var device_name = $('<td>').text(getName(device));
-                    var device_toggle = $('<td>').html(getAction(device));
+                    var name = getName(device);
+                    var device_name = $('<td>').text(name);
+
+                    var is_on = device_data["state"]["on"];
+
+                    if (is_on) {
+                        var toggle_button = new ActionButton("Turn Off", device + "?on=false");
+                    } else {
+                        var toggle_button = new ActionButton("Turn On", device + "?on=true");
+                    }
+
+                    var device_toggle = $('<td>').html(toggle_button.getButton());
                     var device_status = $('<td>').text(getState(device));
                     var device_health = $('<td>').html(getHealth(device));
 
