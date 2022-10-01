@@ -93,6 +93,7 @@ function device_table() {
         success: function (data) {
             var devices = data.devices; // A dictionary of devices and their data
             var device_table = $('#device_list_body');
+
             device_table.empty();
             console.log(devices);
                for (var device in devices) {
