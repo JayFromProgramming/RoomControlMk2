@@ -104,11 +104,11 @@ class BluetoothDetector:
             if len(self.sockets) == 0:
                 self.fault = True
                 self.online = False
-                self.fault_message = "Bluetooth radio unresponsive"
+                self.fault_message = "Radio Unresponsive"
             else:
                 self.fault = True
                 self.online = True
-                self.fault_message = "Heartbeat device unresponsive"
+                self.fault_message = "No Heartbeat"
 
     @background
     def refresh(self):
