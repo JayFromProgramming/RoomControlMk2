@@ -99,8 +99,8 @@
         "door_light_controller"
       ],
       "device_names": [
-          "Room",
-          "Loft",
+          "Room Lights",
+          "Loft Lights",
           "Door"
       ]
     },
