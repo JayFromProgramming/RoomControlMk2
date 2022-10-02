@@ -111,7 +111,7 @@ class LightController:
         self.enabled = True if controller[3] == 1 else False
 
         self.online = True
-        self.current_state = True if controller[4] == 1 else False
+        self.current_state = controller[4]
 
         self.occupancy_detector = occupancy_detector
 
