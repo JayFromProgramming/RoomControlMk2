@@ -8,7 +8,7 @@ def light_color_stringify(data):
            f"\r\nColor: {data['color']}"
 
 
-def state_description(device):
+def toggle_device_state_description(device):
     if "fault" in device.get_health() and device.get_health()["fault"] is True:
         return "FAULT"
     elif device.get_health()["online"] is False:
@@ -23,17 +23,33 @@ def state_description(device):
         return "OFF"
 
 
+def pin_state_description(device):
+    state = device.get_state()
+    active_time = state["active_for"]
+    if device.get_health()["fault"]:
+        return f"FAULT"
+    if state["on"]:
+        if state["triggered"]:
+            return f"Active: {active_time}s"
+        else:
+            return "Armed"
+    else:
+        return "Disabled"
+
+
 def state_to_string(device):
     match device.get_type():
         case 'abstract_rgb':
             return light_color_stringify(device.get_state())
         case 'abstract_toggle_device':
-            return f"State: {state_description(device)}"
+            return f"State: {toggle_device_state_description(device)}"
         case 'VoiceMonkeyDevice':
-            return f"State: {state_description(device)}"
+            return f"State: {toggle_device_state_description(device)}"
         case 'environment_controller':
             return f"Current Value: {device.current_value}{device.unit}, Setpoint: {device.setpoint}{device.unit}, " \
                    f"{'Enabled' if device.on else 'Disabled'}"
+        case 'pin_watcher':
+            return f"State: {pin_state_description(device)}"
         case _:
             return "Device type not implemented"
 

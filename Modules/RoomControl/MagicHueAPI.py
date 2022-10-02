@@ -33,11 +33,15 @@ class MagicHome:
         username = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'MagicHueUsername'").fetchone()[1]
         password = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'MagicHuePassword'").fetchone()[1]
         cursor.close()
-
-        self.api = magichue.RemoteAPI.login_with_user_password(user=username, password=password)
-        self.devices = []
-        self.ready = False
-        self.fetch_all_devices()
+        try:
+            self.api = magichue.RemoteAPI.login_with_user_password(user=username, password=password)
+        except Exception as e:
+            logging.error(f"MagicHueAPI: Failed to login to MagicHue API: {e}")
+            self.devices = []
+        else:
+            self.devices = []
+            self.ready = False
+            self.fetch_all_devices()
 
         # self.state_changed = asyncio.Event()
 
@@ -314,9 +318,13 @@ class MagicDevice(AbstractRGB):
             try:
                 self.light.update_status()
             except magichue.exceptions.MagicHueAPIError as e:
-                print(f"{self.macaddr} get status error: {e}")
+                logging.error(f"MagicHueAPI ({self.macaddr}) error: {e}")
                 self.offline_reason = str(e)
                 self.online = False
+            except Exception as e:
+                self.online = False
+                self.offline_reason = str(e.__class__.__name__)
+                logging.error(f"MagicHueAPI ({self.macaddr}) error: {e}")
         else:
             # Attempt to reconnect
             try:
@@ -324,8 +332,11 @@ class MagicDevice(AbstractRGB):
                 self.online = True
             except magichue.exceptions.MagicHueAPIError as e:
                 # print(f"{self.macaddr} reconnect error: {e}")
-                self.offline_reason = str(e)
                 self.online = False
+                self.offline_reason = str(e)
+            except Exception as e:
+                self.online = False
+                self.offline_reason = str(e.__class__.__name__)
 
     def is_online(self):
         return self.online

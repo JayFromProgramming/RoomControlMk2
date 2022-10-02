@@ -17,15 +17,26 @@ logging = logging.getLogger(__name__)
 
 class BluetoothDetector:
 
-    def __init__(self, database: sqlite3.Connection):
+    def __init__(self, database: sqlite3.Connection, connect_on_queue: bool = False):
         # Target file is a json file that contains bluetooth addresses, name, and role
         self.database = database
         self.init_database()
 
         self.sockets = {}
-
+        self.connect_on_queue = connect_on_queue
         self.last_update = 0
         self.refresh()
+        self.enabled = True
+        self.scan_lockout_time = 0
+
+        if bluetooth is not None:
+            self.online = True
+            self.fault = False
+            self.fault_message = ""
+        else:
+            self.online = False
+            self.fault = True
+            self.fault_message = "Bluetooth not available"
 
     def init_database(self):
         cursor = self.database.cursor()
@@ -51,22 +62,37 @@ class BluetoothDetector:
             logging.warning(f"Target [{name}] already exists in database, updating instead")
         cursor.close()
 
+    def should_scan(self):
+        """Called externally to tell that it is time to scan"""
+        if self.scan_lockout_time > datetime.datetime.now().timestamp():
+            return False
+        self.refresh(scan_allowed=True)
+        self.scan_lockout_time = datetime.datetime.now().timestamp() + 15
+
+    @background
+    def scan(self, scan_allowed):
+        logging.info("Scanning for bluetooth devices")
+        targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
+        for target in targets:
+            if conn := self.sockets.get(target[1]):  # If the socket is already open
+                self.conn_is_alive(conn, target[1])  # Check if the connection is still alive
+            else:
+                if scan_allowed:
+                    self.connect(target[1])  # Else attempt to connect to the device
+        self.last_update = datetime.datetime.now().timestamp()  # Update the last update time
+
     @background
     def refresh(self):
+        logging.info(f"BluetoothOccupancy: Refresh loop started scanning is {'not allowed' if self.connect_on_queue else 'allowed'}")
         while True:
-            logging.info("Scanning for bluetooth devices")
-            targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
-            for target in targets:
-                if conn := self.sockets.get(target[1]):  # If the socket is already open
-                    self.conn_is_alive(conn, target[1])  # Check if the connection is still alive
-                else:
-                    self.connect(target[1])  # Else attempt to connect to the device
-            self.last_update = datetime.datetime.now().timestamp()  # Update the last update time
+            self.scan(not self.connect_on_queue)
             time.sleep(30)
 
     @background
     def connect(self, address):
         if bluetooth is None:
+            self.fault = True
+            self.fault_message = "Bluetooth not available"
             return
         sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         sock.setblocking(True)  # Set the socket to non-blocking
@@ -115,11 +141,6 @@ class BluetoothDetector:
         else:
             logging.debug(f"Connection to {address} is alive")
             self.update_occupancy(address, True)
-
-    def detailed_status(self):
-        return {
-            "last_update": self.last_update
-        }
 
     def update_occupancy(self, address, in_room):
         # Get the UUID of the mac address
@@ -210,3 +231,31 @@ class BluetoothDetector:
         cursor.close()
         return device[2]
 
+    ### API Methods ###
+
+    def name(self):
+        return "blue_stalker"
+
+    def get_state(self):
+        return {
+            "on": self.enabled,
+            "auto_scan": self.connect_on_queue
+        }
+
+    def get_info(self):
+        return {
+            "last_update": self.last_update
+        }
+
+    def get_health(self):
+        return {
+            "online": self.online,
+            "fault": self.fault,
+            "reason": self.fault_message
+        }
+
+    def get_type(self):
+        return "blue_stalker"
+
+    def auto_state(self):
+        return False

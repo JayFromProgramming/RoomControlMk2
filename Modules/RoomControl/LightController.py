@@ -6,12 +6,14 @@ from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothD
 
 import logging
 
+from Modules.RoomControl.OccupancyDetection.OccupancyDetector import OccupancyDetector
+
 logging = logging.getLogger(__name__)
 
 
 class LightControllerHost:
 
-    def __init__(self, database, bluetooth_occupancy: BluetoothDetector, room_controllers=None):
+    def __init__(self, database, occupancy_detector: OccupancyDetector, room_controllers=None):
 
         logging.info("Initializing Light Controller Host")
 
@@ -22,7 +24,7 @@ class LightControllerHost:
         self.database_init()
         self.room_controllers = room_controllers
         self.light_controllers = {}
-        self.bluetooth_occupancy = bluetooth_occupancy
+        self.occupancy_detector = occupancy_detector
 
         cursor = self.database.cursor()
         self.database.lock.acquire()
@@ -32,7 +34,7 @@ class LightControllerHost:
         self.database.lock.release()
         for controller in controllers:
             self.light_controllers[controller[0]] = \
-                LightController(controller[0], self.database, self.bluetooth_occupancy, room_controllers=self.room_controllers,
+                LightController(controller[0], self.database, self.occupancy_detector, room_controllers=self.room_controllers,
                                 active_state=controller[1], inactive_state=controller[2], enabled=controller[3], current_state=controller[4])
 
         logging.info("Light Controller Host Initialized")
@@ -83,7 +85,7 @@ class LightControllerHost:
 
 class LightController:
 
-    def __init__(self, name, database, bluetooth_detector: BluetoothDetector, room_controllers=None,
+    def __init__(self, name, database, occupancy_detector: BluetoothDetector, room_controllers=None,
                  active_state=None, inactive_state=None, enabled=False, current_state=False):
         logging.info(f"LightController: {name} is being initialised")
 
@@ -101,7 +103,7 @@ class LightController:
         self.online = True
         self.current_state = True if current_state == 1 else False
 
-        self.bluetooth_detector = bluetooth_detector
+        self.occupancy_detector = occupancy_detector
 
         self.light_control_devices = {}
         self.light_control_targets = []
@@ -131,7 +133,7 @@ class LightController:
 
     def _check_occupancy(self):
         for target in self.light_control_targets:
-            if self.bluetooth_detector.is_here(target):
+            if self.occupancy_detector.is_here(target):
                 return True
         return False
 
@@ -173,8 +175,8 @@ class LightController:
     def get_targets_info(self):
         devices = {}
         for device in self.light_control_targets:
-            name = self.bluetooth_detector.get_name(device)
-            devices.update({name: self.bluetooth_detector.is_here(device)})
+            name = self.occupancy_detector.get_name(device)
+            devices.update({name: self.occupancy_detector.is_here(device)})
         return devices
 
     def get_health(self):

@@ -9,6 +9,7 @@ from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.CommandController import CommandController
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
+from Modules.RoomControl.OccupancyDetection import OccupancyDetector
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
 from Modules.RoomControl.SensorHost import SensorHost
@@ -48,10 +49,12 @@ class ConcurrentDatabase(sqlite3.Connection):
         super().__init__(*args, **kwargs)
         self.lock = CustomLock()
 
+
 def get_local_ip():
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     raise NotImplementedError
+
 
 class RoomController:
 
@@ -62,7 +65,7 @@ class RoomController:
         self.magic_home = MagicHueAPI.MagicHome(database=self.database)
         self.vesync = VeSyncAPI.VeSyncAPI(database=self.database)
         self.monkey = VoiceMonkeyAPI.VoiceMonkeyAPI(database=self.database)
-        self.blue_stalker = BluetoothDetector(self.database)
+        self.occupancy_detector = OccupancyDetector.OccupancyDetector(self.database)
 
         self.controllers = [self.magic_home, self.vesync, self.monkey]
 
@@ -87,12 +90,13 @@ class RoomController:
 
         self.light_controller_host = LightControllerHost(
             self.database,
-            self.blue_stalker,
+            self.occupancy_detector,
             room_controllers=self.controllers
         )
 
         self.controllers.append(self.environment_host)
-        self.controllers.append(self.light_controller_host)
+        # self.controllers.append(self.light_controller_host)
+        self.controllers.append(self.occupancy_detector)
 
         self.scene_controller = SceneController(self.database, self.controllers)
         self.command_controller = CommandController(self.controllers)
@@ -107,7 +111,7 @@ class RoomController:
 
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,
-                                 occupancy_detector=self.blue_stalker,
+                                 occupancy_detector=self.occupancy_detector,
                                  scene_controller=self.scene_controller,
                                  command_controller=self.command_controller,
                                  webserver_address=address)
@@ -125,4 +129,5 @@ class RoomController:
         # logging.info("Refreshing devices")
 
         for controller in self.controllers:
-            controller.refresh_all()
+            if hasattr(controller, "refresh_all"):
+                controller.refresh_all()

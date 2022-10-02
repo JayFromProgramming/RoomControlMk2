@@ -1,6 +1,26 @@
 {
   "schema": [
     {
+      "slot": -1,
+      "name": "Plug 1",
+      "device": "plug_1"
+    },
+    {
+      "slot": -1,
+      "name": "Motion Sensor",
+      "device": "motion"
+    },
+    {
+      "slot": -1,
+      "name": "Door Sensor",
+      "device": "door"
+    },
+    {
+      "slot": -1,
+      "name": "Blue Stalker",
+      "device": "blue_stalker"
+    },
+    {
       "slot": 0,
       "type": "rgb_light",
       "name": "Room Lights",
