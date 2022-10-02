@@ -19,8 +19,8 @@ class OccupancyDetector:
         self.blue_stalker = BluetoothDetector(self.database, connect_on_queue=True if GPIO else False)
         if GPIO:
             GPIO.setmode(GPIO.BOARD)
-        self.motion_pin = PinWatcher("motion", 4, self.motion_detected, bouncetime=200)
-        self.door_pin = PinWatcher("door", 17, self.motion_detected, bouncetime=200)
+        self.motion_pin = PinWatcher("motion", 11, self.motion_detected, bouncetime=200)
+        self.door_pin = PinWatcher("door", 15, self.motion_detected, bouncetime=200)
 
         self.sources = {
             "bluetooth": self.blue_stalker,
@@ -76,7 +76,7 @@ class PinWatcher:
             logging.debug(f"PinWatcher ({name}): Initialized")
         except Exception as e:
             self.fault = True
-            self.fault_message = str(e.__class__.__name__) + ": " + str(e.__str__()[:15] + "..." if len(e.__str__()) > 15 else e)
+            self.fault_message = str(e)
             logging.warning(f"PinWatcher ({name}): Error initializing: {e}")
 
     def _callback(self, pin):
