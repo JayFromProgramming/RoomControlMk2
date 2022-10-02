@@ -76,7 +76,7 @@ class PinWatcher:
             logging.debug(f"PinWatcher ({name}): Initialized")
         except Exception as e:
             self.fault = True
-            self.fault_message = str(e)
+            self.fault_message = str(e.__class__.__name__) + ": " + str(e[:15] + "..." if len(e.__str__()) > 15 else e)
             logging.warning(f"PinWatcher ({name}): Error initializing: {e}")
 
     def _callback(self, pin):
