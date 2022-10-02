@@ -28,6 +28,9 @@ class BluetoothDetector:
         self.enabled = True
         self.scan_lockout_time = 0
 
+        self.heartbeat_device = "38:1D:D9:F7:6D:44"
+        self.heartbeat_alive = False  # If the heartbeat device is alive
+
         if bluetooth is not None:
             self.online = True
             self.fault = False
@@ -73,6 +76,15 @@ class BluetoothDetector:
     @background
     def scan(self, scan_allowed):
         logging.info("Scanning for bluetooth devices")
+
+        # Check if the heartbeat device is still connected
+        if self.sockets.get(self.heartbeat_device):
+            self.conn_is_alive(self.sockets[self.heartbeat_device], self.heartbeat_device, is_heartbeat=True)
+            self.heartbeat_alive = True
+        else:
+            self.connect(self.heartbeat_device, is_heartbeat=True)
+            self.heartbeat_alive = False
+
         targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
         for target in targets:
             if conn := self.sockets.get(target[1]):  # If the socket is already open
@@ -80,7 +92,24 @@ class BluetoothDetector:
             else:
                 if scan_allowed:
                     self.connect(target[1])  # Else attempt to connect to the device
+
         self.last_update = datetime.datetime.now().timestamp()  # Update the last update time
+
+    def determine_health(self):
+        if self.heartbeat_alive:
+            self.fault = False
+            self.fault_message = ""
+        else:
+            # If the heartbeat device is not alive and there are no other devices connected
+            # Then the bluetooth detector is offline
+            if len(self.sockets) == 0:
+                self.fault = True
+                self.online = False
+                self.fault_message = "Bluetooth radio unresponsive"
+            else:
+                self.fault = True
+                self.online = True
+                self.fault_message = "Heartbeat device unresponsive"
 
     @background
     def refresh(self):
@@ -97,7 +126,7 @@ class BluetoothDetector:
         self.fault_message = "Refresh loop exited"
 
     @background
-    def connect(self, address):
+    def connect(self, address, is_heartbeat=False):
         if bluetooth is None:
             self.fault = True
             self.fault_message = "Bluetooth not available"
@@ -111,7 +140,10 @@ class BluetoothDetector:
             if e.__str__() == "[Errno 111] Connection refused":  # Connection refused still counts as a connection as
                 # the device had to be in range to refuse the connection
                 logging.error(f"Connection to address {address} refused, device is in range")
-                self.update_occupancy(address, True)
+                if not is_heartbeat:
+                    self.update_occupancy(address, True)
+                else:
+                    self.heartbeat_alive = True
                 return
             elif e.__str__() == "[Errno 115] Operation now in progress":  # This is the error we expect to see
                 logging.info(f"Connection to {address} is in progress")
@@ -121,34 +153,52 @@ class BluetoothDetector:
                 return
             else:  # Any other error is unexpected
                 logging.error(f"Connection to address {address} failed with error {e}")
-                self.update_occupancy(address, False)
+                if not is_heartbeat:
+                    self.update_occupancy(address, False)
+                else:
+                    self.heartbeat_alive = False
                 return
         except OSError as e:  # Any additional errors that the OS throws are caught here
             logging.error(f"Failed to connect to {address} with error {e}")
-            self.update_occupancy(address, False)
+            if not is_heartbeat:
+                self.update_occupancy(address, False)
+            else:
+                self.heartbeat_alive = False
             return
         else:
             logging.info(f"Connected to {address}")
             self.sockets[address] = sock
-            self.update_occupancy(address, True)
+            if not is_heartbeat:
+                self.update_occupancy(address, True)
+            else:
+                self.heartbeat_alive = True
 
     @background
-    def conn_is_alive(self, connection, address):
+    def conn_is_alive(self, connection, address, is_heartbeat=False):
         logging.info(f"Checking if {address} is alive")
         try:
             connection.getpeername()
         except bluetooth.BluetoothError as e:
             logging.info(f"Connection to {address} is dead, reason: {e}")
-            self.update_occupancy(address, False)
+            if not is_heartbeat:
+                self.update_occupancy(address, False)
+            else:
+                self.heartbeat_alive = False
             self.sockets.pop(address)
         except OSError:
             logging.debug("Connection lost")
             connection.close()
-            self.update_occupancy(address, False)
+            if not is_heartbeat:
+                self.update_occupancy(address, False)
+            else:
+                self.heartbeat_alive = False
             self.sockets.pop(address)
         else:
             logging.debug(f"Connection to {address} is alive")
-            self.update_occupancy(address, True)
+            if not is_heartbeat:
+                self.update_occupancy(address, True)
+            else:
+                self.heartbeat_alive = True
 
     def update_occupancy(self, address, in_room):
         # Get the UUID of the mac address

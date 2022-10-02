@@ -16,6 +16,8 @@ class OccupancyDetector:
         self.database = database
         self.sources = {}
 
+        self.last_activity = 0  # type: int # Last time a user was detected either by door or motion sensor
+
         self.blue_stalker = BluetoothDetector(self.database, connect_on_queue=True if GPIO else False)
         if GPIO:
             GPIO.setmode(GPIO.BOARD)
@@ -30,7 +32,11 @@ class OccupancyDetector:
 
     def motion_detected(self, pin):
         logging.info("Motion Detected on pin {}".format(pin))
+        self.last_activity = time.time()
         self.blue_stalker.should_scan()
+
+    def was_activity_recent(self, seconds=60):
+        return self.last_activity + seconds > time.time()
 
     def is_here(self, device):
         return self.blue_stalker.is_here(device)
