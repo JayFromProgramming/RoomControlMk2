@@ -78,12 +78,10 @@ class BluetoothDetector:
         logging.info("Scanning for bluetooth devices")
 
         # Check if the heartbeat device is still connected
-        if self.sockets.get(self.heartbeat_device):
+        if self.heartbeat_alive:
             self.conn_is_alive(self.sockets[self.heartbeat_device], self.heartbeat_device, is_heartbeat=True)
-            self.heartbeat_alive = True
         else:
             self.connect(self.heartbeat_device, is_heartbeat=True)
-            self.heartbeat_alive = False
 
         targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
         for target in targets:
