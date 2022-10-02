@@ -49,7 +49,7 @@ class OccupancyDetector:
 
 class PinWatcher:
 
-    def __init__(self, name, pin, callback: callable, edge=None, bouncetime=200, normally_open=False):
+    def __init__(self, name, pin, callback: callable, edge=None, bouncetime=200, normally_open=True):
         self.online = True
         self.fault = False
         self.fault_message = ""
