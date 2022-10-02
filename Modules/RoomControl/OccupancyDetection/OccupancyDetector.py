@@ -71,6 +71,7 @@ class PinWatcher:
 
         self.edge = edge if edge is not None else GPIO.BOTH
         try:
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             self.state = GPIO.input(self.pin) if self.normal_open else not GPIO.input(self.pin)
             GPIO.add_event_detect(self.pin, self.edge, callback=self._callback, bouncetime=self.bouncetime)
             logging.debug(f"PinWatcher ({name}): Initialized")
