@@ -37,6 +37,20 @@ def pin_state_description(device):
         return "Disabled"
 
 
+def blue_stalker_state(device):
+    state = device.get_state()
+    info = device.get_info()
+    health = device.get_health()
+    if health["fault"]:
+        return f"Detection: Fault"
+    if not health["online"]:
+        return f"Detection: DOWN"
+    if state['occupied']:
+        return f"Occupants: {', '.join(state['occupants'])}"
+    else:
+        return f"Not Occupied, AutoScan: {state['auto_scan']}"
+
+
 def state_to_string(device):
     match device.get_type():
         case 'abstract_rgb':
@@ -50,6 +64,8 @@ def state_to_string(device):
                    f"{'Enabled' if device.on else 'Disabled'}"
         case 'pin_watcher':
             return f"State: {pin_state_description(device)}"
+        case 'blue_stalker':
+            return blue_stalker_state(device)
         case _:
             return "Device type not implemented"
 

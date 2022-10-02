@@ -34,8 +34,8 @@ class BluetoothDetector:
             self.fault = False
             self.fault_message = ""
         else:
-            self.online = False
-            self.fault = True
+            self.online = True
+            self.fault = False
             self.fault_message = "Bluetooth not available"
 
     def init_database(self):
@@ -188,6 +188,15 @@ class BluetoothDetector:
 
         return occupancy_info
 
+    def get_occupants_names(self):
+        """Gets current occupants and only returns their names"""
+        occupants = self.get_occupancy()
+        occupants_names = []
+        for occupant in occupants:
+            if occupants[occupant]["present"]:
+                occupants_names.append(occupant)
+        return occupants_names
+
     def is_occupied(self):
         cursor = self.database.cursor()
         cursor.execute("SELECT * FROM bluetooth_occupancy")
@@ -239,7 +248,9 @@ class BluetoothDetector:
     def get_state(self):
         return {
             "on": self.enabled,
-            "auto_scan": self.connect_on_queue
+            "auto_scan": self.connect_on_queue,
+            "occupied": self.is_occupied(),
+            "occupants": self.get_occupants_names()
         }
 
     def get_info(self):

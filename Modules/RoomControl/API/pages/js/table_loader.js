@@ -120,6 +120,12 @@ function device_table() {
                     device_row.append(device_health);
                     device_table.append(device_row);
                 }
+                // Add a footer spans the entire table that shows the last time the page was updated
+                var footer = $('<tr>');
+                var footer_text = $('<td>').text("Last Updated: " + new Date().toLocaleString());
+                footer_text.attr("colspan", 4);
+                footer.append(footer_text);
+                device_table.append(footer);
         },
         error: function (xhr, status, error) {
             console.log("Error: " + error.message);
