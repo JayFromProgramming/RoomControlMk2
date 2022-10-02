@@ -75,7 +75,7 @@ class BluetoothDetector:
 
     @background
     def scan(self, scan_allowed):
-        logging.info("Scanning for bluetooth devices")
+        logging.info("BlueStalker: Scanning for bluetooth devices")
 
         # Check if the heartbeat device is still connected
         if self.heartbeat_alive:
@@ -111,7 +111,7 @@ class BluetoothDetector:
 
     @background
     def refresh(self):
-        logging.info(f"BluetoothOccupancy: Refresh loop started scanning is {'not allowed' if self.connect_on_queue else 'allowed'}")
+        logging.info(f"BlueStalker: Refresh loop started scanning is {'not allowed' if self.connect_on_queue else 'allowed'}")
         while True:
             try:
                 if self.enabled:

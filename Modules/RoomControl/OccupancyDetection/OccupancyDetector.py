@@ -30,6 +30,21 @@ class OccupancyDetector:
             "door": self.door_pin
         }
 
+    @background
+    def periodic_update(self):
+        while True:
+            if GPIO is None:
+                break
+            scanning_allowed = True
+            for source in self.sources.values():
+                if not isinstance(source, BluetoothDetector):
+                    if source.enabled:
+                        scanning_allowed = False
+            if scanning_allowed:
+                self.blue_stalker.connect_on_queue = False
+            else:
+                self.blue_stalker.connect_on_queue = True
+
     def motion_detected(self, pin):
         logging.info("Motion Detected on pin {}".format(pin))
         self.last_activity = time.time()
@@ -127,3 +142,11 @@ class PinWatcher:
 
     def auto_state(self):
         return False
+
+    @property
+    def on(self):
+        return self.enabled
+
+    @on.setter
+    def on(self, value):
+        self.enabled = value
