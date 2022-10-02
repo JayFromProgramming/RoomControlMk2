@@ -52,6 +52,23 @@ def blue_stalker_state(device):
     else:
         return f"Not Occupied, AutoScan: {state['auto_scan']}"
 
+def auto_light_controller_state_string(device):
+    state = device.get_state()
+    if state["on"]:
+        match state["current_state"]:
+            case 0:
+                return "State: IDLE"
+            case 1:
+                return "State: ACTIVE"
+            case 2:
+                return "State: TRIGGERED"
+            case 3:
+                return "State: FAULT"
+            case _:
+                return "State: UNKNOWN"
+    else:
+        return "State: DISABLED"
+
 
 def state_to_string(device):
     match device.get_type():
@@ -68,6 +85,8 @@ def state_to_string(device):
             return f"State: {pin_state_description(device)}"
         case 'blue_stalker':
             return blue_stalker_state(device)
+        case 'light_controller':
+            return f"State: {}"
         case _:
             return "Device type not implemented"
 
