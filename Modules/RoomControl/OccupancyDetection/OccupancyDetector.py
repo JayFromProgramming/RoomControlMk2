@@ -31,6 +31,7 @@ class OccupancyDetector:
             "motion": self.motion_pin,
             "door": self.door_pin
         }
+        self.periodic_update()
 
     @background
     def periodic_update(self):
@@ -46,6 +47,7 @@ class OccupancyDetector:
                 self.blue_stalker.connect_on_queue = False
             else:
                 self.blue_stalker.connect_on_queue = True
+            time.sleep(5)
 
     def motion_detected(self, pin):
         logging.info("Motion Detected on pin {}".format(pin))
