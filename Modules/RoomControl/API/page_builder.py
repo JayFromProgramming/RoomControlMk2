@@ -86,7 +86,7 @@ def state_to_string(device):
         case 'blue_stalker':
             return blue_stalker_state(device)
         case 'light_controller':
-            return f"State: {auto_light_controller_state_string(device)}"
+            return auto_light_controller_state_string(device)
         case _:
             return "Device type not implemented"
 
