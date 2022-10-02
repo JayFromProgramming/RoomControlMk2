@@ -1,5 +1,7 @@
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 import logging
+from Modules.RoomControl.AbstractSmartDevices import background
+
 
 logging = logging.getLogger(__name__)
 
