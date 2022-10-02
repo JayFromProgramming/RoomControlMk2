@@ -95,6 +95,7 @@ class BluetoothDetector:
 
     def determine_health(self):
         if self.heartbeat_alive:
+            self.online = True
             self.fault = False
             self.fault_message = ""
         else:
