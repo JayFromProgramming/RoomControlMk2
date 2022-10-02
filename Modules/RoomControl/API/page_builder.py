@@ -95,12 +95,14 @@ def generate_device_buttons(device):
 
 
 def health_message(device):
+    if "online" in device.get_health() and device.get_health()["online"] is False:
+        return f"<span style='color:red'>OFFLINE: {device.get_health()['reason']}</span>"
     if "fault" in device.get_health() and device.get_health()["fault"] is True:
         return f"<span style='color:red'>FAULT: {device.get_health()['reason']}</span>"
     elif device.get_health()["online"]:
         return "<span style='color:green'>ONLINE</span>"
     else:
-        return f"<span style='color:red'>OFFLINE: {device.get_health()['reason']}</span>"
+        return "<span style='color:red'>UNKNOWN</span>"
 
 
 def generate_actions(device):
