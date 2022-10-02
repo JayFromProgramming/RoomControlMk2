@@ -155,10 +155,11 @@ class LightController:
                 if self.occupancy_detector.was_activity_recent():  # If there was activity in the room recently
                     if self.door_motion_state is not None:
                         self.set_state(2, self.door_motion_state)
-            if self._check_occupancy():
-                self.set_state(1, self.active_state)
-            else:
-                self.set_state(0, self.inactive_state)
+            elif not self.occupancy_detector.bluetooth_fault():  # If the bluetooth detector has faulted
+                if self._check_occupancy():
+                    self.set_state(1, self.active_state)
+                else:
+                    self.set_state(0, self.inactive_state)
 
     def set_state(self, state_val, state=None):
         if self.current_state != state_val:
