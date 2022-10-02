@@ -82,6 +82,8 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         self.current_state = None
         self.load_state()
         self.online = True
+        self.offline_reason = "Unknown"
+        self.fault = False
 
     def load_state(self):
         cursor = self.database.cursor()
@@ -116,23 +118,33 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
     def run_monkey(self, monkey, state_after=None):
         url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
         logging.info(f"Running monkey {monkey}")
-        resp = requests.get(url)
-        if resp.status_code == 200:
-            logging.info(f"Monkey {monkey} ran successfully")
-            if state_after is not None:
-                self.current_state = state_after
-                db_busy = self.database.lock.acquire(blocking=False)
-                if not db_busy:
-                    logging.warning("Database was busy, could not update VoiceMonkey device state")
-                    return
-                cursor = self.database.cursor()
-                cursor.execute("UPDATE voicemonkey_devices SET current_state = ? WHERE device_name = ?",
-                               (state_after, self.device_id))
-                cursor.close()
-                self.database.commit()
-                self.database.lock.release()
+        try:
+            resp = requests.get(url)
+        except requests.exceptions.ConnectionError:
+            self.online = False
+            self.offline_reason = "No API"
+            logging.error(f"Could not connect to VoiceMonkey server")
         else:
-            logging.error(f"Monkey {monkey} failed to run, status code {resp.status_code}")
+            if resp.status_code == 200:
+                logging.info(f"Monkey {monkey} queued successfully")
+                if state_after is not None:
+                    self.current_state = state_after
+                    db_busy = self.database.lock.acquire(timeout=2)
+                    if not db_busy:
+                        logging.warning("Database was busy, could not update VoiceMonkey device state")
+                        return
+                    cursor = self.database.cursor()
+                    cursor.execute("UPDATE voicemonkey_devices SET current_state = ? WHERE device_name = ?",
+                                   (state_after, self.device_id))
+                    cursor.close()
+                    self.database.commit()
+                    self.database.lock.release()
+                    self.online = True
+                    self.offline_reason = "Unknown"
+            else:
+                logging.error(f"Monkey {monkey} failed to queue, status code {resp.status_code}")
+                self.online = False
+                self.offline_reason = f"API Error, code: {resp.status_code}"
 
     def refresh_info(self):
         logging.debug(f"Refreshing {self.name} info")

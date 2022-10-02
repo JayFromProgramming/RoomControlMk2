@@ -56,13 +56,14 @@ function getAction(id){
 
 // A class to handle sending a command to the server without refreshing the page
 class ActionButton {
-    constructor(name, action) {
+    constructor(name, action, enabled) {
       this.name = name;
       this.action = action; // String of the api action
       this.button = document.createElement("button");
       this.button.innerHTML = this.name;
       this.button.onclick = this.onClick;
       this.button.name = this.action;
+      this.button.enabled = enabled;
     }
 
     onClick() {
@@ -95,7 +96,6 @@ function device_table() {
             var device_table = $('#device_list_body');
 
             device_table.empty();
-            console.log(devices);
                for (var device in devices) {
                     var device_data = devices[device];
                     var device_row = $('<tr>');
@@ -103,11 +103,11 @@ function device_table() {
                     var device_name = $('<td>').text(name);
 
                     var is_on = device_data["state"]["on"];
-
+                    var is_down = !device_data["health"]["online"];
                     if (is_on) {
-                        var toggle_button = new ActionButton("Turn Off", device + "?on=false");
+                        var toggle_button = new ActionButton("Turn Off", device + "?on=false", !is_down);
                     } else {
-                        var toggle_button = new ActionButton("Turn On", device + "?on=true");
+                        var toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
                     }
 
                     var device_toggle = $('<td>').html(toggle_button.getButton());
