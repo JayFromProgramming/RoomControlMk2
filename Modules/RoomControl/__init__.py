@@ -95,7 +95,7 @@ class RoomController:
         )
 
         self.controllers.append(self.environment_host)
-        # self.controllers.append(self.light_controller_host)
+        self.controllers.append(self.light_controller_host)
         self.controllers.append(self.occupancy_detector)
 
         self.scene_controller = SceneController(self.database, self.controllers)
