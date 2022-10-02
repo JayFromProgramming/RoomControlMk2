@@ -25,7 +25,6 @@ class BluetoothDetector:
         self.sockets = {}
         self.connect_on_queue = connect_on_queue
         self.last_update = 0
-        self.refresh()
         self.enabled = True
         self.scan_lockout_time = 0
 
@@ -37,6 +36,8 @@ class BluetoothDetector:
             self.online = True
             self.fault = False
             self.fault_message = "Bluetooth not available"
+
+        self.refresh()
 
     def init_database(self):
         cursor = self.database.cursor()
@@ -85,8 +86,15 @@ class BluetoothDetector:
     def refresh(self):
         logging.info(f"BluetoothOccupancy: Refresh loop started scanning is {'not allowed' if self.connect_on_queue else 'allowed'}")
         while True:
-            self.scan(not self.connect_on_queue)
-            time.sleep(30)
+            try:
+                if self.enabled:
+                    self.scan(not self.connect_on_queue)
+                time.sleep(30)
+            except Exception as e:
+                logging.error(f"BluetoothOccupancy: Refresh loop failed with error {e}")
+                break
+        self.fault = True
+        self.fault_message = "Refresh loop exited"
 
     @background
     def connect(self, address):
@@ -242,13 +250,21 @@ class BluetoothDetector:
 
     ### API Methods ###
 
+    @property
+    def on(self):
+        return self.enabled
+
+    @on.setter
+    def on(self, value):
+        self.enabled = value
+
     def name(self):
         return "blue_stalker"
 
     def get_state(self):
         return {
             "on": self.enabled,
-            "auto_scan": self.connect_on_queue,
+            "auto_scan": not self.connect_on_queue,
             "occupied": self.is_occupied(),
             "occupants": self.get_occupants_names()
         }

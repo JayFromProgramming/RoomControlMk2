@@ -41,10 +41,12 @@ def blue_stalker_state(device):
     state = device.get_state()
     info = device.get_info()
     health = device.get_health()
+    if not state["on"]:
+        return "State: Disabled"
     if health["fault"]:
-        return f"Detection: Fault"
+        return "State: Fault"
     if not health["online"]:
-        return f"Detection: DOWN"
+        return "State: DOWN"
     if state['occupied']:
         return f"Occupants: {', '.join(state['occupants'])}"
     else:
