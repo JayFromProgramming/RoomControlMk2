@@ -50,7 +50,7 @@ def blue_stalker_state(device):
     if state['occupied']:
         return f"Occupants: {', '.join(state['occupants'])}"
     else:
-        return f"Not Occupied, AutoScan: {state['auto_scan']}"
+        return f"Not occupied, AutoScan: {state['auto_scan']}"
 
 
 def auto_light_controller_state_string(device):

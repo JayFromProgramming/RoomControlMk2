@@ -86,6 +86,8 @@ class BluetoothDetector:
         except Exception as e:
             logging.error(f"BlueStalker: Error checking heartbeat device: {e}")
 
+        time.sleep(2.5) # Wait for the heartbeat device to connect
+
         if not self.heartbeat_alive and heartbeat_was_alive:
             logging.error("BlueStalker: Heartbeat device lost, delaying next scan")
             return
