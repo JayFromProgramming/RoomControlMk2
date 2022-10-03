@@ -66,6 +66,9 @@ class VoiceMonkeyAPI:
                 time.sleep(random.randint(15, 40))
                 device.refresh_state()
                 logging.debug(f"Refreshed VoiceMonkey device {device.device_id}")
+                for device_2 in [device for device in self.devices if not device.online]:
+                    device_2.refresh_state()
+                    time.sleep(5)
 
 
 class VoiceMonkeyDevice(AbstractToggleDevice):
@@ -120,13 +123,13 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         logging.info(f"Running monkey {monkey}")
         try:
             resp = requests.get(url)
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as e:
             self.online = False
             self.offline_reason = "No API"
-            logging.error(f"Could not connect to VoiceMonkey server")
+            logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({e})")
         else:
             if resp.status_code == 200:
-                logging.info(f"Monkey {monkey} queued successfully")
+                logging.debug(f"Monkey {monkey} queued successfully")
                 if state_after is not None:
                     self.current_state = state_after
                     db_busy = self.database.lock.acquire(timeout=2)
