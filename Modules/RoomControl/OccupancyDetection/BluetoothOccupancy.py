@@ -77,11 +77,14 @@ class BluetoothDetector:
     def scan(self, scan_allowed):
         logging.info("BlueStalker: Scanning for bluetooth devices")
 
-        # Check if the heartbeat device is still connected
-        if self.heartbeat_alive:
-            self.conn_is_alive(self.sockets[self.heartbeat_device], self.heartbeat_device, is_heartbeat=True)
-        else:
-            self.connect(self.heartbeat_device, is_heartbeat=True)
+        try:
+            # Check if the heartbeat device is still connected
+            if self.heartbeat_alive:
+                self.conn_is_alive(self.sockets[self.heartbeat_device], self.heartbeat_device, is_heartbeat=True)
+            else:
+                self.connect(self.heartbeat_device, is_heartbeat=True)
+        except Exception as e:
+            logging.error(f"BlueStalker: Error checking heartbeat device: {e}")
 
         targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
         for target in targets:
