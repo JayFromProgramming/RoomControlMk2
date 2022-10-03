@@ -27,14 +27,14 @@ def toggle_device_state_description(device):
 def pin_state_description(device):
     state = device.get_state()
     active_time = state["active_for"]
-    last_active = datetime.datetime.fromtimestamp(state["last_active"]) if state["last_active"] is not None else None
+    last_active = datetime.datetime.fromtimestamp(state["last_active"]) if "last_active" in state else 0
     if device.get_health()["fault"]:
         return f"FAULT"
     if state["on"]:
         if state["triggered"]:
             return f"Active: {active_time:.2f}s"
         else:
-            return f"Armed: Last Active: {last_active.strftime('%H:%M:%S') if last_active is not None else 'Unknown'}"
+            return f"Armed: Last Active: {last_active.strftime('%H:%M:%S') if last_active is not 0 else 'Unknown'}"
     else:
         return "Disabled"
 
