@@ -4,7 +4,6 @@ import time
 
 from Modules.RoomControl.AbstractSmartDevices import background
 
-
 logging = logging.getLogger(__name__)
 
 try:
@@ -53,16 +52,19 @@ class OccupancyDetector:
         name text, enabled BOOLEAN DEFAULT TRUE, fault_state TEXT DEFAULT null)
         """, commit=True)
         # Add default sources
-        self.database.run("""
-        INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("bluetooth")
-        """, commit=True)
-        self.database.run("""
-        INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("motion")
-        """, commit=True)
-        self.database.run("""
-        INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("door")
-        """, commit=True)
 
+        results = self.database.get("""
+        SELECT * FROM occupancy_sources""")
+        if len(results) == 0:
+            self.database.run("""
+            INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("bluetooth")
+            """, commit=True)
+            self.database.run("""
+            INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("motion")
+            """, commit=True)
+            self.database.run("""
+            INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("door")
+            """, commit=True)
 
     @background
     def periodic_update(self):
@@ -81,7 +83,7 @@ class OccupancyDetector:
             time.sleep(5)
 
     def motion_detected(self, pin):
-        logging.info("Motion Detected on pin {}".format(pin))
+        logging.info("Activity Detected on pin {}".format(pin))
         self.last_activity = time.time()
         self.blue_stalker.should_scan()
 

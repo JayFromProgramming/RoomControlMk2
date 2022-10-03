@@ -71,7 +71,7 @@ class BluetoothDetector:
         """Called externally to tell that it is time to scan"""
         if self.scan_lockout_time > datetime.datetime.now().timestamp():
             return False
-        self.refresh(scan_allowed=True)
+        self.scan(scan_allowed=True)
         self.scan_lockout_time = datetime.datetime.now().timestamp() + 15
 
     @background
