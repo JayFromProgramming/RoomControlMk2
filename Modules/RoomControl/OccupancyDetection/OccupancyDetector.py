@@ -86,7 +86,7 @@ class PinWatcher:
         self.pin = pin  # Pin number
         self.state = None  # None = Unknown, True = On, False = Off
         self._name = name  # Name of the device
-        self.enabled = True  # Is the device enabled for detection
+        self.enabled = False  # Is the device enabled for detection
 
         self.callback = callback
         self.edge = None
