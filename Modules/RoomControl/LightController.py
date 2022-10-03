@@ -197,7 +197,11 @@ class LightController:
         return devices
 
     def get_health(self):
-        return {"online": True}
+        return {
+            "online": True,
+            "fault": self.occupancy_detector.bluetooth_fault(),
+            "reason": "Bluetooth Offline" if self.occupancy_detector.bluetooth_fault() else "Unknown"
+        }
 
     def get_type(self):
         return "light_controller"
