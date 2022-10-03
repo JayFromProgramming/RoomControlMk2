@@ -21,6 +21,16 @@
       "device": "blue_stalker"
     },
     {
+      "slot": -1,
+      "name": "Door Lights",
+      "device": "room_light_controller"
+    },
+    {
+      "slot": -1,
+      "name": "Loft Lights",
+      "device": "loft_light_controller"
+    },
+    {
       "slot": 0,
       "type": "rgb_light",
       "name": "Room Lights",
@@ -99,8 +109,8 @@
         "door_light_controller"
       ],
       "device_names": [
-          "Room Lights",
-          "Loft Lights",
+          "Room",
+          "Loft",
           "Door"
       ]
     },
