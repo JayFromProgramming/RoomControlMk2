@@ -14,7 +14,7 @@ function device_table() {
             var sys_info_box = $('#sys_info');
             sys_info_box.empty();
             sys_info_box.append('<table>');
-            sys_info_box.append('<tr span=2><td>System Temperature</td><td>');
+            sys_info_box.append('<tr><td colspan=2>System Information</td><td>');
 
             if (sys_temp == null) {
                 sys_info_box.append('<tr><td>CPU Temp:</td><td>N/A</td></tr>');

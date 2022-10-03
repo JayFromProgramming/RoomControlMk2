@@ -99,7 +99,7 @@ class BluetoothDetector:
             if conn := self.sockets.get(target[1]):  # If the socket is already open
                 self.conn_is_alive(conn, target[1])  # Check if the connection is still alive
             else:
-                if scan_allowed:
+                if scan_allowed or True:
                     self.connect(target[1])  # Else attempt to connect to the device
 
         self.last_update = datetime.datetime.now().timestamp()  # Update the last update time
