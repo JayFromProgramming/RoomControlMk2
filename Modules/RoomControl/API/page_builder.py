@@ -1,3 +1,4 @@
+import datetime
 import sys
 
 from aiohttp import web
@@ -26,13 +27,14 @@ def toggle_device_state_description(device):
 def pin_state_description(device):
     state = device.get_state()
     active_time = state["active_for"]
+    last_active = datetime.datetime.fromtimestamp(state["last_active"]) if state["last_active"] is not None else None
     if device.get_health()["fault"]:
         return f"FAULT"
     if state["on"]:
         if state["triggered"]:
-            return f"Active: {active_time}s"
+            return f"Active: {active_time:.2f}s"
         else:
-            return "Armed"
+            return f"Armed: Last Active: {last_active.strftime('%H:%M:%S') if last_active is not None else 'Unknown'}"
     else:
         return "Disabled"
 
@@ -115,6 +117,8 @@ def generate_device_buttons(device):
 
 
 def health_message(device):
+    if device is None:
+        return f"<span style='color: red'>ERROR: Unknown Device</span>"
     if "online" in device.get_health() and device.get_health()["online"] is False:
         return f"<span style='color:red'>OFFLINE: {device.get_health()['reason']}</span>"
     if "fault" in device.get_health() and device.get_health()["fault"] is True:

@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import os
 import sqlite3
 import time
 
@@ -86,7 +87,7 @@ class BluetoothDetector:
         except Exception as e:
             logging.error(f"BlueStalker: Error checking heartbeat device: {e}")
 
-        time.sleep(2.5) # Wait for the heartbeat device to connect
+        time.sleep(2.5)  # Wait for the heartbeat device to connect
 
         if not self.heartbeat_alive and heartbeat_was_alive:
             logging.error("BlueStalker: Heartbeat device lost, delaying next scan")
@@ -122,6 +123,13 @@ class BluetoothDetector:
     @background
     def refresh(self):
         logging.info(f"BlueStalker: Refresh loop started scanning is {'not allowed' if self.connect_on_queue else 'allowed'}")
+        # Check OS, if not linux then return
+        if os.name != "posix":
+            logging.error("BlueStalker: In devmode, disabling bluetooth")
+            self.online = False
+            self.fault = True
+            self.fault_message = "Wrong OS"
+            return
         while True:
             try:
                 if self.enabled:

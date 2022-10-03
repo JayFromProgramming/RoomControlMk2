@@ -49,6 +49,21 @@ class ConcurrentDatabase(sqlite3.Connection):
         super().__init__(*args, **kwargs)
         self.lock = CustomLock()
 
+    def run(self, sql, *args, **kwargs):
+        cursor = super().cursor()
+        self.lock.acquire()
+        cursor.execute(sql, *args)
+        self.lock.release()
+        if kwargs.get("commit", True):
+            super().commit()
+        return cursor
+
+    def get(self, sql, *args):
+        cursor = self.run(sql, *args)
+        result = cursor.fetchall()
+        cursor.close()
+        return result
+
 
 def get_local_ip():
     import socket

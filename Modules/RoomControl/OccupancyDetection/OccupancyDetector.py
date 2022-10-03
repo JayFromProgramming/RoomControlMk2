@@ -18,6 +18,7 @@ class OccupancyDetector:
 
     def __init__(self, database):
         self.database = database
+        self.database_init()
         self.sources = {}
 
         self.last_activity = 0  # type: int # Last time a user was detected either by door or motion sensor
@@ -25,8 +26,19 @@ class OccupancyDetector:
         self.blue_stalker = BluetoothDetector(self.database, connect_on_queue=True if GPIO else False)
         if GPIO:
             GPIO.setmode(GPIO.BOARD)
-        self.motion_pin = PinWatcher("motion", 11, self.motion_detected, bouncetime=200)
-        self.door_pin = PinWatcher("door", 15, self.motion_detected, bouncetime=200)
+
+        results = self.database.get("""
+            SELECT * FROM occupancy_sources
+        """)
+
+        enabled_sources = {}
+        for name, enabled, _ in results:
+            enabled_sources[name] = True if enabled == 1 else False
+
+        self.motion_pin = PinWatcher("motion", 11, self.motion_detected, bouncetime=200,
+                                     enabled=enabled_sources["motion"], database=self.database)
+        self.door_pin = PinWatcher("door", 15, self.motion_detected, bouncetime=200,
+                                   enabled=enabled_sources["door"], database=self.database)
 
         self.sources = {
             "bluetooth": self.blue_stalker,
@@ -34,6 +46,23 @@ class OccupancyDetector:
             "door": self.door_pin
         }
         self.periodic_update()
+
+    def database_init(self):
+        self.database.run("""
+        CREATE TABLE IF NOT EXISTS occupancy_sources (
+        name text, enabled BOOLEAN DEFAULT TRUE, fault_state TEXT DEFAULT null)
+        """, commit=True)
+        # Add default sources
+        self.database.run("""
+        INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("bluetooth")
+        """, commit=True)
+        self.database.run("""
+        INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("motion")
+        """, commit=True)
+        self.database.run("""
+        INSERT OR IGNORE INTO occupancy_sources (name) VALUES ("door")
+        """, commit=True)
+
 
     @background
     def periodic_update(self):
@@ -79,14 +108,15 @@ class OccupancyDetector:
 
 class PinWatcher:
 
-    def __init__(self, name, pin, callback: callable, edge=None, bouncetime=200, normally_open=True):
+    def __init__(self, name, pin, callback: callable, edge=None, bouncetime=200, normally_open=True,
+                 enabled=True, database=None):
         self.online = True
         self.fault = False
         self.fault_message = ""
         self.pin = pin  # Pin number
         self.state = None  # None = Unknown, True = On, False = Off
         self._name = name  # Name of the device
-        self.enabled = False  # Is the device enabled for detection
+        self.enabled = enabled  # Is the device enabled for detection
 
         self._last_rising = 0  # Last time the device was triggered
         self._last_falling = 0  # Last time the device was triggered
@@ -95,6 +125,7 @@ class PinWatcher:
         self.edge = None
         self.bouncetime = bouncetime
         self.normal_open = normally_open
+        self.database = database
 
         if GPIO is None:
             self.fault = True
@@ -135,7 +166,7 @@ class PinWatcher:
             "on": self.enabled,
             "triggered": self.state,
             "active_for": 0 if not self.state else time.time() - self._last_rising,
-            "last_active": self.last_active
+            "last_active": self._last_rising,
         }
 
     def get_info(self):
@@ -165,4 +196,5 @@ class PinWatcher:
 
     @on.setter
     def on(self, value):
+        self.database.run("UPDATE occupancy_sources SET enabled = ? WHERE name = ?", (value, self.name()), commit=True)
         self.enabled = value
