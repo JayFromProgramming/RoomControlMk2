@@ -88,6 +88,9 @@ class PinWatcher:
         self._name = name  # Name of the device
         self.enabled = False  # Is the device enabled for detection
 
+        self._last_rising = 0  # Last time the device was triggered
+        self._last_falling = 0  # Last time the device was triggered
+
         self.callback = callback
         self.edge = None
         self.bouncetime = bouncetime
@@ -112,6 +115,12 @@ class PinWatcher:
 
     def _callback(self, pin):
         self.state = GPIO.input(self.pin) if self.normal_open else not GPIO.input(self.pin)
+
+        if self.state:  # If the device is active
+            self._last_rising = time.time()
+        else:
+            self._last_falling = time.time()
+
         logging.debug(f"PinWatcher ({self.name()}): Pin {pin} changed state to {self.state}")
         self.callback(pin)
         # Setup new event detect
@@ -125,7 +134,8 @@ class PinWatcher:
         return {
             "on": self.enabled,
             "triggered": self.state,
-            "active_for": 0,
+            "active_for": 0 if not self.state else time.time() - self._last_rising,
+            "last_active": self.last_active
         }
 
     def get_info(self):
