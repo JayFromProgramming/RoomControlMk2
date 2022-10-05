@@ -15,45 +15,6 @@ function getName(id){
     return name;
 }
 
-function getState(id){
-    var state = "";
-    $.ajax({
-        url: "/get_status_string/" + id,
-        type: "GET",
-        async: false,
-        success: function(data){
-            state = data;
-        }
-    });
-    return state;
-}
-
-function getHealth(id){
-    var health = "";
-    $.ajax({
-        url: "/get_health_string/" + id,
-        type: "GET",
-        async: false,
-        success: function(data){
-            health = data;
-        }
-    });
-    return health;
-}
-
-function getAction(id){
-    var action = "";
-    $.ajax({
-        url: "/get_action_string/" + id,
-        type: "GET",
-        async: false,
-        success: function(data){
-            action = data;
-        }
-    });
-    return action;
-}
-
 // A class to handle sending a command to the server without refreshing the page
 class ActionButton {
     constructor(name, action, enabled) {
@@ -68,7 +29,7 @@ class ActionButton {
 
     onClick() {
        $.ajax({
-          url: "/set/" + this.name,
+          url: "/set_scene/" + this.name,
           type: "get",
           success: function(result) {
 
