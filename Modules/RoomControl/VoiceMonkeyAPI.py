@@ -88,6 +88,14 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         self.offline_reason = "Unknown"
         self.fault = False
 
+    def main_power_state(self, state):
+        if not state:
+            self.fault = True
+            self.offline_reason = "Power Outage"
+        else:
+            self.fault = False
+            self.offline_reason = "Unknown"
+
     def load_state(self):
         cursor = self.database.cursor()
         cursor.execute("SELECT * FROM voicemonkey_devices WHERE device_name = ?", (self.device_id,))

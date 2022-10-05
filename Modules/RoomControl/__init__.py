@@ -3,9 +3,11 @@ import logging
 import sqlite3
 import threading
 import os
+import time
 
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
+from Modules.RoomControl.AbstractSmartDevices import background
 from Modules.RoomControl.CommandController import CommandController
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
@@ -124,6 +126,7 @@ class RoomController:
             address = "wopr.eggs.loafclan.org"
             logging.info("Running in prod mode, using wopr.eggs.loafclan.org")
 
+        self.background()
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,
                                  occupancy_detector=self.occupancy_detector,
@@ -146,3 +149,10 @@ class RoomController:
         for controller in self.controllers:
             if hasattr(controller, "refresh_all"):
                 controller.refresh_all()
+
+    @background
+    def background(self):
+        while True:
+            for device in self.monkey.get_all_devices():
+                device.main_power_state(self.vesync.get_device("plug_1").on)
+            time.sleep(15)
