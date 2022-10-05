@@ -148,12 +148,12 @@ class BluetoothDetector:
     def refresh(self):
         logging.info(f"BlueStalker: Refresh loop started, high frequency scan is {'enabled' if self.high_frequency_scan_enabled else 'disabled'}")
         # Check OS, if not linux then return
-        # if os.name != "posix":
-        #     logging.error("BlueStalker: In devmode, disabling bluetooth")
-        #     self.online = False
-        #     self.fault = True
-        #     self.fault_message = "Wrong OS"
-        #     return
+        if os.name != "posix":
+            logging.error("BlueStalker: In devmode, disabling bluetooth")
+            self.online = False
+            self.fault = True
+            self.fault_message = "Wrong OS"
+            return
         while True:
             try:
                 self.determine_health()

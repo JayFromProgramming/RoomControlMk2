@@ -66,7 +66,8 @@ class SceneController:
             self.triggers.update({
                 trigger[1]: SceneTrigger(trigger[0], trigger[1],
                                          trigger[2], trigger[3], trigger[4],
-                                         trigger[5], self.database, self.execute_scene)})
+                                         trigger[5], self.database, self.execute_scene,
+                                         self.action_to_str(trigger[0]))})
 
     def execute_trigger(self, trigger_id):
         if trigger_id not in self.triggers:
@@ -100,11 +101,41 @@ class SceneController:
                     if action == "target_value" and hasattr(device, "setpoint"):
                         device.setpoint = value
 
+    def action_to_str(self, scene_id):
+        """
+        Returns human readable discription of the actions of the scene
+        Example: Sets [device] [setting] to [value]
+        """
+        actions = []
+        if scene_id not in self.scenes:
+            logging.error("Scene {} does not exist".format(scene_id))
+            return f"Scene {scene_id} does not exist"
+        scene_data = self.scenes[scene_id]["data"]
+        command = APIMessageRX(scene_data)
+        for device in self.devices:
+            if hasattr(command, device.name()):
+                device_command = getattr(command, device.name())
+                for action, value in device_command.items():
+                    if action == "on":
+                        actions.append("Turns {name} {value}".format(name=f"[{device.name()}]", value='on' if value else 'off'))
+                    if action == "brightness":
+                        actions.append("Sets {name} brightness to {value}".format(name=f"[{device.name()}]", value=value))
+                    if action == "color":
+                        r, g, b = value
+                        color = f"({r}, {g}, {b})"
+                        actions.append("Sets {name} color to {value}".format(name=f"[{device.name()}]", value=color))
+                    if action == "white":
+                        actions.append("Sets {name} white to {value}".format(name=f"[{device.name()}]", value=value))
+                    if action == "target_value":
+                        actions.append("Sets {name} setpoint to {value}".format(name=f"[{device.name()}]", value=value))
+
+        return ", ".join(actions)
+
 
 class SceneTrigger:
 
     def __init__(self, scene_id, trigger_id, trigger_name, trigger_type,
-                 trigger_value, active, database, callback):
+                 trigger_value, active, database, callback, action_string):
         self.scene_id = scene_id
         self.trigger_id = trigger_id
         self.trigger_name = trigger_name
@@ -113,6 +144,8 @@ class SceneTrigger:
         self.active = False if active == 0 else True
         self.database = database
         self.callback = callback
+
+        self.action_string = action_string
 
         logging.info(f"Initializing SceneTrigger ({self.trigger_name})")
         self.api_action = None
@@ -237,5 +270,5 @@ class SceneTrigger:
             "trigger_type": self.trigger_type,
             "trigger_value": self.trigger_value,
             "active": self.active if self.trigger_type != "immediate" else False,
+            "action": self.action_string
         }
-
