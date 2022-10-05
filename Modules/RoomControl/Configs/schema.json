@@ -2,7 +2,7 @@
   "schema": [
     {
       "slot": -1,
-      "name": "Plug 1",
+      "name": "Main Power",
       "device": "plug_1"
     },
     {
