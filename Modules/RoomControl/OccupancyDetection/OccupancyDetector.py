@@ -77,9 +77,9 @@ class OccupancyDetector:
                     if source.enabled:
                         scanning_allowed = False
             if scanning_allowed:
-                self.blue_stalker.connect_on_queue = False
+                self.blue_stalker.high_frequency_scan_enabled = False
             else:
-                self.blue_stalker.connect_on_queue = True
+                self.blue_stalker.high_frequency_scan_enabled = True
             time.sleep(5)
 
     def motion_detected(self, pin):
