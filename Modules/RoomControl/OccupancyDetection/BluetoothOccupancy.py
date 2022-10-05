@@ -18,14 +18,18 @@ logging = logging.getLogger(__name__)
 
 class BluetoothDetector:
 
-    def __init__(self, database: sqlite3.Connection, connect_on_queue: bool = False):
+    def __init__(self, database: sqlite3.Connection, high_frequency_scan_enabled: bool = False):
         # Target file is a json file that contains bluetooth addresses, name, and role
         self.database = database
         self.init_database()
 
         self.sockets = {}
-        self.connect_on_queue = connect_on_queue
-        self.last_update = 0
+        self.high_frequency_scan_enabled = high_frequency_scan_enabled
+
+        self.last_checkup = 0
+        self.last_scan = 0
+        self.scanning = False
+
         self.enabled = True
         self.scan_lockout_time = 0
 
@@ -72,12 +76,14 @@ class BluetoothDetector:
         if self.scan_lockout_time > datetime.datetime.now().timestamp():
             return False
         logging.info("BlueStalker: Scanning on request")
-        self.scan(scan_allowed=True)
-        self.scan_lockout_time = datetime.datetime.now().timestamp() + 15
+        self.scan()
+        self.scan_lockout_time = datetime.datetime.now().timestamp() + 5
 
     @background
-    def scan(self, scan_allowed):
-        logging.info("BlueStalker: Scanning for bluetooth devices")
+    def life_check(self):
+        """Check if connections are alive, but doesn't run connect"""
+        logging.info("BlueStalker: Starting Life Check")
+
         heartbeat_was_alive = self.heartbeat_alive
         try:
             # Check if the heartbeat device is still connected
@@ -98,11 +104,28 @@ class BluetoothDetector:
         for target in targets:
             if conn := self.sockets.get(target[1]):  # If the socket is already open
                 self.conn_is_alive(conn, target[1])  # Check if the connection is still alive
-            else:
-                if scan_allowed or True:
-                    self.connect(target[1])  # Else attempt to connect to the device
 
-        self.last_update = datetime.datetime.now().timestamp()  # Update the last update time
+        self.last_checkup = datetime.datetime.now().timestamp()
+
+    @background
+    def scan(self):
+        logging.info("BlueStalker: Scanning for bluetooth devices")
+
+        if self.scanning:
+            logging.warning("BlueStalker: Scan already in progress")
+            return
+
+        self.scanning = True
+        conn_threads = []
+        targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
+        for target in targets:
+            if self.sockets.get(target[1]) is None:  # If the socket is already open
+                conn_threads.append(self.connect(target[1]))  # Else attempt to connect to the device
+
+        for thread in conn_threads:
+            thread.join()
+        self.scanning = False
+        self.last_scan = datetime.datetime.now().timestamp()  # Update the last update time
 
     def determine_health(self):
         if self.heartbeat_alive:
@@ -123,20 +146,27 @@ class BluetoothDetector:
 
     @background
     def refresh(self):
-        logging.info(f"BlueStalker: Refresh loop started scanning is {'not allowed' if self.connect_on_queue else 'allowed'}")
+        logging.info(f"BlueStalker: Refresh loop started, high frequency scan is {'enabled' if self.high_frequency_scan_enabled else 'disabled'}")
         # Check OS, if not linux then return
-        if os.name != "posix":
-            logging.error("BlueStalker: In devmode, disabling bluetooth")
-            self.online = False
-            self.fault = True
-            self.fault_message = "Wrong OS"
-            return
+        # if os.name != "posix":
+        #     logging.error("BlueStalker: In devmode, disabling bluetooth")
+        #     self.online = False
+        #     self.fault = True
+        #     self.fault_message = "Wrong OS"
+        #     return
         while True:
             try:
-                if self.enabled:
-                    self.scan(not self.connect_on_queue)
-                time.sleep(30)
                 self.determine_health()
+                self.life_check()
+                if self.enabled:
+                    if self.high_frequency_scan_enabled:
+                        if self.last_scan + 30 < datetime.datetime.now().timestamp():
+                            self.scan()
+                    else:
+                        if self.last_scan + 60 < datetime.datetime.now().timestamp():
+                            self.scan()
+                self.determine_health()
+                time.sleep(15)
             except Exception as e:
                 logging.error(f"BluetoothOccupancy: Refresh loop failed with error {e}")
                 break
@@ -203,8 +233,8 @@ class BluetoothDetector:
             else:
                 self.heartbeat_alive = False
             self.sockets.pop(address)
-        except OSError:
-            logging.debug("Connection lost")
+        except OSError as e:
+            logging.info(f"BlueStalker: Connection to {address} is dead, reason: {e}")
             connection.close()
             if not is_heartbeat:
                 self.update_occupancy(address, False)
@@ -332,14 +362,15 @@ class BluetoothDetector:
     def get_state(self):
         return {
             "on": self.enabled,
-            "auto_scan": not self.connect_on_queue,
+            "high_frequency_scan": self.high_frequency_scan_enabled,
             "occupied": self.is_occupied(),
             "occupants": self.get_occupants_names()
         }
 
     def get_info(self):
         return {
-            "last_update": self.last_update
+            "last_scan": self.last_scan,
+            "last_check": self.last_checkup
         }
 
     def get_health(self):

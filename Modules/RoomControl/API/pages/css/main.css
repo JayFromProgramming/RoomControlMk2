@@ -253,6 +253,7 @@ table.listing td,
 table.listing th {
 	border:1px solid #fff;
 	text-align:center;
+	font-family: monospace;
 	}	
 table.listing th {
 	background:#9097A9;

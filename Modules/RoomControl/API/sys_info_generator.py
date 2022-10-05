@@ -34,5 +34,6 @@ def generate_sys_info() -> APIMessageTX:
         sys_temp=sys_temp,
         sys_load=sys_load,
         sys_mem=sys_mem,
-        sys_uptime=sys_uptime
+        sys_uptime=sys_uptime,
+        prog_uptime=round(datetime.datetime.now().timestamp() - psutil.Process().create_time())
     )

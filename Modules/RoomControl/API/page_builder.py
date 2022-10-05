@@ -34,7 +34,7 @@ def pin_state_description(device):
         if state["triggered"]:
             return f"Active: {active_time:.2f}s"
         else:
-            return f"Armed: Last Active: {last_active.strftime('%H:%M:%S') if last_active is not 0 else 'Unknown'}"
+            return f"Armed: Last Active: {last_active.strftime('%H:%M:%S') if last_active != 0 else 'Unknown'}"
     else:
         return "Disabled"
 
@@ -52,7 +52,8 @@ def blue_stalker_state(device):
     if state['occupied']:
         return f"Occupants: {', '.join(state['occupants'])}"
     else:
-        return f"Not occupied, AutoScan: {state['auto_scan']}"
+        timestamp = datetime.datetime.fromtimestamp(info["last_scan"]).strftime('%H:%M:%S')
+        return f"No occupants, last scan: {timestamp}"
 
 
 def auto_light_controller_state_string(device):
