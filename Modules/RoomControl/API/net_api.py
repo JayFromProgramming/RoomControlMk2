@@ -278,6 +278,7 @@ class NetAPI:
 
         # Redirect to the main page /page/main
         response = web.Response(text="Authorized", status=302)
+
         response.headers["Location"] = "/page/main"
         return response
 
