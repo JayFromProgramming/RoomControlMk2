@@ -5,8 +5,10 @@ from aiohttp import web
 
 
 def light_color_stringify(data):
-    return f"On: {data['on']}, Brightness: {str(data['brightness']).zfill(3)}" \
-           f"\r\nColor: {data['color']}"
+    if data["white_enabled"]:
+        return f"On: {str(data['on']).ljust(5)}, Brightness: {(data['brightness']/255) * 100}%"
+    else:
+        return f"On: {str(data['on']).ljust(5)}, Color: {data['color']}"
 
 
 def toggle_device_state_description(device):
@@ -43,6 +45,9 @@ def blue_stalker_state(device):
     state = device.get_state()
     info = device.get_info()
     health = device.get_health()
+
+    scan_timestamp = datetime.datetime.fromtimestamp(info["last_scan"]).strftime('%H:%M:%S')
+
     if not state["on"]:
         return "State: DISABLED"
     if health["fault"]:
@@ -50,10 +55,9 @@ def blue_stalker_state(device):
     if not health["online"]:
         return "State: DOWN"
     if state['occupied']:
-        return f"Occupants: {', '.join(state['occupants'])}"
+        return f"Occupants: {', '.join(state['occupants'])}; Last scan: {scan_timestamp}"
     else:
-        timestamp = datetime.datetime.fromtimestamp(info["last_scan"]).strftime('%H:%M:%S')
-        return f"No occupants, last scan: {timestamp}"
+        return f"No occupants; Last scan: {scan_timestamp}"
 
 
 def auto_light_controller_state_string(device):
@@ -79,7 +83,7 @@ def state_to_string(device):
         case 'abstract_rgb':
             return light_color_stringify(device.get_state())
         case 'abstract_toggle_device':
-            return f"State: {toggle_device_state_description(device)}"
+            return f"State: {toggle_device_state_description(device)}; Power Draw: {device.get_info()['power']}W"
         case 'VoiceMonkeyDevice':
             return f"State: {toggle_device_state_description(device)}"
         case 'environment_controller':

@@ -275,11 +275,14 @@ table.listing .white td {
 table.listing .device_name {
 	text-align:left;
 	font-family: monospace;
+	font-size: 12px;
 }
 
 table.listing .device_details {
 	text-align:left;
 	font-family: monospace;
+	/*font-weight: bold;*/
+	font-size: 12px;
 }
 
 table.listing .device_status {

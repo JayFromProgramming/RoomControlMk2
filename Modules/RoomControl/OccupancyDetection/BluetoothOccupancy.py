@@ -195,6 +195,7 @@ class BluetoothDetector:
                 return
             elif e.__str__() == "[Errno 115] Operation now in progress":  # This is the error we expect to see
                 logging.info(f"BlueStalker: Connection to {address} is in progress")
+                self.update_occupancy(address, False)
                 self.sockets[address] = sock  # Add the socket to the list of sockets
                 time.sleep(2.5)  # Wait for the connection to complete
                 self.conn_is_alive(sock, address)  # Check if the connection is still alive
@@ -242,7 +243,7 @@ class BluetoothDetector:
                 self.heartbeat_alive = False
             self.sockets.pop(address)
         else:
-            logging.debug(f"Connection to {address} is alive")
+            # logging.info(f"Connection to {address} is alive")
             if not is_heartbeat:
                 self.update_occupancy(address, True)
             else:
