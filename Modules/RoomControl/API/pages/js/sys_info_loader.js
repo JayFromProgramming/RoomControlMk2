@@ -31,8 +31,7 @@ function device_table() {
             sys_info_box.append('</table>');
         },
         error: function (xhr, status, error) {
-            console.log("Error: " + error.message);
-            // Don't do anything if there's an error
+
         }
     });
 }

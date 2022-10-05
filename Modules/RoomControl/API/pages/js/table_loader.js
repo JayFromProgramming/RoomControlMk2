@@ -5,7 +5,7 @@ function button (actionLink, displayName){
 function getName(id){
     var name = "";
     $.ajax({
-        url: "name/" + id,
+        url: "/name/" + id,
         type: "GET",
         async: false,
         success: function(data){
@@ -18,7 +18,7 @@ function getName(id){
 function getState(id){
     var state = "";
     $.ajax({
-        url: "get_status_string/" + id,
+        url: "/get_status_string/" + id,
         type: "GET",
         async: false,
         success: function(data){
@@ -31,7 +31,7 @@ function getState(id){
 function getHealth(id){
     var health = "";
     $.ajax({
-        url: "get_health_string/" + id,
+        url: "/get_health_string/" + id,
         type: "GET",
         async: false,
         success: function(data){
@@ -44,7 +44,7 @@ function getHealth(id){
 function getAction(id){
     var action = "";
     $.ajax({
-        url: "get_action_string/" + id,
+        url: "/get_action_string/" + id,
         type: "GET",
         async: false,
         success: function(data){
@@ -120,16 +120,20 @@ function device_table() {
                     device_row.append(device_health);
                     device_table.append(device_row);
                 }
-                // Add a footer spans the entire table that shows the last time the page was updated
+                // Add a footer spans the entire table that shows the last time the page was updated,
+                // set the color to black
                 var footer = $('<tr>');
                 var footer_text = $('<td>').text("Last Updated: " + new Date().toLocaleString());
                 footer_text.attr("colspan", 4);
+                footer_text.css("color", "black");
                 footer.append(footer_text);
                 device_table.append(footer);
         },
         error: function (xhr, status, error) {
-            console.log("Error: " + error.message);
-            // Don't do anything if there's an error
+            // Set the footer text to red, but don't change the text
+            var footer = $('#device_list_body tr:last-child');
+            footer.css("color", "red");
+
         }
     });
 }

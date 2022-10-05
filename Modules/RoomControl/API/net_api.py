@@ -41,6 +41,7 @@ class NetAPI:
         self.app = web.Application()
         self.app.add_routes(
             [web.get('', self.handle_web)]
+            + [web.get("/page/{page}", self.handle_page)]
             + [web.get('/login', self.handle_login)]
             + [web.post('/login_auth', self.handle_login_auth)]
             + [web.get('/auth/{api_key}', self.handle_auth)]  # When visited it will set a cookie to allow access to the API
@@ -60,9 +61,9 @@ class NetAPI:
             + [web.get('/sys_info', self.handle_sys_info)]
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
             + [web.post('/set/{name}', self.handle_set_post)]
-            + [web.get('/css/{file}', self.handle_css)]
-            + [web.get('/js/{file}', self.handle_js)]
-            + [web.get('/img/{file}', self.handle_img)]
+            + [web.get('/page/css/{file}', self.handle_css)]
+            + [web.get('/page/js/{file}', self.handle_js)]
+            + [web.get('/page/img/{file}', self.handle_img)]
             + [web.get('/name/{device_id}', self.handle_name)]
             + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
             + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
@@ -275,9 +276,27 @@ class NetAPI:
         if not self.check_auth(request):
             return login_redirect()
 
-        # Load the main page from "{root}\pages\main_view_page.html"
+        # Redirect to the main page /page/main
+        response = web.Response(text="Authorized", status=302)
+        response.headers["Location"] = "/page/main"
+        return response
 
-        return page_builder.generate_main_page(self)
+    async def handle_page(self, request):
+        if not self.check_auth(request):
+            return login_redirect()
+
+        page = request.match_info['page']
+
+        # Make sure the page is valid and not a path traversal attack
+        if not page or page.startswith(".") or "/" in page:
+            return web.Response(text="Invalid page", status=404)
+
+        if os.path.isfile(f"{sys.path[0]}/Modules/RoomControl/API/pages/{page}.html"):
+            with open(f"{sys.path[0]}/Modules/RoomControl/API/pages/{page}.html", "r") as file:
+                return web.Response(text=file.read(), content_type="text/html")
+        else:
+            logging.warning(f"Page {sys.path[0]}/Modules/RoomControl/API/pages/{page}.html not found")
+            return web.Response(text="Page not found", status=404)
 
     async def handle_web_control(self, request):
         if not self.check_auth(request):
