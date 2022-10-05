@@ -185,7 +185,7 @@ ul.nav li.last {background:none;}
 /* center column styles */
 .top-bar {
 	float:left;
-	width:603px;
+	width:800px;
 	border-left:2px solid #f70;
 	padding:0 0 0 9px;
 	margin:0 0 4px 0;
@@ -224,12 +224,12 @@ ul.nav li.last {background:none;}
 div.table {
 	float:left;
 	position:relative;
-	width:614px;
+	width:800px;
 	margin:0 0 37px 0;
 	}
 table.listing {
 	border-bottom:1px solid #9097A9;
-	width:613px;
+	width:800px;
 	padding:0;
 	margin:0;
 	border:1px solid #9097A9;
@@ -270,7 +270,24 @@ table.listing .bg td {
 	}
 table.listing .white td {
 	background:#fff;
-	}	
+	}
+
+table.listing .device_name {
+	text-align:left;
+	font-family: monospace;
+}
+
+table.listing .device_details {
+	text-align:left;
+	font-family: monospace;
+}
+
+table.listing .device_status {
+	text-align:center;
+	font-family: monospace;
+}
+
+
 table.listing .first {border-left:0px solid #9097A9;text-align:left;}
 table.listing .last {border-right:0px solid #9097A9;}
 

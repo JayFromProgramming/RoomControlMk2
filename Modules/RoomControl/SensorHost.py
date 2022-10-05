@@ -165,7 +165,7 @@ class EnvironmentSensor(Sensor):
                     logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor read failed - {error}")
                     print(error.args[0])
             else:
-                self.set_fault(True, "Sensor failed initialisation")
+                self.set_fault(True, "Initialisation failed")
                 logging.error(f"EnvironmentSensor ({self.name}): DHT22 sensor read failed "
                               f"- DHT22 sensor not initialised")
                 break  # If the sensor is not initialised, stop trying to read it

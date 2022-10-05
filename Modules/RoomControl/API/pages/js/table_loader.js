@@ -100,7 +100,7 @@ function device_table() {
                     var device_data = devices[device];
                     var device_row = $('<tr>');
                     var name = getName(device);
-                    var device_name = $('<td>').text(name);
+                    var device_name = $('<td class="device_name">').text(name);
 
                     var is_on = device_data["state"]["on"];
                     var is_down = !device_data["health"]["online"];
@@ -111,8 +111,8 @@ function device_table() {
                     }
 
                     var device_toggle = $('<td>').html(toggle_button.getButton());
-                    var device_status = $('<td>').text(getState(device));
-                    var device_health = $('<td>').html(getHealth(device));
+                    var device_status = $('<td class="device_details">').text(getState(device));
+                    var device_health = $('<td class="device_health">').html(getHealth(device));
 
                     device_row.append(device_name);
                     device_row.append(device_toggle);
