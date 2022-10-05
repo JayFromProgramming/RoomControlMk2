@@ -104,10 +104,18 @@ function device_table() {
 
                     var is_on = device_data["state"]["on"];
                     var is_down = !device_data["health"]["online"];
-                    if (is_on) {
-                        var toggle_button = new ActionButton("Turn Off", device + "?on=false", !is_down);
-                    } else {
-                        var toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
+                    if (device === "plug_1") {
+                        if (is_on) {
+                            var toggle_button = new ActionButton("No Action", device + "?on=true", false);
+                        } else {
+                            var toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
+                        }
+                    }else {
+                        if (is_on) {
+                            var toggle_button = new ActionButton("Turn Off", device + "?on=false", !is_down);
+                        } else {
+                            var toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
+                        }
                     }
 
                     var device_toggle = $('<td>').html(toggle_button.getButton());
