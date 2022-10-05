@@ -105,13 +105,11 @@
       "name": "Automatic Lights",
       "device": [
         "room_light_controller",
-        "loft_light_controller",
-        "door_light_controller"
+        "loft_light_controller"
       ],
       "device_names": [
           "Room",
-          "Loft",
-          "Door"
+          "Loft"
       ]
     },
     {
