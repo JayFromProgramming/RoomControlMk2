@@ -17,6 +17,7 @@ function getName(id){
 
 // A class to handle sending a command to the server without refreshing the page
 class ActionButton {
+
     constructor(name, action, enabled) {
       this.name = name;
       this.action = action; // String of the api action

@@ -36,7 +36,7 @@ def pin_state_description(device):
         if state["triggered"]:
             return f"Active: {active_time:.2f}s"
         else:
-            return f"Armed: Last Active: {last_active.strftime('%H:%M:%S') if last_active != 0 else 'Unknown'}"
+            return f"Armed: Last Active: {last_active.strftime('%I:%M:%S %p') if last_active != 0 else 'Unknown'}"
     else:
         return "Disabled"
 
@@ -46,7 +46,7 @@ def blue_stalker_state(device):
     info = device.get_info()
     health = device.get_health()
 
-    scan_timestamp = datetime.datetime.fromtimestamp(info["last_scan"]).strftime('%H:%M:%S')
+    scan_timestamp = datetime.datetime.fromtimestamp(info["last_scan"]).strftime('%I:%M:%S %p')
 
     if not state["on"]:
         return "State: DISABLED"
