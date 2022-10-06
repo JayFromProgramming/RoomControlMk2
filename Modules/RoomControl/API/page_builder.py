@@ -20,11 +20,11 @@ def toggle_device_state_description(device):
     if device.is_on() and device.auto_state()["is_auto"]:
         return "AUTO"
     elif device.is_on() and not device.auto_state()["is_auto"]:
-        return "ON  "
+        return "ON"
     elif not device.is_on() and device.auto_state()["is_auto"]:
         return "IDLE"
     elif not device.is_on() and not device.auto_state()["is_auto"]:
-        return "OFF "
+        return "OFF"
 
 
 def pin_state_description(device):
@@ -84,7 +84,8 @@ def state_to_string(device):
         case 'abstract_rgb':
             return light_color_stringify(device.get_state())
         case 'abstract_toggle_device':
-            return f"State: {toggle_device_state_description(device)}; Power Draw: {device.get_info()['power']}W"
+            state = f"{toggle_device_state_description(device)};"
+            return f"State: {state.ljust(5)} Power Draw: {device.get_info()['power']}W"
         case 'VoiceMonkeyDevice':
             return f"State: {toggle_device_state_description(device)}"
         case 'environment_controller':
