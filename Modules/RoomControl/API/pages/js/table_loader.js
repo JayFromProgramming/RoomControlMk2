@@ -106,7 +106,7 @@ function device_table() {
                     var is_down = !device_data["health"]["online"];
                     if (device === "plug_1") {
                         if (is_on) {
-                            var toggle_button = new ActionButton("No Action", device + "?on=true", false);
+                            var toggle_button = new ActionButton("Locked", device + "?on=true", false);
                         } else {
                             var toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
                         }

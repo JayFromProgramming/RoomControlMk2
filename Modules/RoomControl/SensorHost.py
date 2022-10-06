@@ -171,3 +171,4 @@ class EnvironmentSensor(Sensor):
                 break  # If the sensor is not initialised, stop trying to read it
             # Wait 5 seconds before reading again
             time.sleep(20)
+
