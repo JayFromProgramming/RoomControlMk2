@@ -6,9 +6,9 @@ from aiohttp import web
 
 def light_color_stringify(data):
     if data["white_enabled"]:
-        return f"On: {str(data['on']).ljust(5)}, Brightness: {(data['brightness']/255) * 100}%"
+        return f"On: {str(data['on']).rjust(5)}, Brightness: {(data['brightness']/255) * 100}%"
     else:
-        return f"On: {str(data['on']).ljust(5)}, Color: {data['color']}"
+        return f"On: {str(data['on']).rjust(5)}, Color: {data['color']}"
 
 
 def toggle_device_state_description(device):
