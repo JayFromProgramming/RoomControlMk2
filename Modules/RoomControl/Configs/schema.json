@@ -22,7 +22,7 @@
     },
     {
       "slot": -1,
-      "name": "Door Lights",
+      "name": "Room Lights",
       "device": "room_light_controller"
     },
     {
