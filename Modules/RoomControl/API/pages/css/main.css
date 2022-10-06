@@ -233,6 +233,7 @@ table.listing {
 	padding:0;
 	margin:0;
 	border:1px solid #9097A9;
+	white-space: pre-wrap;
 	}
 table.listing th {
 	border-top:0 !important;
