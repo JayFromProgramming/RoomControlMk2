@@ -20,11 +20,11 @@ def toggle_device_state_description(device):
     if device.is_on() and device.auto_state()["is_auto"]:
         return "AUTO"
     elif device.is_on() and not device.auto_state()["is_auto"]:
-        return "ON"
+        return "ON  "
     elif not device.is_on() and device.auto_state()["is_auto"]:
         return "IDLE"
     elif not device.is_on() and not device.auto_state()["is_auto"]:
-        return "OFF"
+        return "OFF "
 
 
 def pin_state_description(device):
