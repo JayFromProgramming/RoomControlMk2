@@ -142,6 +142,7 @@ class MagicDevice(AbstractRGB):
         except magichue.exceptions.MagicHueAPIError as e:
             logging.error(f"MagicHomeDevice: Error creating device object for {macaddr}: {e}")
             self.light = None
+            self.bulb_type = None
         else:
             self.online = True
         self.macaddr = macaddr
