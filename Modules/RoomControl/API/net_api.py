@@ -96,14 +96,12 @@ class NetAPI:
                     access_log=None)
 
     def init_database(self):
-        cursor = self.database.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS "
-                       "api_authorizations (device_id TEXT, api_secret TEXT, current_cookie TEXT)")
-        cursor.execute("""
+
+        self.database.run("CREATE TABLE IF NOT EXISTS "
+                          "api_authorizations (device_id TEXT, api_secret TEXT, current_cookie TEXT)")
+        self.database.run("""
         CREATE TABLE IF NOT EXISTS login_auth_relations (user_id TEXT UNIQUE REFERENCES api_authorizations(device_id),
         device_name TEXT, current_cookie TEXT, expires INTEGER)""")
-        cursor.close()
-        self.database.commit()
 
     def get_device(self, device_name):
         for api in self.other_apis:
@@ -536,4 +534,3 @@ class NetAPI:
         data = self.data_logger.get_data(source, start, end)
         msg = APIMessageTX(data_log=data, source=source)
         return web.Response(text=msg.__str__())
-

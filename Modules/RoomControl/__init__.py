@@ -57,7 +57,10 @@ class ConcurrentDatabase(sqlite3.Connection):
         cursor = super().cursor()
         cursor.execute(sql, *args)
         if kwargs.get("commit", True):
-            super().commit()
+            try:
+                super().commit()
+            except sqlite3.OperationalError as e:
+                logging.info(f"Database Error: Commit failed {e}")
         self.lock.release()
         return cursor
 
