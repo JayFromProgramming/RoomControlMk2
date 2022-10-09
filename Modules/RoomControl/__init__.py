@@ -9,6 +9,7 @@ from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.AbstractSmartDevices import background
 from Modules.RoomControl.CommandController import CommandController
+from Modules.RoomControl.DataLogger import DataLoggingHost
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
 from Modules.RoomControl.OccupancyDetection import OccupancyDetector
@@ -126,13 +127,17 @@ class RoomController:
             address = "wopr.eggs.loafclan.org"
             logging.info("Running in prod mode, using wopr.eggs.loafclan.org")
 
+        self.data_logging = DataLoggingHost(self.database,
+                                            room_sensor_host=self.sensor_host, room_controllers=self.controllers)
+
         self.background()
         self.web_server = NetAPI(self.database,
                                  device_controllers=self.controllers,
                                  occupancy_detector=self.occupancy_detector,
                                  scene_controller=self.scene_controller,
                                  command_controller=self.command_controller,
-                                 webserver_address=address)
+                                 webserver_address=address,
+                                 datalogger=self.data_logging)
 
     def init_database(self):
         cursor = self.database.cursor()

@@ -1,0 +1,45 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+<title>Fully Automated Room conTrol</title>
+<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+<style media="all" type="text/css">
+@import "css/main.css";
+</style>
+</head>
+<body>
+<div id="main">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+  <div id="header"> <a href="#" class="logo"><img src="img/logo.gif" width="101" height="29" alt="" /></a>
+    <ul id="top-navigation">
+      <li><span><span><a href="/">Device Controls</a></span></span></li>
+      <li><span><span><a href="#">Scenes</a></span></span></li>
+      <li class="active"><span><span>Data Logs</span></span></li>
+      <li><span><span><a href="#">Settings</a></span></span></li>
+    </ul>
+  </div>
+  <div id="middle">
+    <div id="center-column">
+      <canvas id="graph_canvas" width="400" height="400"></canvas>
+
+    </div>
+    <div id="right-column"> <strong class="h">INFO</strong>
+      <div id="graph_params">
+        <label for="multi_source_select_box"></label>
+        <select id="multi_source_select_box" multiple>
+        </select>
+        <input type="date" id="start_date" value="2000-01-01"></input>
+        <input type="date" id="end_date" value="2000-01-01"></input>
+
+      </div>
+      <div>
+        <button id="generate_graph_button" type="button">Generate Graph</button>
+      </div>
+    </div>
+  </div>
+  <script type="application/javascript" src="js/graph_loader.js"></script>
+  <div id="footer"></div>
+</div>
+</body>
+</html>

@@ -124,6 +124,9 @@ class EnvironmentController:
             logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
             self._reason = "Source is not a sensor"
 
+    def get_value(self):
+        return self.setpoint
+
     def get_state(self):
         value = {
             "on": self.enabled,

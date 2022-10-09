@@ -6,6 +6,7 @@ from Modules.RoomControl.AbstractSmartDevices import background
 
 logging = logging.getLogger(__name__)
 
+
 class SensorHost:
 
     def __init__(self):
@@ -121,6 +122,9 @@ class EnvironmentSensor(Sensor):
 
         # self.read_sensor()
 
+    def get_sensor_values(self):
+        return self.values.values()
+
     @property
     def fault(self):
         return self._fault
@@ -171,4 +175,3 @@ class EnvironmentSensor(Sensor):
                 break  # If the sensor is not initialised, stop trying to read it
             # Wait 5 seconds before reading again
             time.sleep(20)
-

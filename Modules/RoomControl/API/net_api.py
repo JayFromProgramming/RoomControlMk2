@@ -28,13 +28,15 @@ class NetAPI:
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
     def __init__(self, database, device_controllers=None, occupancy_detector=None,
-                 scene_controller=None, command_controller=None, webserver_address="localhost"):
+                 scene_controller=None, command_controller=None, webserver_address="localhost",
+                 datalogger=None):
         self.database = database  # type: ConcurrentDatabase
         self.other_apis = device_controllers
         self.occupancy_detector = occupancy_detector  # type: BluetoothDetector
 
         self.scene_controller = scene_controller  # type: SceneController
         self.command_controller = command_controller  # type: CommandController
+        self.data_logger = datalogger  # type: DataLoggerHost
 
         self.init_database()
 
@@ -68,6 +70,8 @@ class NetAPI:
             + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
             + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
             + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
+            + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
+            + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
         )
 
         # Set webserver address and port
@@ -510,3 +514,26 @@ class NetAPI:
         device = self.get_device(device_id)
         device_action = page_builder.generate_actions(device)
         return web.Response(text=device_action)
+
+    async def handle_data_log_sources(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received DATA_LOG_SOURCES request")
+        sources = self.data_logger.get_sources()
+        names = []
+        for source in sources:
+            names.append(source.name)
+        msg = APIMessageTX(data_log_sources=names)
+        return web.Response(text=msg.__str__())
+
+    async def handle_data_log_get(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received DATA_LOG request")
+        source = request.match_info['log_name']
+        start = request.match_info['start']
+        end = request.match_info['end']
+        data = self.data_logger.get_data(source, start, end)
+        msg = APIMessageTX(data_log=data)
+        return web.Response(text=msg.__str__())
+
