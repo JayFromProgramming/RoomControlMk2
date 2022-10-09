@@ -31,7 +31,8 @@ function initialize_page() {
     // And the end date to now (Must conform to YYYY-MM-DD, the date must have leading zeros eg 2020-01-01)
     let start_date = new Date();
     let end_date = new Date();
-    start_date.setDate(start_date.getDate() - 1);
+    start_date.setHours(start_date.getHours() - 4);
+    end_date.setHours(end_date.getHours() + 1);
     let date_str = start_date.getDate().toString().padStart(2, "0");
     let start_date_string = start_date.getFullYear() + "-" + (start_date.getMonth() + 1) + "-" + date_str;
     date_str = end_date.getDate().toString().padStart(2, "0");
@@ -49,11 +50,20 @@ function initialize_page() {
     let x_axis = {
         type: "time",
         time: {
-            unit: "second",
+            unit: "millisecond",
             displayFormats: {
-                hour: "HH:mm"
+                day: "MMM D",
+                hour: "HH",
+                minute: "HH:mm",
+                second: "HH:mm:ss",
             },
-            tooltipFormat: "DD HH:mm"
+            tooltipFormat: "MMM D, HH:mm:ss"
+        },
+        ticks: {
+            source: "data",
+            autoSkip: true,
+            autoSkipPadding: 20,
+            maxRotation: 45,
         }
     };
 
@@ -120,7 +130,7 @@ function initialize_page() {
             for (let source_data of data) {
                 // Get all the time stamps for each source and add them to the set
                 for (let data_point of source_data["data_log"]) {
-                    all_time_stamps.add(data_point[0]);
+                    all_time_stamps.add(data_point[0]); // Add the time stamp to the set
                 }
             }
 
@@ -132,7 +142,7 @@ function initialize_page() {
                 for (let timestamp of all_time_stamps) {
                     // If the source does not have data for the time stamp, then set the value to null
                     if (!source_data["data_log"].map(data_point => data_point[0]).includes(timestamp)) {
-                        source_data["data_log"].push([timestamp, NaN]);
+                        source_data["data_log"].push([timestamp, NaN]); // Add the time stamp with a null value
                     }
                 }
             }
@@ -145,7 +155,13 @@ function initialize_page() {
                 // Add the data to the graph
                 datasets.push({
                     label: source_data["source"],
-                    data: source_data["data_log"].map(data_point => data_point[1]),
+                    data: source_data["data_log"].map(data_point => {
+                        labels.add(data_point[0]);
+                        return {
+                            x: data_point[0],
+                            y: data_point[1]
+                        }
+                    }),
                     borderColor: colors[color_index],
                     fill: false,
                     pointRadius: 0,
@@ -156,11 +172,6 @@ function initialize_page() {
                     },
                     spanGaps: true
                 });
-
-                // Add the time stamps to the labels
-                for (let data_point of source_data["data_log"]) {
-                    labels.add(data_point[0]);
-                }
 
                 color_index += 1;
 
