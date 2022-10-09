@@ -78,13 +78,30 @@ function initialize_page() {
                     borderColor: colors[color_index],
                 });
                 color_index += 1;
-                // The labels are the timestamps, we need to convert them to a date string
-                labels = data["data_log"].map(x => new Date(x[0] * 1000).toLocaleString());
+                // Add timestamps to the labels, we will convert them to a human readable format later
+                labels = data["data_log"].map(x => x[0]);
             }));
         }
         Promise.all(promises).then(() => {
             chart.data.datasets = datasets;
             chart.data.labels = labels;
+
+            // Convert the timestamps to a human readable format
+            // This is done by overriding the default tick generation function
+
+            // chart.options = {
+            //     scales: {
+            //         xAxes: [{
+            //             ticks: {
+            //                 callback: function (value, index, values) {
+            //                     return new Date(value * 1000).toLocaleString();
+            //                 }
+            //             }
+            //         }]
+            //     }
+            // }
+
+            // Adjust the Y axis scaling to fit the data but not be too zoomed in (Minimum view range is 10 units)
             chart.update();
         });
     });

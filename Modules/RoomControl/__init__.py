@@ -53,12 +53,12 @@ class ConcurrentDatabase(sqlite3.Connection):
         self.lock = CustomLock()
 
     def run(self, sql, *args, **kwargs):
-        cursor = super().cursor()
         self.lock.acquire()
+        cursor = super().cursor()
         cursor.execute(sql, *args)
-        self.lock.release()
         if kwargs.get("commit", True):
             super().commit()
+        self.lock.release()
         return cursor
 
     def get(self, sql, *args):
