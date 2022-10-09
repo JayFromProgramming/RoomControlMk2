@@ -70,7 +70,8 @@ function initialize_page() {
     let y_axis = {
         type: "linear",
         ticks: {
-            beginAtZero: true
+            suggestedMin: 40,
+            suggestedMax: 80,
         }
     }
 
