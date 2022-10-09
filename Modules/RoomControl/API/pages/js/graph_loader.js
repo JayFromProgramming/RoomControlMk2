@@ -45,11 +45,36 @@ function initialize_page() {
     // Generate the blank graph, this will be updated when the user selects the "Generate Graph" button,
     // The Y axis will be updated to the correct dates
     let ctx = document.getElementById("graph_canvas").getContext("2d");
+
+    let x_axis = {
+        type: "time",
+        time: {
+            unit: "second",
+            displayFormats: {
+                hour: "HH:mm"
+            },
+            tooltipFormat: "DD HH:mm"
+        }
+    };
+
+    let y_axis = {
+        type: "linear",
+        ticks: {
+            beginAtZero: true
+        }
+    }
+
     let chart = new Chart(ctx, {
         type: "line",
         data: {
             labels: [],
             datasets: []
+        },
+        options: {
+            scales: {
+                xAxes: [x_axis],
+                yAxes: [y_axis]
+            }
         }
     });
 
@@ -72,6 +97,7 @@ function initialize_page() {
         // Each source needs a different easy to read color, this is used to generate the colors
         let color_index = 0;
         let colors = ["#FF0000", "#00FF00", "#0000FF", "#00FFFF", "#FF00FF", "#000000", "#FFFFFF"];
+        let grey = "#808080";
 
         let promises = [];
         // Note: Each source does not need to have the same amount of data points, so the labels need to be
@@ -82,32 +108,68 @@ function initialize_page() {
             promises.push(fetch_data_log(source.value, start, end));
         }
 
+        let all_time_stamps = new Set(); // Used to create a list of all the time stamps excluding duplicates
+
+        const skipped = (ctx, value) => ctx.p0.skip || ctx.p1.skip ? value : undefined;
+
+
         // Once all the data has been fetched, generate the graph
+        // If a source does not have data for a specific time stamp, then the value will be set to null
         Promise.all(promises).then(data => {
+
+            for (let source_data of data) {
+                // Get all the time stamps for each source and add them to the set
+                for (let data_point of source_data["data_log"]) {
+                    all_time_stamps.add(data_point[0]);
+                }
+            }
+
             let datasets = [];
             let labels = new Set();
+
             for (let source_data of data) {
-                let source = source_data["source"];
-                let data_points = source_data["data_log"];
-                let dataset = {
-                    label: source,
-                    data: [],
-                    fill: false,
-                    borderColor: colors[color_index],
-                    backgroundColor: colors[color_index],
-                    pointRadius: 0,
-                    pointHitRadius: 5
-                };
-                color_index += 1;
-                for (let data_point of data_points) {
-                    let timestamp = data_point[0];
-                    let value = data_point[1];
-                    dataset["data"].push({x: timestamp, y: value});
-                    labels.add(timestamp);
+
+                for (let timestamp of all_time_stamps) {
+                    // If the source does not have data for the time stamp, then set the value to null
+                    if (!source_data["data_log"].map(data_point => data_point[0]).includes(timestamp)) {
+                        source_data["data_log"].push([timestamp, NaN]);
+                    }
                 }
-                datasets.push(dataset);
             }
-            labels = Array.from(labels).sort();
+
+            for (let source_data of data) {
+
+                // Sort the data by the time stamp
+                source_data["data_log"].sort((a, b) => a[0] - b[0]);
+
+                // Add the data to the graph
+                datasets.push({
+                    label: source_data["source"],
+                    data: source_data["data_log"].map(data_point => data_point[1]),
+                    borderColor: colors[color_index],
+                    fill: false,
+                    pointRadius: 0,
+                    pointHitRadius: 5,
+                    segment: {
+                        borderColor: ctx => skipped(ctx, grey),
+                        borderDash: ctx => skipped(ctx, [6, 6])
+                    },
+                    spanGaps: true
+                });
+
+                // Add the time stamps to the labels
+                for (let data_point of source_data["data_log"]) {
+                    labels.add(data_point[0]);
+                }
+
+                color_index += 1;
+
+            }
+
+            // Convert the set of labels to an array and sort it
+            labels = Array.from(labels);
+            labels.sort();
+
             chart.data.labels = labels;
             chart.data.datasets = datasets;
             chart.update();
