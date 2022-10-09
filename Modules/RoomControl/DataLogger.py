@@ -112,7 +112,9 @@ class DataLogger:
                 return  # Don't log if the sensor is faulty
         else:
             return
+
         timestamp = int(time.time())
+
         self.database.run("INSERT INTO data_logging VALUES (?, ?, ?, ?)", (self.uuid, timestamp, value, 1))
 
     def get_logs(self, start_time, end_time):

@@ -40,7 +40,7 @@ class SensorValue:
         self.roll_avg = rolling_average  # type: bool
         self.roll_avg_len = rolling_average_length  # type: int
         self.roll_avg_values = []  # type: list
-        self._fault = False  # type: bool
+        self._fault = True  # type: bool
         self._reason = "Unknown"  # type: str
 
     def get_value(self):

@@ -534,6 +534,6 @@ class NetAPI:
         start = request.match_info['start']
         end = request.match_info['end']
         data = self.data_logger.get_data(source, start, end)
-        msg = APIMessageTX(data_log=data)
+        msg = APIMessageTX(data_log=data, source=source)
         return web.Response(text=msg.__str__())
 
