@@ -50,17 +50,12 @@ function initialize_page() {
     let x_axis = {
         type: "time",
         time: {
-            unit: "millisecond",
-            displayFormats: {
-                day: "MMM D",
-                hour: "HH",
-                minute: "HH:mm",
-                second: "HH:mm:ss",
-            },
-            tooltipFormat: "MMM D, HH:mm:ss"
+            unit: "minute",
+            parser: "X",
+            tooltipFormat: "YYYY-MM-DD HH:mm:ss",
         },
         ticks: {
-            source: "data",
+            source: "labels",
             autoSkip: true,
             autoSkipPadding: 20,
             maxRotation: 45,
@@ -159,6 +154,7 @@ function initialize_page() {
                     data: source_data["data_log"].map(data_point => {
                         labels.add(data_point[0]);
                         return {
+                            // Convert the time stamp to a date format string (not object, this is important)
                             x: data_point[0],
                             y: data_point[1]
                         }

@@ -68,6 +68,8 @@ class DataLoggingHost:
         cursor = self.loggers[source].get_logs(start_time, end_time)
         data = []
         for row in cursor:
+            # Generate an ISO 8601 timestamp
+            # timestamp = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(row[1]))
             data.append((row[1], row[2]))
         return data
 
@@ -85,6 +87,7 @@ class DataLogger:
         self.enabled = True
         self.attribute = attribute
         self.uuid = uuid
+        self.senicide()  # Remove old logs
         self.start_logging()
 
     @background
@@ -121,3 +124,7 @@ class DataLogger:
         """Get the logs between the start and end time"""
         return self.database.get("SELECT * FROM data_logging WHERE id = ? AND timestamp >= ? AND timestamp <= ?",
                                  (self.uuid, start_time, end_time))
+
+    def senicide(self):
+        """Remove logs older than 2 days"""
+        self.database.run("DELETE FROM data_logging WHERE timestamp < ? AND id = ?", (int(time.time()) - 172800, self.uuid))

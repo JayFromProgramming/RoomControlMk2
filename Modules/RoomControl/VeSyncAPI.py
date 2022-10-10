@@ -133,3 +133,15 @@ class VeSyncPlug(AbstractToggleDevice):
 
     def __repr__(self):
         return self.__str__()
+
+    def power(self):
+        return self.get_info()["power"]
+
+    def voltage(self):
+        return self.get_info()["voltage"]
+
+    def energy(self):
+        return self.get_info()["energy"]
+
+    def active_time(self):
+        return self.get_info()["active_time"]
