@@ -26,19 +26,25 @@
       <canvas id="graph_canvas" width="400" height="400"></canvas>
 
     </div>
-    <div id="right-column"> <strong class="h">INFO</strong>
+    <div id="right-column-graph">
       <div id="graph_params">
-        <label for="multi_source_select_box"></label>
-        <select id="multi_source_select_box" multiple>
-        </select>
-        <input type="date" id="start_date" value="2000-01-01"></input>
-        <input type="time" id="start_time" value="00:00"></input>
-        <input type="date" id="end_date" value="2000-01-01"></input>
-        <input type="time" id="end_time" value="00:00"></input>
-
+        <strong class="h">Graph Parameters</strong>
+        <div class="box">
+          <h>Preset: </h>
+          <label for="preset_selector"></label>
+          <select id="preset_selector">
+          </select>
+          <input type="checkbox" id="time_override">Override Time</input>
+          <div class="box">
+            <input type="date" id="start_date" value="2000-01-01">
+            <input type="time" id="start_time" value="00:00">
+            <input type="date" id="end_date" value="2000-01-01">
+            <input type="time" id="end_time" value="00:00">
+          </div>
+          <button id="generate_graph_button" type="button">Generate Graph</button>
+        </div>
       </div>
-      <div>
-        <button id="generate_graph_button" type="button">Generate Graph</button>
+
       </div>
     </div>
   </div>

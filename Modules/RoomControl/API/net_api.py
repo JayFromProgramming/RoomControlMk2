@@ -517,11 +517,8 @@ class NetAPI:
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         # logging.info("Received DATA_LOG_SOURCES request")
-        sources = self.data_logger.get_sources()
-        names = []
-        for source in sources:
-            names.append(source.name)
-        msg = APIMessageTX(data_log_sources=names)
+        presets = self.data_logger.get_presets()
+        msg = APIMessageTX(presets=presets)
         return web.Response(text=msg.__str__())
 
     async def handle_data_log_get(self, request):

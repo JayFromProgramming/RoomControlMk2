@@ -121,6 +121,11 @@ a.logo {
 	padding:0 9px 0 0;
 	width:133px;
 	}
+#right-column-graph{
+	float:right;
+	padding:0 9px 0 0;
+	width: 260px;
+}
 /* center column */
 #center-column {
 	float:left;
@@ -337,6 +342,15 @@ div.table .select select {
 	color:#fff;
 	text-transform:uppercase;
 	}
+#right-column-graph .h {
+	float:left;
+	background:#7E878A;
+	border:1px solid #B8B8B8;
+	border-bottom:0;
+	padding:3px 10px;
+	color:#fff;
+	text-transform:uppercase;
+}
 /* right column box */
 #right-column .box {
 	float:left;
@@ -346,6 +360,15 @@ div.table .select select {
 	background:#EBEBEB;
 	margin:0 0 15px 0;
 	}
+#right-column-graph .box {
+	float:left;
+	width:240px;
+	padding:5px;
+	border:1px solid #B8B8B8;
+	background:#EBEBEB;
+	margin:0 0 15px 0;
+}
+
 	
 /* right column buttons */
 .buttons {

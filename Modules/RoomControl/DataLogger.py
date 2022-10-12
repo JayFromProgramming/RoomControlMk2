@@ -40,7 +40,10 @@ class DataLoggingHost:
                         attribute TEXT DEFAULT NULL, uuid INTEGER PRIMARY KEY AUTOINCREMENT)""")
         cursor.execute("""CREATE TABLE IF NOT EXISTS
                         data_logging (id INTEGER REFERENCES data_sources(uuid),
-                         timestamp integer, value TEXT, compression_level integer)""")
+                         timestamp TIMESTAMP, value TEXT, compression_level integer)""")
+        cursor.execute("""CREATE TABLE IF NOT EXISTS
+                        web_graphing_presets(name text, data_sources text, time_range integer)""")
+
         cursor.close()
         self.database.commit()
 
@@ -72,6 +75,29 @@ class DataLoggingHost:
             # timestamp = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(row[1]))
             data.append((row[1], row[2]))
         return data
+
+    def get_presets(self):
+        presets = self.database.get("SELECT * FROM web_graphing_presets")
+
+        results = {}
+
+        for preset in presets:
+
+            if preset[1] is None:
+                sources = self.database.get("SELECT * FROM data_sources")
+            else:
+                sources = self.database.get("SELECT * FROM data_sources WHERE uuid IN ({})".format(preset[1]))
+
+            source_names = []
+            for source in sources:
+                source_names.append(source[0])
+
+            results[preset[0]] = {
+                "time_range": preset[2],
+                "data_sources": source_names
+            }
+
+        return results
 
 
 class DataLogger:
