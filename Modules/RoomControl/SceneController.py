@@ -236,6 +236,8 @@ class SceneTrigger:
         logging.info(f"SceneTrigger ({self.trigger_name}): Trigger primed, will execute in {execution_delay} seconds")
         time.sleep(execution_delay)
         self.execute()
+        # Re-prime the trigger after it has executed
+        self.prime()
 
     def execute_command(self):
         match self.api_action:
