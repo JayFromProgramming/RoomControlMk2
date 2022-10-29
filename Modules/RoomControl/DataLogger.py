@@ -148,7 +148,9 @@ class DataLogger:
 
     def get_logs(self, start_time, end_time):
         """Get the logs between the start and end time"""
-        logging.info(f"DataLogger ({self.name}): Getting logs between {start_time} and {end_time}")
+        start_stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_time))
+        end_stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(end_time))
+        logging.info(f"DataLogger ({self.name}): Getting logs between {start_stamp} and {end_stamp}")
         fetch_start = time.time()
         result = self.database.get("SELECT * FROM data_logging WHERE id = ? AND timestamp >= ? AND timestamp <= ?",
                                    (self.uuid, start_time, end_time))
@@ -156,7 +158,7 @@ class DataLogger:
         return result
 
     def senicide(self):
-        """Remove logs older than 2 days"""
+        """Remove logs older than 4 days"""
         logging.info(f"DataLogger ({self.name}): Removing old logs")
         self.database.run("DELETE FROM data_logging WHERE timestamp < ? AND id = ?",
-                          (int(time.time()) - 172800, self.uuid))
+                          (int(time.time()) - 345600, self.uuid))
