@@ -1,3 +1,4 @@
+import datetime
 import time
 import logging
 
@@ -148,8 +149,8 @@ class DataLogger:
 
     def get_logs(self, start_time, end_time):
         """Get the logs between the start and end time"""
-        start_stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_time))
-        end_stamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(end_time))
+        start_stamp = datetime.datetime.fromtimestamp(int(start_time)).strftime("%Y-%m-%dT%H:%M:%S")
+        end_stamp = datetime.datetime.fromtimestamp(int(end_time)).strftime("%Y-%m-%dT%H:%M:%S")
         logging.info(f"DataLogger ({self.name}): Getting logs between {start_stamp} and {end_stamp}")
         fetch_start = time.time()
         result = self.database.get("SELECT * FROM data_logging WHERE id = ? AND timestamp >= ? AND timestamp <= ?",
