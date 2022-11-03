@@ -309,6 +309,8 @@ class BluetoothDetector:
         cursor.execute("SELECT * FROM bluetooth_occupancy")
         occupancy = cursor.fetchall()
         cursor.close()
+        if not self.enabled:
+            return False
         for device in occupancy:
             if device[1] == 1:
                 return True
