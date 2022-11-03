@@ -174,6 +174,7 @@ class LightController:
                     device.set_color(state.color)
                 if hasattr(state, "white"):
                     device.set_white(state.white)
+            time.sleep(1)
             # Verify the light properly changed state to the desired state
             for device in self.light_control_devices.values():
                 if hasattr(state, "on"):
