@@ -147,11 +147,11 @@ class LightController:
 
     def update(self):
         if self.enabled:
-            if self.current_state != 1 and self.current_state != 2:  # If the state isn't already on or faulted
+            if self.current_state != 1 and self.current_state != 2:  # If the state isn't already on or motion
                 if self.occupancy_detector.bluetooth_fault():  # If the bluetooth detector has faulted
                     if self.fault_state is not None:  # If there is a fault state to go to
                         self.set_state(3, self.fault_state)  # Set the state to fault
-            if self.current_state == 0 or self.current_state == 3:  # If the state is off or faulted
+            if self.current_state != 1:  # If the state is off or faulted
                 if self.occupancy_detector.was_activity_recent():  # If there was activity in the room recently
                     if self.door_motion_state is not None:
                         self.set_state(2, self.door_motion_state)

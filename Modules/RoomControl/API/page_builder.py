@@ -39,7 +39,7 @@ def pin_state_description(device):
         else:
             return f"Armed: Last Active: {last_active.strftime('%I:%M:%S %p') if last_active != 0 else 'Unknown'}"
     else:
-        return "Disabled"
+        return "DISABLED"
 
 
 def blue_stalker_state(device):
