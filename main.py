@@ -1,7 +1,7 @@
 import logging
 
 logging.basicConfig(level=logging.INFO,
-                    format=r"%(levelname)s - %(threadName)s - %(name)s - %(funcName)s - %(message)s",
+                    format=r"%(levelname)s - %(threadName)s - %(name)s.%(funcName)s - %(message)s",
                     datefmt='%H:%M:%S')
 
 
