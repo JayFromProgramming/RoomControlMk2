@@ -82,6 +82,8 @@ class BluetoothDetector:
     @background
     def life_check(self):
         """Check if connections are alive, but doesn't run connect"""
+        if not self.enabled:
+            return
         logging.info("BlueStalker: Starting Life Check")
 
         heartbeat_was_alive = self.heartbeat_alive
