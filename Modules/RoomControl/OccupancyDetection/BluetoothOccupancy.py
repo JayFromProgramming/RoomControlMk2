@@ -338,6 +338,8 @@ class BluetoothDetector:
         if device is None:
             return None
         cursor.close()
+        if not self.enabled:
+            return False
         return True if device[1] == 1 else False
 
     def get_name(self, uuid):
