@@ -180,6 +180,7 @@ class LightController:
                     if hasattr(state, "white"):
                         device.set_white(state.white)
                 time.sleep(5)
+                self.changing_state = False
                 # Verify the light properly changed state to the desired state
                 for device in self.light_control_devices.values():
                     if hasattr(state, "on"):
@@ -211,7 +212,6 @@ class LightController:
                             self.current_state = prev_state
                             return
                 logging.info(f"LightController: {self.controller_name} successfully changed state to {state_val}")
-                self.changing_state = False
         except Exception as e:
             logging.error(f"LightController: {self.controller_name} failed to change state to {state_val} due to {e}")
             self.current_state = prev_state
