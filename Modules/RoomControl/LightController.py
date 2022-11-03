@@ -261,6 +261,7 @@ class LightController:
     @on.setter
     def on(self, value):
         self.enabled = value
+        self.changing_state = False
         cursor = self.database.cursor()
         self.database.lock.acquire()
         cursor.execute("UPDATE light_controllers SET enabled=? WHERE name=?", (value, self.controller_name))
