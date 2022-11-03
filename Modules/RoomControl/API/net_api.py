@@ -422,7 +422,7 @@ class NetAPI:
     async def handle_get_scenes(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received GET_SCENES request")
+        logging.debug("Received GET_SCENES request")
 
         if self.scene_controller is None:
             msg = APIMessageTX(error="Scene controller not found")
@@ -474,7 +474,7 @@ class NetAPI:
     async def handle_sys_info(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received SYS_INFO request")
+        logging.debug("Received SYS_INFO request")
 
         return web.Response(text=generate_sys_info().__str__())
 

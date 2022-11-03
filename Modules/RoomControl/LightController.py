@@ -174,6 +174,29 @@ class LightController:
                     device.set_color(state.color)
                 if hasattr(state, "white"):
                     device.set_white(state.white)
+            # Verify the light properly changed state to the desired state
+            for device in self.light_control_devices.values():
+                if hasattr(state, "on"):
+                    if device.get_on() != state.on:
+                        logging.error(f"LightController: {self.controller_name}"
+                                      f" failed to change state to {state_val}")
+                        return
+                if hasattr(state, "brightness"):
+                    if device.get_brightness() != state.brightness:
+                        logging.error(f"LightController: {self.controller_name}"
+                                      f" failed to change state to {state_val}")
+                        return
+                if hasattr(state, "color"):
+                    if device.get_color() != state.color:
+                        logging.error(f"LightController: {self.controller_name}"
+                                      f" failed to change state to {state_val}")
+                        return
+                if hasattr(state, "white"):
+                    if device.get_white() != state.white:
+                        logging.error(f"LightController: {self.controller_name}"
+                                      f" failed to change state to {state_val}")
+                        return
+            logging.info(f"LightController: {self.controller_name} successfully changed state to {state_val}")
 
     def get_state(self):
         return {
