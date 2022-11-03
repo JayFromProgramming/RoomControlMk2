@@ -448,7 +448,7 @@ class NetAPI:
     async def handle_get_commands(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
-        logging.info("Received GET_COMMANDS request")
+        logging.debug("Received GET_COMMANDS request")
 
         if self.command_controller is None:
             msg = APIMessageTX(error="Scene controller not found")
