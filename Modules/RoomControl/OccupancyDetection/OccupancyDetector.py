@@ -90,7 +90,7 @@ class OccupancyDetector:
     def bluetooth_fault(self):
         return self.blue_stalker.fault or not self.blue_stalker.online
 
-    def was_activity_recent(self, seconds=5):
+    def was_activity_recent(self, seconds=60):
         return self.last_activity + seconds > time.time()
 
     def is_here(self, device):
