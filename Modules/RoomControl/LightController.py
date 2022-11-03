@@ -111,6 +111,7 @@ class LightController:
         self.enabled = True if controller[3] == 1 else False
 
         self.online = True
+        self.changing_state = False
         self.current_state = controller[4]
 
         self.occupancy_detector = occupancy_detector
@@ -146,7 +147,7 @@ class LightController:
         return False
 
     def update(self):
-        if self.enabled:
+        if self.enabled and not self.changing_state:
             if self.current_state != 1 and self.current_state != 2:  # If the state isn't already on or motion
                 if self.occupancy_detector.bluetooth_fault():  # If the bluetooth detector has faulted
                     if self.fault_state is not None:  # If there is a fault state to go to
@@ -163,51 +164,58 @@ class LightController:
 
     @background
     def set_state(self, state_val, state=None):
-        if self.current_state != state_val:
-            prev_state = self.current_state
-            self.current_state = state_val
-            logging.info(f"LightController: {self.controller_name} is changing state to {state_val}")
-            for device in self.light_control_devices.values():
-                if hasattr(state, "on"):
-                    device.set_on(state.on)
-                if hasattr(state, "brightness"):
-                    device.set_brightness(state.brightness)
-                if hasattr(state, "color"):
-                    device.set_color(state.color)
-                if hasattr(state, "white"):
-                    device.set_white(state.white)
-            time.sleep(5)
-            # Verify the light properly changed state to the desired state
-            for device in self.light_control_devices.values():
-                if hasattr(state, "on"):
-                    if device.get_on() != state.on:
-                        logging.error(f"LightController: {self.controller_name}"
-                                      f" failed to change state to [{state_val}]"
-                                      f" [{device.get_on()} != {state.on}]")
-                        self.current_state = prev_state
-                        return
-                if hasattr(state, "brightness"):
-                    if device.get_brightness() != state.brightness:
-                        logging.error(f"LightController: {self.controller_name}"
-                                      f" failed to change state to [{state_val}] "
-                                      f"[{device.get_brightness()} != {state.brightness}]")
-                        self.current_state = prev_state
-                        return
-                if hasattr(state, "color"):
-                    if list(device.get_color()) != state.color:
-                        logging.error(f"LightController: {self.controller_name}"
-                                      f" failed to change state to [{state_val}]"
-                                      f" [{device.get_color()} != {state.color}]")
-                        self.current_state = prev_state
-                        return
-                if hasattr(state, "white"):
-                    if device.get_brightness() != state.white:
-                        logging.error(f"LightController: {self.controller_name}"
-                                      f" failed to change state to [{state_val}] "
-                                      f"[{device.get_brightness()} != {state.white}]")
-                        self.current_state = prev_state
-                        return
-            logging.info(f"LightController: {self.controller_name} successfully changed state to {state_val}")
+        prev_state = self.current_state
+        try:
+            if self.current_state != state_val:
+                self.changing_state = True
+                self.current_state = state_val
+                logging.info(f"LightController: {self.controller_name} is changing state to {state_val}")
+                for device in self.light_control_devices.values():
+                    if hasattr(state, "on"):
+                        device.set_on(state.on)
+                    if hasattr(state, "brightness"):
+                        device.set_brightness(state.brightness)
+                    if hasattr(state, "color"):
+                        device.set_color(state.color)
+                    if hasattr(state, "white"):
+                        device.set_white(state.white)
+                time.sleep(5)
+                # Verify the light properly changed state to the desired state
+                for device in self.light_control_devices.values():
+                    if hasattr(state, "on"):
+                        if device.get_on() != state.on:
+                            logging.error(f"LightController: {self.controller_name}"
+                                          f" failed to change state to [{state_val}]"
+                                          f" [{device.get_on()} != {state.on}]")
+                            self.current_state = prev_state
+                            return
+                    if hasattr(state, "brightness"):
+                        if device.get_brightness() != state.brightness:
+                            logging.error(f"LightController: {self.controller_name}"
+                                          f" failed to change state to [{state_val}] "
+                                          f"[{device.get_brightness()} != {state.brightness}]")
+                            self.current_state = prev_state
+                            return
+                    if hasattr(state, "color"):
+                        if list(device.get_color()) != state.color:
+                            logging.error(f"LightController: {self.controller_name}"
+                                          f" failed to change state to [{state_val}]"
+                                          f" [{device.get_color()} != {state.color}]")
+                            self.current_state = prev_state
+                            return
+                    if hasattr(state, "white"):
+                        if device.get_brightness() != state.white:
+                            logging.error(f"LightController: {self.controller_name}"
+                                          f" failed to change state to [{state_val}] "
+                                          f"[{device.get_brightness()} != {state.white}]")
+                            self.current_state = prev_state
+                            return
+                logging.info(f"LightController: {self.controller_name} successfully changed state to {state_val}")
+                self.changing_state = False
+        except Exception as e:
+            logging.error(f"LightController: {self.controller_name} failed to change state to {state_val} due to {e}")
+            self.current_state = prev_state
+            self.changing_state = False
 
     def get_state(self):
         return {
