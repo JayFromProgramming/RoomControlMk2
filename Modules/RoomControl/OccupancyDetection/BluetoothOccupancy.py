@@ -73,7 +73,13 @@ class BluetoothDetector:
 
     def should_scan(self):
         """Called externally to tell that it is time to scan"""
+        if not self.enabled:
+            return False
+        if not self.online:
+            logging.warning("Bluetooth is offline, scan request rejected")
+            return False
         if self.scan_lockout_time > datetime.datetime.now().timestamp():
+            logging.warning("Scan lockout time has not expired, scan request rejected")
             return False
         logging.info("BlueStalker: Scanning on request")
         self.scan()
