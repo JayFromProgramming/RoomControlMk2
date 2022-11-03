@@ -161,6 +161,7 @@ class LightController:
                 elif not self.occupancy_detector.was_activity_recent():
                     self.set_state(0, self.inactive_state)
 
+    @background
     def set_state(self, state_val, state=None):
         if self.current_state != state_val:
             prev_state = self.current_state
