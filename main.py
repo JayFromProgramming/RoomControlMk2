@@ -1,21 +1,19 @@
-from Modules import RoomControl
-import asyncio
 import logging
-import sqlite3
 
-from Modules.RoomControl.AbstractSmartDevices import background
-
-logging.basicConfig(level=logging.DEBUG,
-                    format=f"%(asctime)s - %(name)s - %(thread)s - %(levelname)s - %(message)s",
+logging.basicConfig(level=logging.INFO,
+                    format=r"%(levelname)s - %(threadName)s - %(name)s - %(funcName)s - %(message)s",
                     datefmt='%H:%M:%S')
 
-logging = logging.getLogger(__name__)
+
+from Modules import RoomControl
+import asyncio
+from Modules.RoomControl.AbstractSmartDevices import background
+
 room_controller = RoomControl.RoomController()
 
 
 async def main():
     logging.info("Starting main")
-
     while True:
         await asyncio.sleep(5)
         room_controller.refresh()
@@ -24,6 +22,8 @@ async def main():
 @background
 def other_main():
     asyncio.new_event_loop()
+
+    # logging = logging.getLogger(__name__)
     asyncio.run(main())
 
 
