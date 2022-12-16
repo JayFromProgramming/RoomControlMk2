@@ -37,7 +37,7 @@ def pin_state_description(device):
         if state["triggered"]:
             return f"Active: {active_time:.2f}s"
         else:
-            return f"Armed: Last Active: {last_active.strftime('%I:%M:%S %p') if last_active != 0 else 'Unknown'}"
+            return f"Armed: Last Active: {last_active.strftime('%I:%M:%S %p %m/%d') if last_active != 0 else 'Unknown'}"
     else:
         return "DISABLED"
 
