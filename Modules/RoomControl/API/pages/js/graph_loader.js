@@ -51,9 +51,11 @@ class PresetSelector {
         const override_selected = document.getElementById("time_override");
         if (!override_selected.checked) {
             let date_str = start_date.getDate().toString().padStart(2, "0");
-            let start_date_string = start_date.getFullYear() + "-" + (start_date.getMonth() + 1) + "-" + date_str;
+            let date_month = (start_date.getMonth() + 1).toString().padStart(2, "0");
+            let start_date_string = start_date.getFullYear() + "-" + date_month + "-" + date_str;
             date_str = end_date.getDate().toString().padStart(2, "0");
-            let end_date_string = end_date.getFullYear() + "-" + (end_date.getMonth() + 1) + "-" + date_str;
+            date_month = (end_date.getMonth() + 1).toString().padStart(2, "0");
+            let end_date_string = end_date.getFullYear() + "-" + date_month + "-" + date_str;
 
             document.getElementById("start_date").value = start_date_string;
             document.getElementById("end_date").value = end_date_string;
