@@ -111,7 +111,7 @@ class NetworkOccupancyDetector:
         self.init_database()
         self.devices = []
         self.load_devices()
-        self.periodic_refresh()
+        self.net_detect_periodic_refresh()
 
     def init_database(self):
         self.database.run(
@@ -137,7 +137,7 @@ class NetworkOccupancyDetector:
         return False
 
     @background
-    def periodic_refresh(self):
+    def net_detect_periodic_refresh(self):
         logging.info("Starting periodic refresh")
         while True:
             try:
