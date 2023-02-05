@@ -141,16 +141,11 @@ class NetworkOccupancyDetector:
     @background
     def net_detect_periodic_refresh(self):
         logging.info("Starting periodic refresh")
-        if os.name == "posix":
-            from command_runner.elevate import elevate
         while True:
             try:
                 for device in self.devices:
                     if device.needs_ping():
-                        if os.name == "posix":
-                            elevate(device.ping)
-                        else:
-                            device.ping()
+                        device.ping()
                         device.update_db()
             except Exception as e:
                 logging.error(f"Error in periodic refresh: {e}")
