@@ -1,4 +1,5 @@
 import logging
+import typing
 
 import magichue
 import asyncio
@@ -126,6 +127,7 @@ class MagicDevice(AbstractRGB):
         super().__init__(macaddr, database=database)
         self.online = False
         self.api = api
+        self.light = None  # type: magichue.RemoteLight or None
 
         if database is not None:
             cursor = database.cursor()
@@ -294,6 +296,21 @@ class MagicDevice(AbstractRGB):
         else:
             return False
 
+    @background
+    def set_custom_mode(self, speed: int, colors: list):
+        if self.online:
+            try:
+                mode = magichue.CustomMode("CustomMode", speed, colors)
+                self.light.mode = mode
+            except magichue.exceptions.MagicHueAPIError as e:
+                print(f"{self.macaddr} set custom mode error: {e}")
+        else:
+            print(f"{self.macaddr} is offline")
+
+    @background
+    def set_mode(self, mode):
+        pass
+
     def get_status(self):
         if self.online:
             try:
@@ -304,7 +321,7 @@ class MagicDevice(AbstractRGB):
                     "white": self.light.w,
                     "cold_white": self.light.cw,
                     "white_enabled": self.light.is_white,
-                    "mode": self.light.mode._status_text(),
+                    "mode": self.light.mode.name(),
                     "control_type": "MANUAL" if not self.is_auto else "AUTOMATIC",
                 }
                 return status

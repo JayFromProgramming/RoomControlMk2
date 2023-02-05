@@ -1,9 +1,9 @@
 import logging
+
 #  %(name)s.%(funcName)s
 logging.basicConfig(level=logging.INFO,
                     format=r"%(levelname)s - %(threadName)s - %(message)s",
                     datefmt='%H:%M:%S')
-
 
 from Modules import RoomControl
 import asyncio

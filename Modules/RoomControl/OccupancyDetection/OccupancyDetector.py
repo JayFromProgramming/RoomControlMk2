@@ -3,6 +3,7 @@ import logging
 import time
 
 from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.OccupancyDetection.MTUNetOccupancy import NetworkOccupancyDetector
 
 logging = logging.getLogger(__name__)
 
@@ -23,6 +24,8 @@ class OccupancyDetector:
         self.last_activity = 0  # type: int # Last time a user was detected either by door or motion sensor
 
         self.blue_stalker = BluetoothDetector(self.database, high_frequency_scan_enabled=False if GPIO else True)
+        self.net_stalker = NetworkOccupancyDetector(self.database)
+
         if GPIO:
             GPIO.setmode(GPIO.BOARD)
 
@@ -95,6 +98,9 @@ class OccupancyDetector:
 
     def is_here(self, device):
         return self.blue_stalker.is_here(device)
+
+    def on_campus(self, device):
+        return self.net_stalker.is_on_campus(device)
 
     def get_name(self, device):
         return self.blue_stalker.get_name(device)

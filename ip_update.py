@@ -1,0 +1,19 @@
+import datetime
+import sqlite3
+import argparse
+
+# This python program is called remotely over SSH by a phone to allow it to update its ip address in the database
+
+parser = argparse.ArgumentParser(description="Update the ip address of a device in the database")
+parser.add_argument("device", help="The name of the device to update")
+parser.add_argument("ip", help="The ip address of the device")
+args = parser.parse_args()
+
+database = sqlite3.connect("room_data.db", check_same_thread=False)
+cursor = database.cursor()
+
+cursor.execute("UPDATE devices SET ip_address = ?, last_ip_update = ? WHERE name = ?",
+               (args.ip, datetime.datetime.now().timestamp(), args.device))
+
+database.commit()
+database.close()
