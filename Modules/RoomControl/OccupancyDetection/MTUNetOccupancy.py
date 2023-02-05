@@ -51,16 +51,17 @@ class Device:
         try:
             logging.info(f"Pinging {self.name}")
             timeout = 1
-            response = pythonping.ping(self.ip_address, count=1, timeout=timeout)
-            if response.rtt_avg_ms < timeout * 1000:
+            response = pythonping.ping(self.ip_address, count=4, timeout=timeout)
+            if response.packet_loss != 1:
                 logging.info(f"Ping successful for {self.name}, RTT: {response.rtt_avg_ms} ms")
                 self.missed_pings = 0
                 self.last_seen = datetime.datetime.now()
                 self.on_campus = True
                 return True
             else:
+                packet_loss = response.packet_loss * 100
                 self.missed_pings += 1
-                logging.info(f"Ping unsuccessful for {self.name}, missed {self.missed_pings} pings")
+                logging.info(f"Ping unsuccessful for {self.name}, packet loss: {packet_loss}, missed pings: {self.missed_pings}")
                 if self.missed_pings > 4:
                     self.on_campus = False
                     self.missed_pings = 0
