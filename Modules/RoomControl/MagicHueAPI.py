@@ -321,7 +321,7 @@ class MagicDevice(AbstractRGB):
                     "white": self.light.w,
                     "cold_white": self.light.cw,
                     "white_enabled": self.light.is_white,
-                    "mode": self.light.mode.name(),
+                    "mode": self.light.mode.name,
                     "control_type": "MANUAL" if not self.is_auto else "AUTOMATIC",
                 }
                 return status
