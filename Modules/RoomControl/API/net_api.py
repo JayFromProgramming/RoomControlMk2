@@ -49,6 +49,7 @@ class NetAPI:
             + [web.get('/auth/{api_key}', self.handle_auth)]  # When visited it will set a cookie to allow access to the API
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
+            + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
             + [web.get('/web_control/{name}', self.handle_web_control)]
             + [web.post('/web_control/{name}', self.handle_web_control)]
             + [web.get('/get_all', self.handle_get_all)]
@@ -531,3 +532,12 @@ class NetAPI:
         data = self.data_logger.get_data(source, start, end)
         msg = APIMessageTX(data_log=data, source=source)
         return web.Response(text=msg.__str__())
+
+    async def handle_device_ping_update(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received DEVICE_PING_UPDATE request")
+        device_id = request.match_info['device_id']
+        device = self.get_device(device_id)
+        device.ping()
+        return web.Response(text="OK")
