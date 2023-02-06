@@ -5,9 +5,39 @@ import time
 
 from Modules.RoomControl.AbstractSmartDevices import background
 import logging
-import pythonping
+import subprocess
 
 logging = logging.getLogger(__name__)
+
+
+def ping(ip_address, count=4, timeout=1) -> (float, float):
+    if os.name == "nt":
+        command = f"ping -n {count} -w {timeout * 1000} {ip_address}"
+    else:
+        command = f"ping -c {count} -W {timeout} {ip_address}"
+
+    logging.info(f"Running command: {command}")
+
+    result = subprocess.run(command, shell=True, capture_output=True)
+
+    # Get the average time and the packet loss
+    output = result.stdout.decode("utf-8")
+    logging.info(f"Output: {output}")
+
+    # Get the average time
+    try:
+        if os.name == "nt":
+            average_time = output.split("Average = ")[1].split("ms")[0]
+            # Get the packet loss
+            packet_loss = float(output.split("Lost = ")[1].split("(")[0]) / count
+        else:
+            average_time = output.split("avg = ")[1].split("ms")[0]
+            # Get the packet loss
+            packet_loss = output.split("loss = ")[1].split("%")[0]
+    except IndexError:
+        logging.info("Failed to get the average time or packet loss")
+        return None, 1
+    return float(average_time), float(packet_loss)
 
 
 class Device:
@@ -52,15 +82,15 @@ class Device:
         try:
             logging.info(f"Pinging {self.name}")
             timeout = 1
-            response = pythonping.ping(self.ip_address, count=4, timeout=timeout)
-            if response.packet_loss != 1:
-                logging.info(f"Ping successful for {self.name}, RTT: {response.rtt_avg_ms} ms")
+            response = ping(self.ip_address, timeout=timeout, count=4)
+            if response[1] == 0:
+                logging.info(f"Ping successful for {self.name}, RTT: {response[0]}")
                 self.missed_pings = 0
                 self.last_seen = datetime.datetime.now()
                 self.on_campus = True
                 return True
             else:
-                packet_loss = response.packet_loss * 100
+                packet_loss = response[1]
                 self.missed_pings += 1
                 logging.info(f"Ping unsuccessful for {self.name}, packet loss: {packet_loss}, missed pings: {self.missed_pings}")
                 if self.missed_pings > 4:
