@@ -31,9 +31,13 @@ def ping(ip_address, count=4, timeout=1) -> (float, float):
             # Get the packet loss
             packet_loss = float(output.split("Lost = ")[1].split("(")[0]) / count
         else:
-            average_time = output.split("avg = ")[1].split("ms")[0]
+            output_template = "%d packets transmitted, %d received, %d%% packet loss, time %dms"
+            # Use the template to get the values from the output
+            values = output_template % tuple(map(int, output.split(", ")))
+            # Get the average time
+            average_time = values.split("time ")[1].split("ms")[0]
             # Get the packet loss
-            packet_loss = output.split("loss = ")[1].split("%")[0]
+            packet_loss = float(values.split("packet loss, ")[1].split("%")[0]) / 100
     except IndexError:
         logging.info("Failed to get the average time or packet loss")
         return None, 1
