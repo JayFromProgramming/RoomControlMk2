@@ -6,6 +6,7 @@ import time
 from Modules.RoomControl.AbstractSmartDevices import background
 import logging
 import subprocess
+import pyparsing as pp
 
 logging = logging.getLogger(__name__)
 
@@ -26,23 +27,24 @@ def ping(ip_address, count=4, timeout=1) -> (float, float):
 
     # Get the average time
     try:
-        if os.name == "nt":
-            average_time = output.split("Average = ")[1].split("ms")[0]
-            # Get the packet loss
-            packet_loss = float(output.split("Lost = ")[1].split("(")[0]) / count
-        else:
-            output_template = "%d packets transmitted, %d received, %d%% packet loss, time %dms"
-            # Use the template to get the values from the output
-            values = output_template % tuple(map(int, output.split(", ")))
-            # Get the average time
-            average_time = values.split("time ")[1].split("ms")[0]
-            # Get the packet loss
-            packet_loss = float(values.split("packet loss, ")[1].split("%")[0]) / 100
-    except IndexError:
-        logging.info("Failed to get the average time or packet loss")
-        return None, 1
-    return float(average_time), float(packet_loss)
 
+        if os.name == "nt":
+            packet_loss = pp.Word(pp.nums) + "%"
+            average_time = pp.Word("Average = ") + pp.Word(pp.nums) + "ms"
+        else:
+            packet_loss = pp.Word(pp.nums) + "%"
+            average_time = pp.Word("time=") + pp.Word(pp.nums) + "ms"
+
+        packet_loss = packet_loss.parseString(output)
+        average_time = average_time.parseString(output)
+    except pp.ParseException as e:
+        logging.info(f"Failed to parse output: {e}")
+        return None, 1
+
+    packet_loss = float(packet_loss[0])
+    average_time = float(average_time[0])
+
+    return average_time, packet_loss / 100
 
 class Device:
 

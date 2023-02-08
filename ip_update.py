@@ -22,6 +22,11 @@ def main():
 
 
 if __name__ == "__main__":
+
+    # Make sure the working directory is the same as the location of this file
+    import os
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
     try:
         main()
     except Exception as e:
