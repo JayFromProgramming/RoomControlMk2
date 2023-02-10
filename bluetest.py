@@ -7,6 +7,8 @@ class ScanDelegate(DefaultDelegate):
         DefaultDelegate.__init__(self)
 
     def handleDiscovery(self, dev, isNewDev, isNewData):
+        if dev.addrType == "random":
+            return
         if isNewDev:
             print(f"Discovered device {dev.addr}, {dev.addrType}, {dev.rssi}")
         elif isNewData:
