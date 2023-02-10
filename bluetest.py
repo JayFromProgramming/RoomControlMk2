@@ -31,3 +31,4 @@ for dev in devices:
                 print(f"    Company Name: {findCompany(value)}")
         else:
             print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
+    print("----------------------------------------")
