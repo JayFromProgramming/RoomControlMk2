@@ -36,6 +36,8 @@ scanner = Scanner().withDelegate(ScanDelegate())
 devices = scanner.scan(10.0)
 
 for dev in devices:
+    if dev.addrType == "random":
+        continue
     print(f"Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB")
     for (adtype, desc, value) in dev.getScanData():
         if adtype == 255:
