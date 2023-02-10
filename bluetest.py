@@ -17,6 +17,7 @@ def findCompany(companyId):
     for company in companyData:
         if company["Decimal"] == companyId:
             return company["Company"]
+    return "Unknown"
 
 
 scanner = Scanner().withDelegate(ScanDelegate())
@@ -25,10 +26,10 @@ devices = scanner.scan(10.0)
 for dev in devices:
     print(f"Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB")
     for (adtype, desc, value) in dev.getScanData():
-        if adtype == 9:
+        if adtype == 255:
             print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
-            if value in companyData:
-                print(f"    Company Name: {findCompany(value)}")
+
+            print(f"    Company Name: {findCompany(value)}")
         else:
             print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
     print("----------------------------------------")
