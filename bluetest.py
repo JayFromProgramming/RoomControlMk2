@@ -47,6 +47,10 @@ for dev in devices:
             print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
 
     p = getPeripheral(dev)
+    try:
+        p.connect(dev.addr)
+    except Exception as e:
+        print(f"Failed to connect to {dev.addr} with error: {e}")
     if p:
         try:
             services = p.getServices()
