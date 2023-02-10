@@ -70,7 +70,7 @@ for dev in devices:
                             print(f"                        Value: (Not readable)")
             p.disconnect()
         except BTLEDisconnectError as e:
-            print(f"-------ERROR DEVICE DISCONNECTED-------")
+            print(f"-------ERROR DEVICE DISCONNECTED UNEXPECTEDLY-------")
     else:
         print("No services available")
     print("----------------------------------------")
