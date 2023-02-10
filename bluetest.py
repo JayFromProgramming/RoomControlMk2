@@ -76,6 +76,8 @@ for dev in devices:
             p.disconnect()
         except BTLEDisconnectError as e:
             print(f"-------ERROR DEVICE DISCONNECTED UNEXPECTEDLY-------")
+        except Exception as e:
+            print(f"-------ERROR DEVICE FAILED WITH ERROR: {e}-------")
     else:
         print("No services available")
     print("----------------------------------------")
