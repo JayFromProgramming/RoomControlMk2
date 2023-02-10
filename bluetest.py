@@ -26,7 +26,7 @@ def getPeripheral(device):
             print("Random address, skipping")
             return None
         p = Peripheral(device.addr, device.addrType)
-        p.connect(device.addr, device.addrType)
+        p.connect()
         return p
     except Exception as e:
         print(f"Failed to connect to {device.addr} with error: {e}")
