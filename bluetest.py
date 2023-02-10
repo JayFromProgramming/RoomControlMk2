@@ -70,17 +70,20 @@ for dev in devices:
                                 print(f"                Properties: {characteristic.propertiesToString()}")
                             else:
                                 print(f"                Value: (Not readable)")
-                            descriptors = characteristic.getDescriptors()
-                            if len(descriptors) > 0:
-                                print("                Descriptors:")
-                                for descriptor in descriptors:
-                                    print(f"                    Descriptor: {descriptor.uuid}")
-                                    try:
-                                        print(f"                        Value: {descriptor.read()}")
-                                    except Exception as e:
-                                        print(f"                        Value: (Not readable)")
-                            else:
-                                print("                No descriptors available")
+                            try:
+                                descriptors = characteristic.getDescriptors()
+                                if len(descriptors) > 0:
+                                    print("                Descriptors:")
+                                    for descriptor in descriptors:
+                                        print(f"                    Descriptor: {descriptor.uuid}")
+                                        try:
+                                            print(f"                        Value: {descriptor.read()}")
+                                        except Exception as e:
+                                            print(f"                        Value: (Not readable)")
+                                else:
+                                    print("                No descriptors available")
+                            except Exception as e:
+                                print(f"            └──> Failed with error: {e}")
                         except Exception as e:
                             print(f"            └──> Failed with error: {e}")
                 except Exception as e:
