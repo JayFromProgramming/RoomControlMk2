@@ -26,8 +26,8 @@ for dev in devices:
     print(f"Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB")
     for (adtype, desc, value) in dev.getScanData():
         if adtype == 9:
-            print(f"{adtype}:  {desc} = {value}")
+            print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
             if value in companyData:
                 print(f"    Company Name: {findCompany(value)}")
         else:
-            print(f"{adtype}:  {desc} = {value}")
+            print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
