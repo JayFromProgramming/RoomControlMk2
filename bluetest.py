@@ -49,15 +49,18 @@ for dev in devices:
         print("Services:")
         services = p.getServices()
         for service in services:
-            print(f"Service: {service.uuid}")
-            for characteristic in service.getCharacteristics():
-                print(f"    Characteristic: {characteristic.uuid}")
-                print(f"        Properties: {characteristic.propertiesToString()}")
-                print(f"        Value: {characteristic.read()}")
-                print(f"        Descriptors: {characteristic.getDescriptors()}")
-                for descriptor in characteristic.getDescriptors():
-                    print(f"            Descriptor: {descriptor.uuid}")
-                    print(f"                Value: {descriptor.read()}")
+            print(f"    Service: {service.uuid}")
+            print("        Characteristics:")
+            characteristics = service.getCharacteristics()
+            for characteristic in characteristics:
+                print(f"            Characteristic: {characteristic.uuid}")
+                print(f"                Value: {characteristic.read()}")
+                print(f"                Properties: {characteristic.propertiesToString()}")
+                print(f"                Descriptors:")
+                descriptors = characteristic.getDescriptors()
+                for descriptor in descriptors:
+                    print(f"                    Descriptor: {descriptor.uuid}")
+                    print(f"                        Value: {descriptor.read()}")
         p.disconnect()
     else:
         print("No services available")
