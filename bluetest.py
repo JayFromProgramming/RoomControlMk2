@@ -49,12 +49,12 @@ for dev in devices:
     p = getPeripheral(dev)
     if p:
         try:
-            print("Services:")
             services = p.getServices()
+            print(f"Services ({len(services)}):")
             for service in services:
                 print(f"    Service: {service.uuid}")
-                print("        Characteristics:")
                 characteristics = service.getCharacteristics()
+                print(f"        Characteristics ({len(characteristics)}):")
                 for characteristic in characteristics:
                     try:
                         print(f"            Characteristic: {characteristic.uuid}")
