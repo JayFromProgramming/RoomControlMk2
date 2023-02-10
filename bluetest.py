@@ -1,4 +1,4 @@
-from bluepy.btle import Scanner, DefaultDelegate, Peripheral
+from bluepy.btle import Scanner, DefaultDelegate, Peripheral, BTLEDisconnectError
 from companyInfo import companyData
 
 
@@ -69,7 +69,7 @@ for dev in devices:
                         except Exception as e:
                             print(f"                        Value: (Not readable)")
             p.disconnect()
-        except bluepy.btle.BTLEDisconnectError as e:
+        except BTLEDisconnectError as e:
             print(f"-------ERROR DEVICE DISCONNECTED-------")
     else:
         print("No services available")
