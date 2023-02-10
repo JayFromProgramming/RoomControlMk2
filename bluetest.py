@@ -26,7 +26,10 @@ def getPeripheral(device):
             print("Random address, skipping")
             return None
         p = Peripheral(device.addr, device.addrType)
-        p.connect()
+        try:
+            p.connect(device.addr)
+        except BTLEDisconnectError as e:
+            print(f"Failed to connect to {device.addr} with error: {e}")
         return p
     except Exception as e:
         print(f"Failed to connect to {device.addr} with error: {e}")
