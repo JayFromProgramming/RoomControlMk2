@@ -76,9 +76,9 @@ for dev in devices:
                             else:
                                 print("                No descriptors available")
                         except Exception as e:
-                            print(f"            Characteristic: {characteristic.uuid} (Failed to read)")
+                            print(f"        └──> Failed with error: {e}")
                 except Exception as e:
-                    print(f"    Service: {service.uuid} (Failed to read)")
+                    print(f"└──> Failed with error: {e}")
             p.disconnect()
         except BTLEDisconnectError as e:
             print(f"-------ERROR DEVICE DISCONNECTED UNEXPECTEDLY-------")
