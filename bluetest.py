@@ -54,7 +54,10 @@ for dev in devices:
             characteristics = service.getCharacteristics()
             for characteristic in characteristics:
                 print(f"            Characteristic: {characteristic.uuid}")
-                print(f"                Value: {characteristic.read()}")
+                if characteristic.supportsRead():
+                    print(f"                Value: {characteristic.read()}")
+                else:
+                    print(f"                Value: (Not readable)")
                 print(f"                Properties: {characteristic.propertiesToString()}")
                 print(f"                Descriptors:")
                 descriptors = characteristic.getDescriptors()
