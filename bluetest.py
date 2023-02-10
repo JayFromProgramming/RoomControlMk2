@@ -26,6 +26,7 @@ def getPeripheral(device):
             print("Random address, skipping")
             return None
         p = Peripheral(device.addr, device.addrType)
+        p.connect(device.addr, device.addrType)
         return p
     except Exception as e:
         print(f"Failed to connect to {device.addr} with error: {e}")
@@ -47,10 +48,7 @@ for dev in devices:
             print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
 
     p = getPeripheral(dev)
-    try:
-        p.connect(dev.addr)
-    except Exception as e:
-        print(f"Failed to connect to {dev.addr} with error: {e}")
+
     if p:
         try:
             services = p.getServices()
