@@ -76,7 +76,7 @@ for dev in devices:
                             else:
                                 print("                No descriptors available")
                         except Exception as e:
-                            print(f"        └──> Failed with error: {e}")
+                            print(f"            └──> Failed with error: {e}")
                 except Exception as e:
                     print(f"└──> Failed with error: {e}")
             p.disconnect()
