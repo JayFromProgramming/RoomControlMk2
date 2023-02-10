@@ -20,18 +20,16 @@ def findCompany(companyId):
     return "Unknown"
 
 
-def getDeviceData(device):
+def getPeripheral(device):
     try:
         if device.addrType == "random":
             print("Random address, skipping")
-            return []
+            return None
         p = Peripheral(device.addr, device.addrType)
-        services = p.getServices()
-        p.disconnect()
-        return services
+        return p
     except Exception as e:
         print(f"Failed to connect to {device.addr} with error: {e}")
-        return []
+        return None
 
 
 scanner = Scanner().withDelegate(ScanDelegate())
@@ -46,16 +44,21 @@ for dev in devices:
         else:
             print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
 
-    services = getDeviceData(dev)
-    for service in services:
-        print(f"Service: {service.uuid}")
-        for characteristic in service.getCharacteristics():
-            print(f"    Characteristic: {characteristic.uuid}")
-            print(f"        Properties: {characteristic.propertiesToString()}")
-            print(f"        Value: {characteristic.read()}")
-            print(f"        Descriptors: {characteristic.getDescriptors()}")
-            for descriptor in characteristic.getDescriptors():
-                print(f"            Descriptor: {descriptor.uuid}")
-                print(f"                Value: {descriptor.read()}")
-
+    p = getPeripheral(dev)
+    if p:
+        print("Services:")
+        services = p.getServices()
+        for service in services:
+            print(f"Service: {service.uuid}")
+            for characteristic in service.getCharacteristics():
+                print(f"    Characteristic: {characteristic.uuid}")
+                print(f"        Properties: {characteristic.propertiesToString()}")
+                print(f"        Value: {characteristic.read()}")
+                print(f"        Descriptors: {characteristic.getDescriptors()}")
+                for descriptor in characteristic.getDescriptors():
+                    print(f"            Descriptor: {descriptor.uuid}")
+                    print(f"                Value: {descriptor.read()}")
+        p.disconnect()
+    else:
+        print("No services available")
     print("----------------------------------------")
