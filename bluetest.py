@@ -52,30 +52,33 @@ for dev in devices:
             services = p.getServices()
             print(f"Services ({len(services)}):")
             for service in services:
-                print(f"    Service: {service.uuid}")
-                characteristics = service.getCharacteristics()
-                print(f"        Characteristics ({len(characteristics)}):")
-                for characteristic in characteristics:
-                    try:
-                        print(f"            Characteristic: {characteristic.uuid}")
-                        if characteristic.supportsRead():
-                            print(f"                Value: {characteristic.read()}")
-                        else:
-                            print(f"                Value: (Not readable)")
-                        print(f"                Properties: {characteristic.propertiesToString()}")
-                        descriptors = characteristic.getDescriptors()
-                        if len(descriptors) > 0:
-                            print("                Descriptors:")
-                        for descriptor in descriptors:
-                            print(f"                    Descriptor: {descriptor.uuid}")
-                            try:
-                                print(f"                        Value: {descriptor.read()}")
-                            except Exception as e:
-                                print(f"                        Value: (Not readable)")
-                        else:
-                            print("                No descriptors available")
-                    except Exception as e:
-                        print(f"            Characteristic: {characteristic.uuid} (Failed to read)")
+                try:
+                    print(f"    Service: {service.uuid}")
+                    characteristics = service.getCharacteristics()
+                    print(f"        Characteristics ({len(characteristics)}):")
+                    for characteristic in characteristics:
+                        try:
+                            print(f"            Characteristic: {characteristic.uuid}")
+                            if characteristic.supportsRead():
+                                print(f"                Value: {characteristic.read()}")
+                            else:
+                                print(f"                Value: (Not readable)")
+                            print(f"                Properties: {characteristic.propertiesToString()}")
+                            descriptors = characteristic.getDescriptors()
+                            if len(descriptors) > 0:
+                                print("                Descriptors:")
+                            for descriptor in descriptors:
+                                print(f"                    Descriptor: {descriptor.uuid}")
+                                try:
+                                    print(f"                        Value: {descriptor.read()}")
+                                except Exception as e:
+                                    print(f"                        Value: (Not readable)")
+                            else:
+                                print("                No descriptors available")
+                        except Exception as e:
+                            print(f"            Characteristic: {characteristic.uuid} (Failed to read)")
+                except Exception as e:
+                    print(f"    Service: {service.uuid} (Failed to read)")
             p.disconnect()
         except BTLEDisconnectError as e:
             print(f"-------ERROR DEVICE DISCONNECTED UNEXPECTEDLY-------")
