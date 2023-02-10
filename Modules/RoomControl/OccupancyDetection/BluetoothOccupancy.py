@@ -11,6 +11,12 @@ except ImportError:
     logging.error("Bluetooth not available")
     bluetooth = None
 
+try:
+    import bluepy.btle as bluetoothLE
+except ImportError:
+    logging.error("Bluetooth LE not available")
+    bluetoothLE = None
+
 from Modules.RoomControl.AbstractSmartDevices import background
 
 logging = logging.getLogger(__name__)
