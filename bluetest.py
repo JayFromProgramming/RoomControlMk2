@@ -46,28 +46,31 @@ for dev in devices:
 
     p = getPeripheral(dev)
     if p:
-        print("Services:")
-        services = p.getServices()
-        for service in services:
-            print(f"    Service: {service.uuid}")
-            print("        Characteristics:")
-            characteristics = service.getCharacteristics()
-            for characteristic in characteristics:
-                print(f"            Characteristic: {characteristic.uuid}")
-                if characteristic.supportsRead():
-                    print(f"                Value: {characteristic.read()}")
-                else:
-                    print(f"                Value: (Not readable)")
-                print(f"                Properties: {characteristic.propertiesToString()}")
-                print(f"                Descriptors:")
-                descriptors = characteristic.getDescriptors()
-                for descriptor in descriptors:
-                    print(f"                    Descriptor: {descriptor.uuid}")
-                    try:
-                        print(f"                        Value: {descriptor.read()}")
-                    except Exception as e:
-                        print(f"                        Value: (Not readable)")
-        p.disconnect()
+        try:
+            print("Services:")
+            services = p.getServices()
+            for service in services:
+                print(f"    Service: {service.uuid}")
+                print("        Characteristics:")
+                characteristics = service.getCharacteristics()
+                for characteristic in characteristics:
+                    print(f"            Characteristic: {characteristic.uuid}")
+                    if characteristic.supportsRead():
+                        print(f"                Value: {characteristic.read()}")
+                    else:
+                        print(f"                Value: (Not readable)")
+                    print(f"                Properties: {characteristic.propertiesToString()}")
+                    print(f"                Descriptors:")
+                    descriptors = characteristic.getDescriptors()
+                    for descriptor in descriptors:
+                        print(f"                    Descriptor: {descriptor.uuid}")
+                        try:
+                            print(f"                        Value: {descriptor.read()}")
+                        except Exception as e:
+                            print(f"                        Value: (Not readable)")
+            p.disconnect()
+        except bluepy.btle.BTLEDisconnectError as e:
+            print(f"-------ERROR DEVICE DISCONNECTED-------")
     else:
         print("No services available")
     print("----------------------------------------")
