@@ -22,6 +22,9 @@ def findCompany(companyId):
 
 def getDeviceData(device):
     try:
+        if device.addrType == "random":
+            print("Random address, skipping")
+            return []
         p = Peripheral(device.addr, device.addrType)
         services = p.getServices()
         p.disconnect()
