@@ -54,20 +54,23 @@ for dev in devices:
                 print("        Characteristics:")
                 characteristics = service.getCharacteristics()
                 for characteristic in characteristics:
-                    print(f"            Characteristic: {characteristic.uuid}")
-                    if characteristic.supportsRead():
-                        print(f"                Value: {characteristic.read()}")
-                    else:
-                        print(f"                Value: (Not readable)")
-                    print(f"                Properties: {characteristic.propertiesToString()}")
-                    print(f"                Descriptors:")
-                    descriptors = characteristic.getDescriptors()
-                    for descriptor in descriptors:
-                        print(f"                    Descriptor: {descriptor.uuid}")
-                        try:
-                            print(f"                        Value: {descriptor.read()}")
-                        except Exception as e:
-                            print(f"                        Value: (Not readable)")
+                    try:
+                        print(f"            Characteristic: {characteristic.uuid}")
+                        if characteristic.supportsRead():
+                            print(f"                Value: {characteristic.read()}")
+                        else:
+                            print(f"                Value: (Not readable)")
+                        print(f"                Properties: {characteristic.propertiesToString()}")
+                        print(f"                Descriptors:")
+                        descriptors = characteristic.getDescriptors()
+                        for descriptor in descriptors:
+                            print(f"                    Descriptor: {descriptor.uuid}")
+                            try:
+                                print(f"                        Value: {descriptor.read()}")
+                            except Exception as e:
+                                print(f"                        Value: (Not readable)")
+                    except Exception as e:
+                        print(f"            Characteristic: {characteristic.uuid} (Failed to read)")
             p.disconnect()
         except BTLEDisconnectError as e:
             print(f"-------ERROR DEVICE DISCONNECTED UNEXPECTEDLY-------")
