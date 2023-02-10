@@ -63,7 +63,10 @@ for dev in devices:
                 descriptors = characteristic.getDescriptors()
                 for descriptor in descriptors:
                     print(f"                    Descriptor: {descriptor.uuid}")
-                    print(f"                        Value: {descriptor.read()}")
+                    if descriptor.supportsRead():
+                        print(f"                        Value: {descriptor.read()}")
+                    else:
+                        print(f"                        Value: (Not readable)")
         p.disconnect()
     else:
         print("No services available")
