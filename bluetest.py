@@ -67,9 +67,9 @@ for dev in devices:
                             print(f"            Characteristic: {characteristic.uuid}")
                             if characteristic.supportsRead():
                                 print(f"                Value: {characteristic.read()}")
-                                print(f"                Properties: {characteristic.propertiesToString()}")
                             else:
                                 print(f"                Value: (Not readable)")
+                            print(f"                Properties: {characteristic.propertiesToString()}")
                             try:
                                 descriptors = characteristic.getDescriptors()
                                 if len(descriptors) > 0:
@@ -83,7 +83,7 @@ for dev in devices:
                                 else:
                                     print("                No descriptors available")
                             except Exception as e:
-                                print(f"            └──> Failed with error: {e}")
+                                print(f"                └──> Failed with error: {e}")
                         except Exception as e:
                             print(f"            └──> Failed with error: {e}")
                 except Exception as e:
