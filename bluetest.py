@@ -26,10 +26,10 @@ def getPeripheral(device):
             print("Random address, skipping")
             return None
         p = Peripheral(device.addr, device.addrType)
-        try:
-            p.connect(device.addr)
-        except BTLEDisconnectError as e:
-            print(f"Failed to connect to {device.addr} with error: {e}")
+        # try:
+        #     p.connect(device.addr)
+        # except BTLEDisconnectError as e:
+        #     print(f"Failed to connect to {device.addr} with error: {e}")
         return p
     except Exception as e:
         print(f"Failed to connect to {device.addr} with error: {e}")
@@ -42,6 +42,7 @@ devices = scanner.scan(10.0)
 for dev in devices:
     if dev.addrType == "random":
         continue
+    p = getPeripheral(dev)
     print(f"Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB")
     for (adtype, desc, value) in dev.getScanData():
         if adtype == 255:
@@ -49,8 +50,6 @@ for dev in devices:
             print(f"    Company Name: {findCompany(value)}")
         else:
             print(f"{str(adtype).ljust(3)}:  {desc} = {value}")
-
-    p = getPeripheral(dev)
 
     if p:
         try:
