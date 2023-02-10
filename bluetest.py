@@ -78,7 +78,7 @@ for dev in devices:
                         except Exception as e:
                             print(f"            └──> Failed with error: {e}")
                 except Exception as e:
-                    print(f"└──> Failed with error: {e}")
+                    print(f"        └──> Failed with error: {e}")
             p.disconnect()
         except BTLEDisconnectError as e:
             print(f"-------ERROR DEVICE DISCONNECTED UNEXPECTEDLY-------")
