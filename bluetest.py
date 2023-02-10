@@ -1,5 +1,5 @@
 from bluepy.btle import Scanner, DefaultDelegate
-
+from companyInfo import companyData
 
 class ScanDelegate(DefaultDelegate):
     def __init__(self):
@@ -18,4 +18,9 @@ devices = scanner.scan(10.0)
 for dev in devices:
     print(f"Device {dev.addr} ({dev.addrType}), RSSI={dev.rssi} dB")
     for (adtype, desc, value) in dev.getScanData():
-        print(f"  {desc} = {value}")
+        if adtype == 9:
+            print(f"  {desc} = {value}")
+            if value in companyData:
+                print(f"    Company Name: {companyData[value]}")
+        else:
+            print(f"  {desc} = {value}")
