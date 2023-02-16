@@ -89,12 +89,15 @@ class NetAPI:
         # Load the schema
         with open("Modules/RoomControl/Configs/schema.json") as f:
             self.schema = json.load(f)
+        logging.info("Loaded schema")
         self.runner = web.AppRunner(self.app)
+        logging.info("Created runner")
 
     def run(self):
         logging.info("Starting webserver")
         web.run_app(self.app, host=self.webserver_address, port=self.webserver_port,
                     access_log=None)
+        logging.error("Webserver stopped")
 
     def init_database(self):
 
