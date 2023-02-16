@@ -140,7 +140,8 @@ class VeSyncPlug(AbstractToggleDevice):
             return details
         else:
             self.online = False
-            return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0, "connection": "offline"}
+            return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0, "connection": "offline",
+                    "conn_status": self.device.connection_status}
 
     def __str__(self):
         return f"{self.device_name}: {self.get_info()}"
