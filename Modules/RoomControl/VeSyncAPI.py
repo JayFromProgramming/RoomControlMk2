@@ -67,7 +67,7 @@ class VeSyncPlug(AbstractToggleDevice):
         self.cached_details = {}
         self.online = True
         self.fault = False
-        self.last_update = datatime.datetime.now()
+        self.last_update = datetime.datetime.now()
         self.database = database
 
         self.upper_bounds = None
