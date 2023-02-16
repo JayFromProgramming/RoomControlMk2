@@ -127,15 +127,11 @@ class VeSyncPlug(AbstractToggleDevice):
     def get_info(self):
         if len(self.device.details) > 1:
             # Check if the data is different from the last time we got it
-            if self.cached_details != self.device.details:
-                self.cached_details = self.device.details
-                self.online = True
-                details = self.device.details
-                details.update({"connection": "online"})
-                self.last_update = datetime.datetime.now()
-            else:
-                logging.debug(f"VeSyncAPI ({self.device_name}): Cached data is up to date")
-                details = self.cached_details
+            self.cached_details = self.device.details
+            self.online = True
+            details = self.device.details
+            details.update({"connection": "online"})
+            self.last_update = datetime.datetime.fromtimestamp(self.device.update_energy_ts)
             return details
         else:
             self.online = False
