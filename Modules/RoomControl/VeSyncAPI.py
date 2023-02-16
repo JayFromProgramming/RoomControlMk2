@@ -141,17 +141,17 @@ class VeSyncPlug(AbstractToggleDevice):
             if self.device.update_energy_ts is not None:
                 self.last_update = datetime.datetime.fromtimestamp(self.device.update_energy_ts)
 
-            details.update({"connection": self.device.connection_status})
-            if self.device.connection_status == "offline":
-                self.online = False
-                self.offline_reason = f"No Response"
-                logging.warning(f"VeSyncAPI ({self.device_name}): Device is offline")
-
+            # details.update({"connection": self.device.connection_status})
+            # if self.device.connection_status == "offline":
+            #     self.online = False
+            #     self.offline_reason = f"No Response"
+            #     logging.warning(f"VeSyncAPI ({self.device_name}): Device is offline")
+            details.update({"connection": "online"})
             return details
         else:
             self.online = False
             return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0,
-                    "connection": self.device.connection_status}
+                    "connection": "offline"}
 
     def __str__(self):
         return f"{self.device_name}: {self.get_info()}"
