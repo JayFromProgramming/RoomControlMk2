@@ -103,6 +103,7 @@ class VeSyncPlug(AbstractToggleDevice):
     @background
     def refresh_info(self):
         logging.debug(f"Refreshing {self.device_name} info")
+        self.device.get_details()
         self.device.update()
         if self.upper_bounds and self.lower_bounds:
             state = self.get_info()
