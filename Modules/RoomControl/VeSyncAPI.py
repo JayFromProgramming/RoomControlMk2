@@ -127,6 +127,7 @@ class VeSyncPlug(AbstractToggleDevice):
         try:
             self.device.get_details()
             self.device.update()
+            self.device.update_energy()
         except Exception as e:
             logging.warning(f"VeSyncAPI ({self.device_name}): Error getting device details: {e}")
             self.online = False
