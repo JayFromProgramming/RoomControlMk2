@@ -1,3 +1,4 @@
+import datetime
 import logging
 import typing
 
@@ -66,6 +67,7 @@ class VeSyncPlug(AbstractToggleDevice):
         self.cached_details = {}
         self.online = True
         self.fault = False
+        self.last_update = datatime.datetime.now()
         self.database = database
 
         self.upper_bounds = None
@@ -117,12 +119,23 @@ class VeSyncPlug(AbstractToggleDevice):
                 logging.warning(f"VeSyncAPI ({self.device_name}): Power draw is below lower bounds")
             else:
                 self.fault = False
+        if self.last_update < datetime.datetime.now() - datetime.timedelta(minutes=5):
+            self.online = False
+            self.offline_reason = f"Stale data"
+            logging.warning(f"VeSyncAPI ({self.device_name}): Device has not updated in 5 minutes")
 
     def get_info(self):
         if len(self.device.details) > 1:
-            details = self.device.details
-            details.update({"connection": "online"})
-            self.online = True
+            # Check if the data is different from the last time we got it
+            if self.cached_details != self.device.details:
+                self.cached_details = self.device.details
+                self.online = True
+                details = self.device.details
+                details.update({"connection": "online"})
+                self.last_update = datetime.datetime.now()
+            else:
+                logging.debug(f"VeSyncAPI ({self.device_name}): Cached data is up to date")
+                details = self.cached_details
             return details
         else:
             self.online = False
