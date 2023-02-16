@@ -131,17 +131,16 @@ class VeSyncPlug(AbstractToggleDevice):
             self.cached_details = self.device.details
             self.online = True
             details = self.device.details
-            details.update({"connection": "online"})
             if self.device.update_energy_ts is not None:
                 self.last_update = datetime.datetime.fromtimestamp(self.device.update_energy_ts)
 
-            details.update({"conn_status": self.device.connection_status})
+            details.update({"connection": self.device.connection_status})
 
             return details
         else:
             self.online = False
-            return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0, "connection": "offline",
-                    "conn_status": self.device.connection_status}
+            return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0,
+                    "connection": self.device.connection_status}
 
     def __str__(self):
         return f"{self.device_name}: {self.get_info()}"
