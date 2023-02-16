@@ -131,7 +131,8 @@ class VeSyncPlug(AbstractToggleDevice):
             self.online = True
             details = self.device.details
             details.update({"connection": "online"})
-            self.last_update = datetime.datetime.fromtimestamp(self.device.update_energy_ts)
+            if self.device.update_energy_ts is not None:
+                self.last_update = datetime.datetime.fromtimestamp(self.device.update_energy_ts)
             return details
         else:
             self.online = False
