@@ -103,8 +103,6 @@ class VeSyncPlug(AbstractToggleDevice):
     @background
     def refresh_info(self):
         logging.debug(f"Refreshing {self.device_name} info")
-        self.device.get_details()
-        self.device.update()
         if self.upper_bounds and self.lower_bounds:
             state = self.get_info()
             if state["active_time"] < 2:  # If the device has been on for less than 2 minutes
@@ -126,6 +124,14 @@ class VeSyncPlug(AbstractToggleDevice):
         #     logging.warning(f"VeSyncAPI ({self.device_name}): Device has not updated in 1 minute")
 
     def get_info(self):
+        try:
+            self.device.get_details()
+            self.device.update()
+        except Exception as e:
+            logging.warning(f"VeSyncAPI ({self.device_name}): Error getting device details: {e}")
+            self.online = False
+            self.offline_reason = f"API Error"
+            return self.cached_details
         if len(self.device.details) > 1:
             # Check if the data is different from the last time we got it
             self.cached_details = self.device.details
@@ -135,6 +141,10 @@ class VeSyncPlug(AbstractToggleDevice):
                 self.last_update = datetime.datetime.fromtimestamp(self.device.update_energy_ts)
 
             details.update({"connection": self.device.connection_status})
+            if self.device.connection_status == "offline":
+                self.online = False
+                self.offline_reason = f"No Response"
+                logging.warning(f"VeSyncAPI ({self.device_name}): Device is offline")
 
             return details
         else:
