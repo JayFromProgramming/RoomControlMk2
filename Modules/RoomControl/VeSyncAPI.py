@@ -119,10 +119,10 @@ class VeSyncPlug(AbstractToggleDevice):
                 logging.warning(f"VeSyncAPI ({self.device_name}): Power draw is below lower bounds")
             else:
                 self.fault = False
-        if self.last_update < datetime.datetime.now() - datetime.timedelta(minutes=5):
+        if self.last_update < datetime.datetime.now() - datetime.timedelta(minutes=1):
             self.online = False
-            self.offline_reason = f"Stale data"
-            logging.warning(f"VeSyncAPI ({self.device_name}): Device has not updated in 5 minutes")
+            self.offline_reason = f"Data Stale"
+            logging.warning(f"VeSyncAPI ({self.device_name}): Device has not updated in 1 minute")
 
     def get_info(self):
         if len(self.device.details) > 1:
