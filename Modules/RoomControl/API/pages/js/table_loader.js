@@ -1,17 +1,25 @@
+
+device_name_cache = {};
+
 function button(actionLink, displayName) {
     return '<a href="' + actionLink + '" class="button">' + displayName + '</a>';
 }
 
 function getName(id) {
     var name = "";
-    $.ajax({
-        url: "/name/" + id,
-        type: "GET",
-        async: false,
-        success: function (data) {
-            name = data;
-        }
-    });
+    if (id in device_name_cache) {
+        return device_name_cache[id];
+    } else {
+        $.ajax({
+            url: "/name/" + id,
+            type: "GET",
+            async: false,
+            success: function (data) {
+                name = data;
+                device_name_cache[id] = name;
+            }
+        });
+    }
     return name;
 }
 
@@ -97,7 +105,7 @@ function getState(device_json) {
                 } else if (device_json["health"]["online"] === false) {
                     state_string += "State: DOWN";
                 } else if (device_json["state"]["occupied"] === true) {
-                    state_string += "Occupants: " + device_json["state"]["occupants"];
+                    state_string += "Occupants: " + device_json["state"]["occupants"]
                 } else {
                     state_string += "No Occupants";
                 }
