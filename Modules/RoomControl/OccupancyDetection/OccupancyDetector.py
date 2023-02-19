@@ -24,7 +24,7 @@ class OccupancyDetector:
         self.last_activity = 0  # type: int # Last time a user was detected either by door or motion sensor
 
         self.blue_stalker = BluetoothDetector(self.database, high_frequency_scan_enabled=False if GPIO else True)
-        self.net_stalker = NetworkOccupancyDetector(self.database)
+        # self.net_stalker = NetworkOccupancyDetector(self.database)
 
         if GPIO:
             GPIO.setmode(GPIO.BOARD)

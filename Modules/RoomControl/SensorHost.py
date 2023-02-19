@@ -109,7 +109,7 @@ class EnvironmentSensor(Sensor):
     def __init__(self, name):
         super().__init__(name)
         self.values["temperature"] = SensorValue("room_temp", 0, "°F", True, 5)
-        self.values["humidity"] = SensorValue("room_humid", 0, "%", True, 5)
+        self.values["humidity"] = SensorValue("room_humid", 0, "°%", True, 5)
         try:  # If the controller is not running on a Raspberry Pi, this will fail
             logging.info(f"EnvironmentSensor ({self.name}): Initialising DHT22 sensor")
             import Adafruit_DHT
