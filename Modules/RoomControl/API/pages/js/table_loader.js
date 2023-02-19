@@ -121,10 +121,11 @@ function getState(device_json) {
             } else if (device_json["state"]["on"] === true) {
                 state_string += "State: Armed" + ", ";
                 if (device_json["state"]["triggered"] === 1) {
-                    state_string += "Triggered:" + " " + device_json["state"]["triggered"].toFixed(2) + "S";
+                    state_string += "Triggered:" + " " + device_json["state"]["active_for"].toFixed(2) + "S";
+                } else {
+                    const last_active = new Date(device_json["state"]["last_active"]);
+                    state_string += "Last Active: " + last_active.toLocaleString();
                 }
-                const last_active = new Date(device_json["state"]["last_active"]);
-                state_string += "Last Active: " + last_active.toLocaleString();
             } else {
                 state_string += "State: Disarmed";
             }
