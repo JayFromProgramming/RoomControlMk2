@@ -119,10 +119,10 @@ function getState(device_json) {
             } else if (device_json["health"]["fault"] === true) {
                 state_string += "State: FAULT";
             } else if (device_json["state"]["on"] === true) {
-                state_string += "State: Armed" + ", ";
                 if (device_json["state"]["triggered"] === 1) {
                     state_string += "Triggered:" + " " + device_json["state"]["active_for"].toFixed(2) + "S";
                 } else {
+                    state_string += "State: Armed" + ", ";
                     const last_active = new Date(device_json["state"]["last_active"]);
                     state_string += "Last Active: " + last_active.toLocaleString();
                 }
