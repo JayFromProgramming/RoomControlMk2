@@ -59,7 +59,7 @@ function getState(device_json) {
             }
             break;
         case "abstract_toggle_device":
-            state_string += (toggleDeviceState(device_json) + ",").padEnd(12, " ");
+            state_string += (toggleDeviceState(device_json) + ",").padEnd(13, " ");
             state_string += "Power Draw: " + device_json["info"]["power"] + "W";
             break;
         case "VoiceMonkeyDevice":
@@ -120,7 +120,7 @@ function getState(device_json) {
                 state_string += "State: FAULT";
             } else if (device_json["state"]["on"] === true) {
                 if (device_json["state"]["triggered"] === 1) {
-                    state_string += "State: Triggered:" + " " + device_json["state"]["active_for"].toFixed(2) + "S";
+                    state_string += "State: Triggered" + " " + device_json["state"]["active_for"].toFixed(2) + "S";
                 } else {
                     state_string += "State: Armed" + ", ";
                     const last_active = new Date(device_json["state"]["last_active"] * 1000);
