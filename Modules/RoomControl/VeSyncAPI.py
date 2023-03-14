@@ -1,5 +1,4 @@
 import datetime
-import logging
 import typing
 
 from pyvesync import VeSync
@@ -8,8 +7,7 @@ from threading import Thread
 
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
 
-logging = logging.getLogger(__name__)
-
+from loguru import logger as logging
 
 class VeSyncAPI:
 

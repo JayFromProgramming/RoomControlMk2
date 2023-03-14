@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger as logging
 import sqlite3
 import threading
 import os
@@ -16,9 +16,6 @@ from Modules.RoomControl.OccupancyDetection import OccupancyDetector
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
 from Modules.RoomControl.SensorHost import SensorHost
-
-logging.getLogger(__name__)
-
 
 class CustomLock:
 

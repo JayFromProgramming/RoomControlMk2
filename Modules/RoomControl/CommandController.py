@@ -1,10 +1,8 @@
-import logging
+from loguru import logger as logging
 import os
 import time
 
 from Modules.RoomControl.AbstractSmartDevices import background
-
-logging = logging.getLogger(__name__)
 
 
 class CommandController:

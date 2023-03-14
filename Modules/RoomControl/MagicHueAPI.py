@@ -1,4 +1,4 @@
-import logging
+from loguru import logger as logging
 import typing
 
 import magichue
@@ -6,8 +6,6 @@ import asyncio
 from threading import Thread
 
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, background
-
-logging = logging.getLogger(__name__)
 
 
 def bulb_type_to_string(bulb_type: magichue.light.bulb_types):

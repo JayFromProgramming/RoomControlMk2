@@ -1,9 +1,8 @@
-import logging
-
-#  %(name)s.%(funcName)s
-logging.basicConfig(level=logging.INFO,
-                    format=r"%(levelname)s - %(threadName)s - %(message)s",
-                    datefmt='%H:%M:%S')
+from loguru import logger as logging
+import sys
+logging.remove()
+logging.add(sys.stdout, level="INFO")
+logging.add("logs/{time}.log", rotation="1 week", retention="1 hour", compression="zip", level="INFO")
 
 from Modules import RoomControl
 import asyncio

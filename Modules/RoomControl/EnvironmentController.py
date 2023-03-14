@@ -1,9 +1,7 @@
 import time
-import logging
-
+from loguru import logger as logging
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
 
-logging = logging.getLogger(__name__)
 
 
 class EnvironmentControllerHost:

@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import json
-import logging
 import functools
 import os
 import random
@@ -17,8 +16,7 @@ from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
 from Modules.RoomControl.AbstractSmartDevices import background
 
-logging = logging.getLogger(__name__)
-
+from loguru import logger as logging
 
 def login_redirect():
     return web.HTTPFound("/login")

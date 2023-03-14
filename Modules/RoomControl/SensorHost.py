@@ -1,11 +1,9 @@
 import datetime
-import logging
 import time
 
 from Modules.RoomControl.AbstractSmartDevices import background
 
-logging = logging.getLogger(__name__)
-
+from loguru import logger as logging
 
 class SensorHost:
 

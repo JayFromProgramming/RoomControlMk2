@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import random
 import time
 
@@ -8,7 +7,7 @@ import requests
 
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
 
-logging = logging.getLogger(__name__)
+from loguru import logger as logging
 
 template = "https://api.voicemonkey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
 

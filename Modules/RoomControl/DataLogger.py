@@ -1,10 +1,7 @@
 import datetime
 import time
-import logging
-
+from loguru import logger as logging
 from Modules.RoomControl import background
-
-logging = logging.getLogger(__name__)
 
 
 class DataLoggingHost:

@@ -1,9 +1,9 @@
 import datetime
 import json
-import logging
 import os
 import sqlite3
 import time
+from loguru import logger as logging
 
 try:
     import bluetooth
@@ -18,9 +18,6 @@ except ImportError:
     bluetoothLE = None
 
 from Modules.RoomControl.AbstractSmartDevices import background
-
-logging = logging.getLogger(__name__)
-
 
 class BluetoothDetector:
 

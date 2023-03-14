@@ -4,11 +4,8 @@ from Modules.RoomControl.API.datagrams import APIMessageRX
 from Modules.RoomControl.AbstractSmartDevices import background
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 
-import logging
-
+from loguru import logger as logging
 from Modules.RoomControl.OccupancyDetection.OccupancyDetector import OccupancyDetector
-
-logging = logging.getLogger(__name__)
 
 
 class LightControllerHost:

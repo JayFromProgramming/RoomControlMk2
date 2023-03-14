@@ -1,11 +1,10 @@
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
-import logging
 import time
 
 from Modules.RoomControl.AbstractSmartDevices import background
 from Modules.RoomControl.OccupancyDetection.MTUNetOccupancy import NetworkOccupancyDetector
 
-logging = logging.getLogger(__name__)
+from loguru import logger as logging
 
 try:
     import RPi.GPIO as GPIO

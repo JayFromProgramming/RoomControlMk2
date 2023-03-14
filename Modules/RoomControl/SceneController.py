@@ -1,12 +1,10 @@
-import logging
 import time
 import datetime
 
 from Modules.RoomControl.API.datagrams import APIMessageRX
 from Modules.RoomControl.AbstractSmartDevices import background
 
-logging = logging.getLogger(__name__)
-
+from loguru import logger as logging
 
 class SceneController:
 
