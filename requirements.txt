@@ -16,3 +16,4 @@ pythonping~=1.1.4
 command_runner~=1.5.0
 pyparsing~=3.0.9
 bluepy
+loguru
