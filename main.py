@@ -9,7 +9,7 @@ if not os.path.exists("logs"):
 
 logging.remove()
 logging.add(sys.stdout, level="INFO")
-logging.add("logs/{time}.log", rotation="1 week", retention="1 hour", compression="zip", level="INFO")
+logging.add("logs/{time}.log", rotation="1 week", retention="1 hour", compression="zip", level="WARNING")
 
 from Modules import RoomControl
 import asyncio
