@@ -18,6 +18,7 @@ from Modules.RoomControl.AbstractSmartDevices import background
 
 from loguru import logger as logging
 
+
 def login_redirect():
     return web.HTTPFound("/login")
 
@@ -78,11 +79,13 @@ class NetAPI:
         self.webserver_port = 47670
 
         # List of cookies that are authorized to access the API
-        cursor = self.database.cursor()
-        cursor.execute("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))
-        self.authorized_cookies = [cookie[0] for cookie in cursor.fetchall()]
-        cursor.execute("SELECT current_cookie FROM api_authorizations")
-        self.authorized_cookies += [cookie[0] for cookie in cursor.fetchall()]
+        results = self.database.get("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))
+        self.authorized_cookies = [cookie[0] for cookie in results]
+        results = self.database.get("SELECT current_cookie FROM api_authorizations")
+        self.authorized_cookies += [cookie[0] for cookie in results]
+        results = self.database.get("SELECT * FROM login_lockouts")
+        self.login_lockouts = {row[0]: {"last_attempt": row[1], "attempts": row[2], "locked_out": row[3]} for row in
+                                 results}   # type: dict
 
         # Load the schema
         with open("Modules/RoomControl/Configs/schema.json") as f:
@@ -98,12 +101,13 @@ class NetAPI:
         logging.error("Webserver stopped")
 
     def init_database(self):
-
         self.database.run("CREATE TABLE IF NOT EXISTS "
                           "api_authorizations (device_id TEXT, api_secret TEXT, current_cookie TEXT)")
         self.database.run("""
         CREATE TABLE IF NOT EXISTS login_auth_relations (user_id TEXT UNIQUE REFERENCES api_authorizations(device_id),
         device_name TEXT, current_cookie TEXT, expires INTEGER)""")
+        self.database.run("""
+        CREATE TABLE IF NOT EXISTS login_lockouts (endpoint TEXT, last_attempt INTEGER, attempts INTEGER, locked_out BOOLEAN)""")
 
     def get_device(self, device_name):
         for api in self.other_apis:
@@ -156,14 +160,19 @@ class NetAPI:
         data = await request.post()
         username = data['username']
         password = data['password']
-        logging.info(f"Username: {username}, Password: {password}")
+        browser = request.headers.get("User-Agent")
+        endpoint = request.remote
+
+        if endpoint in self.login_lockouts and self.login_lockouts[endpoint]["locked_out"]:
+            logging.info(f"User {username} attempted to login from {browser} but is locked out")
+            return web.Response(text="Locked out", status=403)
+
+        logging.info(f"User: {username}, Password: {password}, Browser: {browser}, Endpoint: {endpoint}")
         cursor = self.database.cursor()
         user = cursor.execute("SELECT * FROM api_authorizations WHERE device_id=?", (username,)).fetchone()
         logging.info(f"User: {user[0]}, Password: {user[1]}")
         if user and user[1] == password:
-
             new_cookie = hashlib.sha256(f"{password}: {random.random()}".encode()).hexdigest()
-            browser = request.headers.get("User-Agent")
 
             cursor.execute("""INSERT OR REPLACE INTO login_auth_relations (user_id, device_name, current_cookie, expires) 
                            VALUES (?, ?, ?, ?)""", (username, browser, new_cookie, int(time.time()) + 60 * 60 * 24 * 7))
@@ -179,6 +188,17 @@ class NetAPI:
             response.headers["Location"] = "/"
             return response
         else:
+            logging.info(f"Host: {endpoint} failed to login")
+            if endpoint not in self.login_lockouts:
+                self.login_lockouts[endpoint] = {"last_attempt": time.time(), "attempts": 1, "locked_out": False}
+            else:
+                self.login_lockouts[endpoint]["attempts"] += 1
+                if self.login_lockouts[endpoint]["attempts"] > 5:
+                    self.login_lockouts[endpoint]["locked_out"] = True
+                    self.login_lockouts[endpoint]["last_attempt"] = time.time()
+                    logging.info(f"Host: {endpoint} has been locked out")
+                else:
+                    self.login_lockouts[endpoint]["last_attempt"] = time.time()
             cursor.close()
             raise web.HTTPUnauthorized()
 

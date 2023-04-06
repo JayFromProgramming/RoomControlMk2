@@ -19,6 +19,7 @@ except ImportError:
 
 from Modules.RoomControl.AbstractSmartDevices import background
 
+
 class BluetoothDetector:
 
     def __init__(self, database: sqlite3.Connection, high_frequency_scan_enabled: bool = False):
