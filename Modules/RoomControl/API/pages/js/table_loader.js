@@ -1,14 +1,15 @@
 
-device_name_cache = {};
+var device_name_cache = {};
 
 function button(actionLink, displayName) {
     return '<a href="' + actionLink + '" class="button">' + displayName + '</a>';
 }
 
 function getName(id) {
+    // Use localStorage to cache device names
     var name = "";
-    if (id in device_name_cache) {
-        return device_name_cache[id];
+    if (device_name_cache[id] !== undefined) {
+        name = device_name_cache[id];
     } else {
         $.ajax({
             url: "/name/" + id,
@@ -17,6 +18,7 @@ function getName(id) {
             success: function (data) {
                 name = data;
                 device_name_cache[id] = name;
+                localStorage.setItem("device_name_cache", JSON.stringify(device_name_cache));
             }
         });
     }
@@ -255,6 +257,12 @@ function device_table() {
     });
 }
 
+
+var raw_device_name_cache = localStorage.getItem("device_name_cache");
+if (raw_device_name_cache === null) {
+    raw_device_name_cache = "{}";
+}
+var device_name_cache = JSON.parse(raw_device_name_cache);
 $(document).ready(device_table());
 
 // Make the above code run every 5 seconds without refreshing the page
