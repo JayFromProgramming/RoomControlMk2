@@ -262,6 +262,11 @@ function device_table() {
             // Set the footer text to red, but don't change the text
             var footer = device_table.find("tr:last");
             footer.find("td").css("color", "red");
+            // Find all the buttons and disable them
+            var buttons = device_table.find("button");
+            buttons.each(function () {
+                this.disabled = true;
+            });
         },
         success: function (data) {
             generate_table(data);
