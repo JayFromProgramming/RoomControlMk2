@@ -4,7 +4,7 @@ if (raw_device_name_cache === null) {
     raw_device_name_cache = "{}";
 }
 var device_name_cache = JSON.parse(raw_device_name_cache);
-
+var device_table;
 
 function button(actionLink, displayName) {
     return '<a href="' + actionLink + '" class="button">' + displayName + '</a>';
@@ -176,20 +176,20 @@ class ActionButton {
         this.action = action; // String of the api action
         this.button = document.createElement("button");
         this.button.innerHTML = this.name;
+        this.button.className = "btn btn-primary";
         this.button.onclick = this.onClick;
         this.button.name = this.action;
         this.button.enabled = enabled;
     }
 
     onClick() {
+        this.disabled = true;
         $.ajax({
             url: "/set/" + this.name,
             type: "get",
             success: function (result) {
-
             },
             error: function (result) {
-
             }
         })
     }
@@ -204,7 +204,7 @@ class ActionButton {
 function generate_table(data){
     let toggle_button;
     const devices = data.devices; // A dictionary of devices and their data
-    const device_table = $('#device_list_body');
+    device_table = $('#device_list_body');
 
     device_table.empty();
     for (const device in devices) {
@@ -249,9 +249,9 @@ function generate_table(data){
     device_table.append(footer);
 }
 
-function device_table() {
+function gen_device_table() {
 // Display a cached version of the device table before the ajax call
-    const device_table = $('#device_list_body');
+    device_table = $('#device_list_body');
     $.ajax({
         url: "/get_all",
         type: "GET",
@@ -274,5 +274,5 @@ function device_table() {
     });
 }
 
-$(document).ready(device_table());
-$(document).ready(setInterval(device_table, 5000));
+$(document).ready(gen_device_table());
+$(document).ready(setInterval(gen_device_table, 5000));
