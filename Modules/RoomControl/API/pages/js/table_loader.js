@@ -1,5 +1,10 @@
-
 var device_name_cache = {};
+var raw_device_name_cache = localStorage.getItem("device_name_cache");
+if (raw_device_name_cache === null) {
+    raw_device_name_cache = "{}";
+}
+var device_name_cache = JSON.parse(raw_device_name_cache);
+
 
 function button(actionLink, displayName) {
     return '<a href="' + actionLink + '" class="button">' + displayName + '</a>';
@@ -196,75 +201,73 @@ class ActionButton {
 }
 
 
+function generate_table(data){
+    let toggle_button;
+    const devices = data.devices; // A dictionary of devices and their data
+    const device_table = $('#device_list_body');
+
+    device_table.empty();
+    for (const device in devices) {
+        const device_data = devices[device];
+        const device_row = $('<tr>');
+        const name = getName(device);
+        const device_name = $('<td class="device_name">').text(name);
+
+        const is_on = device_data["state"]["on"];
+        const is_down = !device_data["health"]["online"];
+        if (device === "plug_1") {
+            if (is_on) {
+                toggle_button = new ActionButton("Locked", device + "?on=true", false);
+            } else {
+                toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
+            }
+        } else {
+            if (is_on) {
+                toggle_button = new ActionButton("Turn Off", device + "?on=false", !is_down);
+            } else {
+                toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
+            }
+        }
+
+        const device_toggle = $('<td>').html(toggle_button.getButton());
+        const device_status = $('<td class="device_details">').text(getState(device_data));
+        const device_health = $('<td class="device_health">').html(getHealth(device_data));
+
+        device_row.append(device_name);
+        device_row.append(device_toggle);
+        device_row.append(device_status);
+        device_row.append(device_health);
+        device_table.append(device_row);
+    }
+    // Add a footer spans the entire table that shows the last time the page was updated,
+    // set the color to black
+    var footer = $('<tr>');
+    var footer_text = $('<td>').text("Last Updated: " + new Date().toLocaleString());
+    footer_text.attr("colspan", 4);
+    footer_text.css("color", "black");
+    footer.append(footer_text);
+    device_table.append(footer);
+}
+
 function device_table() {
+// Display a cached version of the device table before the ajax call
+    const device_table = $('#device_list_body');
     $.ajax({
         url: "/get_all",
         type: "GET",
         dataType: "json",
-        success: function (data) {
-            let toggle_button;
-            const devices = data.devices; // A dictionary of devices and their data
-            const device_table = $('#device_list_body');
-
-            device_table.empty();
-            for (const device in devices) {
-                const device_data = devices[device];
-                const device_row = $('<tr>');
-                const name = getName(device);
-                const device_name = $('<td class="device_name">').text(name);
-
-                const is_on = device_data["state"]["on"];
-                const is_down = !device_data["health"]["online"];
-                if (device === "plug_1") {
-                    if (is_on) {
-                        toggle_button = new ActionButton("Locked", device + "?on=true", false);
-                    } else {
-                        toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
-                    }
-                } else {
-                    if (is_on) {
-                        toggle_button = new ActionButton("Turn Off", device + "?on=false", !is_down);
-                    } else {
-                        toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
-                    }
-                }
-
-                const device_toggle = $('<td>').html(toggle_button.getButton());
-                const device_status = $('<td class="device_details">').text(getState(device_data));
-                const device_health = $('<td class="device_health">').html(getHealth(device_data));
-
-                device_row.append(device_name);
-                device_row.append(device_toggle);
-                device_row.append(device_status);
-                device_row.append(device_health);
-                device_table.append(device_row);
-            }
-            // Add a footer spans the entire table that shows the last time the page was updated,
-            // set the color to black
-            var footer = $('<tr>');
-            var footer_text = $('<td>').text("Last Updated: " + new Date().toLocaleString());
-            footer_text.attr("colspan", 4);
-            footer_text.css("color", "black");
-            footer.append(footer_text);
-            device_table.append(footer);
-        },
+        async: true,
+        cache: false,
         error: function (xhr, status, error) {
             // Set the footer text to red, but don't change the text
-            var footer = $('#device_list_body tr:last-child');
-            footer.css("color", "red");
-
-        }
+            var footer = device_table.find("tr:last");
+            footer.find("td").css("color", "red");
+        },
+        success: function (data) {
+            generate_table(data);
+        },
     });
 }
 
-
-var raw_device_name_cache = localStorage.getItem("device_name_cache");
-if (raw_device_name_cache === null) {
-    raw_device_name_cache = "{}";
-}
-var device_name_cache = JSON.parse(raw_device_name_cache);
 $(document).ready(device_table());
-
-// Make the above code run every 5 seconds without refreshing the page
-
-setInterval(device_table, 5000);
+$(document).ready(setInterval(device_table, 5000));
