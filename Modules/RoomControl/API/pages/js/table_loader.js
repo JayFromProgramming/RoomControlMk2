@@ -7,14 +7,14 @@ function button(actionLink, displayName) {
 
 function getName(id) {
     // Use localStorage to cache device names
-    var name = "";
+    var name = id;
     if (device_name_cache[id] !== undefined) {
         name = device_name_cache[id];
-    } else {
+    } else { // Queue the name to be fetched, but don't wait for it
         $.ajax({
             url: "/name/" + id,
             type: "GET",
-            async: false,
+            async: true,  // Don't wait for the response
             success: function (data) {
                 name = data;
                 device_name_cache[id] = name;
