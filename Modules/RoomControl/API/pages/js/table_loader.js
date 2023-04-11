@@ -4,11 +4,13 @@ if (raw_device_name_cache === null) {
     raw_device_name_cache = "{}";
 }
 var device_name_cache = JSON.parse(raw_device_name_cache);
-var device_table;
+var first_load = true;
+var device_table_objects = {};
+var footer;
 
-function button(actionLink, displayName) {
-    return '<a href="' + actionLink + '" class="button">' + displayName + '</a>';
-}
+// function button(actionLink, displayName) {
+//     return '<a href="' + actionLink + '" class="button">' + displayName + '</a>';
+// }
 
 function getName(id) {
     // Use localStorage to cache device names
@@ -156,102 +158,139 @@ function getHealth(device_json) {
     return health_string;
 }
 
-function getAction(id) {
-    var action = "";
-    $.ajax({
-        url: "/get_action_string/" + id,
-        type: "GET",
-        async: false,
-        success: function (data) {
-            action = data;
-        }
-    });
-    return action;
+function getAction(id, is_on) {
+    // Endpoint "/set/{name}?on=!{state}" to toggle the state of a device
+    var action_string = "";
+    if (is_on === true) {
+        action_string += "/set/" + id + "?on=false";
+    } else {
+        action_string += "/set/" + id + "?on=true";
+    }
+    return action_string;
 }
 
-// A class to handle sending a command to the server without refreshing the page
-class ActionButton {
-    constructor(name, action, enabled) {
-        this.name = name;
-        this.action = action; // String of the api action
+function getButtonText(state){
+    if (state["on"] === true) {
+        return "Turn Off";
+    } else {
+        return "Turn On";
+    }
+}
+
+class DeviceObject {
+    constructor(device, device_json) {
+        this.id = device;
+        this.name = getName(device);
+        this.row = document.createElement("tr");
+        this.button = document.createElement("td");
+        this.row.id = this.id;
+        this.row.className = "device_row";
+        this.on = device_json["state"]["on"];
+        this.request_success = true;
+
         this.button = document.createElement("button");
-        this.button.innerHTML = this.name;
         this.button.className = "btn btn-primary";
-        this.button.onclick = this.onClick;
-        this.button.name = this.action;
-        this.button.enabled = enabled;
+        this.button.innerHTML = getButtonText(device_json["state"]);
+        this.button.onclick = this.onClick.bind(this);
+        // Add each element in this order Name, Button, State, Health
+        this.name_row = document.createElement("td");
+        this.name_row.classList.add('device_name');
+        this.button_row = document.createElement("td");
+        this.state_row = document.createElement("td");
+        this.state_row.classList.add('device_details');
+        this.health_row = document.createElement("td");
+        this.health_row.classList.add('device_health');
+
+        this.name_row.innerHTML = this.name;
+        this.state_row.innerHTML = getState(device_json);
+        this.health_row.innerHTML = getHealth(device_json);
+        this.button_row.appendChild(this.button);
+
+        this.row.appendChild(this.name_row);
+        this.row.appendChild(this.button_row);
+        this.row.appendChild(this.state_row);
+        this.row.appendChild(this.health_row);
+
+        this.updateRow(device_json);
     }
 
     onClick() {
-        this.disabled = true;
+        this.button.disabled = true;
+        this.request_success = false;
         $.ajax({
-            url: "/set/" + this.name,
+            url: getAction(this.id, this.on),
+            owner: this,
             type: "get",
             success: function (result) {
+                this.owner.request_success = true;
             },
             error: function (result) {
             }
         })
     }
 
-    getButton() {
-        return this.button;
+    getRow() {
+        return this.row;
     }
 
+    updateRow(new_json) {
+        if (this.button.disabled === true && this.request_success === true) {
+            this.button.disabled = false;
+        }
+        this.on = new_json["state"]["on"];
+        this.button.innerHTML = getButtonText(new_json["state"]);
+        this.state_row.innerHTML = getState(new_json);
+        this.health_row.innerHTML = getHealth(new_json);
+    }
 }
 
 
-function generate_table(data){
+function update_table(data){
     let toggle_button;
     const devices = data.devices; // A dictionary of devices and their data
-    device_table = $('#device_list_body');
+    var device_table = $("#device_list_body");
 
-    device_table.empty();
-    for (const device in devices) {
-        const device_data = devices[device];
-        const device_row = $('<tr>');
-        const name = getName(device);
-        const device_name = $('<td class="device_name">').text(name);
 
-        const is_on = device_data["state"]["on"];
-        const is_down = !device_data["health"]["online"];
-        if (device === "plug_1") {
-            if (is_on) {
-                toggle_button = new ActionButton("Locked", device + "?on=true", false);
-            } else {
-                toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
-            }
+    // For each device check if its object exists if not create it
+    for (let device in devices) {
+        let device_object = device_table.find("#" + device);
+        if (device_object.length === 0) {
+            // Create a new device object
+            let device_object = new DeviceObject(device, devices[device]);
+            // Add the device to the table
+            device_table.append(device_object.getRow());
+            device_table_objects[device] = device_object;
         } else {
-            if (is_on) {
-                toggle_button = new ActionButton("Turn Off", device + "?on=false", !is_down);
-            } else {
-                toggle_button = new ActionButton("Turn On", device + "?on=true", !is_down);
-            }
+            // Update the device object
+            device_object = device_table_objects[device];
+            device_object.updateRow(devices[device]);
+            // Update the device in the table
+//             device_table.find("#" + device).updateRow(devices[device].get_row());
         }
-
-        const device_toggle = $('<td>').html(toggle_button.getButton());
-        const device_status = $('<td class="device_details">').text(getState(device_data));
-        const device_health = $('<td class="device_health">').html(getHealth(device_data));
-
-        device_row.append(device_name);
-        device_row.append(device_toggle);
-        device_row.append(device_status);
-        device_row.append(device_health);
-        device_table.append(device_row);
     }
-    // Add a footer spans the entire table that shows the last time the page was updated,
-    // set the color to black
-    var footer = $('<tr>');
-    var footer_text = $('<td>').text("Last Updated: " + new Date().toLocaleString());
-    footer_text.attr("colspan", 4);
-    footer_text.css("color", "black");
-    footer.append(footer_text);
-    device_table.append(footer);
+
+    if (first_load){
+        var footer = $('<tr>');
+//         footer.attr("id", "footer");
+        var footer_text = $('<td>').text("Last Updated: " + new Date().toLocaleString());
+        footer_text.attr("colspan", 4);
+        footer_text.css("color", "black");
+        footer.append(footer_text);
+        device_table.append(footer);
+    } else {
+    // Update the footer
+        var footer = device_table.find("tr:last");
+        footer.find("td").css("color", "black");
+        footer.find("td").text("Last Updated: " + new Date().toLocaleString());
+    }
+    first_load = false;
+    // Update the footer
+
 }
+
 
 function gen_device_table() {
 // Display a cached version of the device table before the ajax call
-    device_table = $('#device_list_body');
     $.ajax({
         url: "/get_all",
         type: "GET",
@@ -269,10 +308,23 @@ function gen_device_table() {
             });
         },
         success: function (data) {
-            generate_table(data);
+            update_table(data);
         },
     });
 }
 
-$(document).ready(gen_device_table());
-$(document).ready(setInterval(gen_device_table, 5000));
+function initialize_page() {
+    // Get the pre-existing device table
+    // Iterate through all elements in the table and remove them
+    device_table = $("#device_list_body");
+    device_table.find("tr").remove();
+
+
+    gen_device_table();
+    setInterval(gen_device_table, 5000);
+
+}
+
+
+
+$(document).ready(initialize_page());
