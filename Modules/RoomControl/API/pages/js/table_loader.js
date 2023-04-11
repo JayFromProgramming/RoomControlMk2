@@ -188,6 +188,8 @@ class DeviceObject {
         this.on = device_json["state"]["on"];
         this.request_success = true;
 
+
+
         this.button = document.createElement("button");
         this.button.className = "btn btn-primary";
         this.button.innerHTML = getButtonText(device_json["state"]);
@@ -210,6 +212,13 @@ class DeviceObject {
         this.row.appendChild(this.button_row);
         this.row.appendChild(this.state_row);
         this.row.appendChild(this.health_row);
+
+        this.locked = false;
+        if (this.id === "plug_1") {
+            this.locked = true;
+            this.button.disabled = true;
+            this.button.innerHTML = "Locked";
+        }
 
         this.updateRow(device_json);
     }
@@ -234,7 +243,7 @@ class DeviceObject {
     }
 
     updateRow(new_json) {
-        if (this.button.disabled === true && this.request_success === true) {
+        if (this.button.disabled === true && this.request_success === true && this.locked === false) {
             this.button.disabled = false;
         }
         this.on = new_json["state"]["on"];
@@ -291,6 +300,7 @@ function update_table(data){
 
 function gen_device_table() {
 // Display a cached version of the device table before the ajax call
+    device_table = $("#device_list_body");
     $.ajax({
         url: "/get_all",
         type: "GET",
