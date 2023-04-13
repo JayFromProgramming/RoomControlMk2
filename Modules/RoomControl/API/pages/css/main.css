@@ -296,6 +296,12 @@ table.listing .device_status {
 	font-family: monospace;
 }
 
+table.listing .footer {
+	text-align:center;
+	font-family: monospace;
+	column-span: all;
+	font-size: 12px;
+}
 
 table.listing .first {border-left:0px solid #9097A9;text-align:left;}
 table.listing .last {border-right:0px solid #9097A9;}

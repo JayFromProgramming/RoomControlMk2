@@ -4,6 +4,13 @@ if (raw_device_name_cache === null) {
     raw_device_name_cache = "{}";
 }
 var device_name_cache = JSON.parse(raw_device_name_cache);
+
+var raw_device_data_cache = sessionStorage.getItem("device_data_cache");
+if (raw_device_data_cache === null) {
+    raw_device_data_cache = "{}";
+}
+var device_data_cache = JSON.parse(raw_device_data_cache);
+
 var first_load = true;
 var device_table_objects = {};
 var footer;
@@ -254,7 +261,7 @@ class DeviceObject {
 }
 
 
-function update_table(data){
+function update_table(data) {
     let toggle_button;
     const devices = data.devices; // A dictionary of devices and their data
     var device_table = $("#device_list_body");
@@ -278,28 +285,33 @@ function update_table(data){
         }
     }
 
-    if (first_load){
-        var footer = $('<tr>');
-//         footer.attr("id", "footer");
-        var footer_text = $('<td>').text("Last Updated: " + new Date().toLocaleString());
-        footer_text.attr("colspan", 4);
-        footer_text.css("color", "black");
-        footer.append(footer_text);
+    // Update the footer
+    var footer_text = device_table.find("#footer_text");
+    if (footer_text.length === 0) {
+//         console.log("Adding footer");
+        var footer = document.createElement("tr");
+        var footer_text = document.createElement("td");
+        footer_text.colSpan = 4;
         device_table.append(footer);
+        footer.appendChild(footer_text);
+        footer_text.innerHTML = "Last Updated: " + new Date().toLocaleString();
+        footer_text.id = "footer_text";
     } else {
-    // Update the footer
-        var footer = device_table.find("tr:last");
-        footer.find("td").css("color", "black");
-        footer.find("td").text("Last Updated: " + new Date().toLocaleString());
+        footer_text.html("Last Updated: " + new Date().toLocaleString());
     }
-    first_load = false;
-    // Update the footer
-
+    // Update the footer text
 }
 
 
 function gen_device_table() {
 // Display a cached version of the device table before the ajax call
+    if (first_load === true && device_data_cache.devices !== undefined) {
+        device_table = $("#device_list_body");
+        console.log("Using cached data");
+        update_table(device_data_cache);
+        first_load = false;
+//         return;
+    }
     device_table = $("#device_list_body");
     $.ajax({
         url: "/get_all",
@@ -319,6 +331,7 @@ function gen_device_table() {
         },
         success: function (data) {
             update_table(data);
+            sessionStorage.setItem("device_data_cache", JSON.stringify(data));
         },
     });
 }
