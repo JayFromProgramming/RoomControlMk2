@@ -50,7 +50,9 @@ class Device {
         console.log("Creating device " + name + " with id " + id + " and info " + json_info);
         this.id = id;
         this.name = name;
+        this.state = json_info.state;
         this.type = json_info.type;
+        this.info = json_info.info;
         this.ui_elements = [];
         // Based on the devices type attach the appropriate UI elements and the default UI elements
         // Eg. If the device is a light, attach a color selector and a brightness slider in addition to the toggle switch
@@ -58,9 +60,16 @@ class Device {
 
         switch (this.type) {
             case "abstract_rgb":
+                this.ui_elements.push(new ToggleSwitch(false, id));
                 this.ui_elements.push(new ColorSelector("#000000", id));
                 break;
-            case "thermostat":
+            case "abstract_toggle_device":
+            case "VoiceMonkeyDevice":
+                this.ui_elements.push(new ToggleSwitch(false, id));
+                break;
+            case "environment_controller":
+                this.ui_elements.push(new ToggleSwitch(false, id));
+                this.ui_elements.push(new SetpointSelector(this.state.target_value, id, this.info.units));
                 break;
             default:
                 break;
@@ -85,6 +94,14 @@ function periodic_update() {
     // Periodically update the device data
     if (device !== null) {
         device.updateData(getDeviceData(device.id));
+        // Check if the device container is empty
+        if ($("#device_container").children().length === 0) {
+            // If it is, add the device elements back
+            var device_elements = device.getElements();
+            for (var i = 0; i < device_elements.length; i++) {
+                $("#device_container").append(device_elements[i].getContainer());
+            }
+        }
     }
 }
 
@@ -94,18 +111,19 @@ function initialize_page(){
     const params = new URLSearchParams(window.location.search);
     const default_device = params.get('device');
     if (default_device !== null) {
-        starting_device = getDeviceData(default_device);
+        starting_device = default_device;
     } else {
         starting_device = null;
     }
     const device_list = new DeviceList(starting_device, function(device_id, list_obj) {
         // Callback function to be called when the selected device changes
         // Create a new DeviceObject and add it to the page
+        $("#device_container").empty();
         var device_name = getName(device_id);
         device = new Device(device_name, device_id, getDeviceData(device_id));
         var device_elements = device.getElements();
-        $("#device_container").empty();
         for (var i = 0; i < device_elements.length; i++) {
+            console.log("Adding element " + device_elements[i]);
             $("#device_container").append(device_elements[i].getContainer());
         }
     });
@@ -115,8 +133,10 @@ function initialize_page(){
     var center_div = $("#center-column");
 
     center_div.append(device_list.getContainer());
+
+    setInterval(periodic_update, 1500);
 }
 
 
-setInterval(periodic_update, 1000);
+
 $(document).ready(initialize_page());

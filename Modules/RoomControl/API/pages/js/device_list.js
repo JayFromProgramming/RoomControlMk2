@@ -8,23 +8,29 @@ class DeviceList {
         this.container.appendChild(this.list_element);
         this.selection_changed_callback = selection_changed_callback; // Callback function to be called when the selected device changes
         this.loadDevices();
+        this.container.addEventListener('click', this.handleDeviceClick.bind(this));
         if (starting_device !== null) {
-            // Select the starting device
+            console.log("Selecting device: " + starting_device);
             this.selectDevice(starting_device);
         }
-        // Setup the callback
-        this.container.addEventListener('click', this.handleDeviceClick.bind(this));
+    }
+
+    selectDevice(device_id) {
+        // Select a device
+        this.list_element.value = device_id;
+        if (typeof this.selection_changed_callback === 'function') {
+            this.selected_device = device_id;
+            this.selection_changed_callback(device_id);
+        } else {
+            console.log("No callback function set");
+        }
     }
 
     handleDeviceClick(event) {
         // Check if the selected device changed and if so fire the callback
         var device_id = this.list_element.value;
         if (device_id !== this.selected_device) {
-            this.selected_device = device_id;
-            console.log("Selected device: " + device_id);
-            if (typeof this.selection_changed_callback === 'function') {
-                this.selection_changed_callback(device_id, this);
-            }
+            this.selectDevice(device_id);
         }
     }
 
@@ -35,6 +41,7 @@ class DeviceList {
             type: 'GET',
             dataType: 'json',
             outer: this,
+            async: false,
             success: function(data) {
                 // Create a list entry for each device (Do not create a DeviceObject)
                 for (var device_id in data.devices) {
@@ -50,13 +57,7 @@ class DeviceList {
         });
     }
 
-    selectDevice(device_id) {
-        // Select a device
-        this.list_element.value = device_id;
-        if (typeof this.selection_changed_callback === 'function') {
-            this.selection_changed_callback(device_id);
-        }
-    }
+
 
     getContainer() {
         // Return the container element

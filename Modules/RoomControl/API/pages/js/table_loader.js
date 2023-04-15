@@ -210,7 +210,8 @@ class DeviceObject {
         this.health_row = document.createElement("td");
         this.health_row.classList.add('device_health');
 
-        this.name_row.innerHTML = this.name;
+        // The device name should be a link to the device page (/page/control_page?device={device_id})
+        this.name_row.innerHTML = "<a href='/page/control_page?device=" + this.id + "'>" + this.name + "</a>";
         this.state_row.innerHTML = getState(device_json);
         this.health_row.innerHTML = getHealth(device_json);
         this.button_row.appendChild(this.button);
