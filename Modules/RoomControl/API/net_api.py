@@ -164,8 +164,8 @@ class NetAPI:
         endpoint = request.remote
 
         # Sanitize the input to prevent SQL injection
-        username = username.replace("'", "").replace('"', "")
-        password = password.replace("'", "").replace('"', "")
+        username = username.replace("'", "").replace('"', "").replace(";", "")
+        password = password.replace("'", "").replace('"', "").replace(";", "")
 
         if endpoint in self.login_lockouts and self.login_lockouts[endpoint]["locked_out"]:
             logging.info(f"User {username} attempted to login from {browser} but is locked out")
