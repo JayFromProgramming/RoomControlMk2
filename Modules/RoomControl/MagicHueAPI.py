@@ -164,16 +164,10 @@ class MagicDevice(AbstractRGB):
     def set_color(self, color: tuple):
         if self.online:
             try:
-                # if self.bulb_type == bulb_types.RGBW and False:
-                #     r, g, b = color
-                #     if r == g == b and False:
-                #         self.light.is_white = True
-                #         self.light.w = r
-                #     else:
-                #         self.light.is_white = False
-                #         self.light.rgb = color
-                # else:
                 self.light.is_white = False
+                # Validate the color tuple
+                if len(color) != 3:
+                    raise ValueError(f"Color tuple must be 3 values, got {len(color)} ({color})")
                 self.light.rgb = color
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set color error: {e}")

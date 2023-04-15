@@ -19,9 +19,10 @@ typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message:
     try:
         if device is None:
             raise ValueError(f"Device ({device}) not found")
-        else:
-            if hasattr(message, "color") and hasattr(device, "color"):
-                device.set_color(message.color)
+        else:  # Device found
+            print(message.__dict__)
+            if hasattr(message, "color") and hasattr(device, "color"):  # Check Message has an attribute called color
+                device.set_color(message.color)  # And the device has a method called color
                 preformed_actions.append(f"set_color to {message.color}")
             if hasattr(message, "brightness") and hasattr(device, "brightness"):
                 device.set_brightness(message.brightness)
