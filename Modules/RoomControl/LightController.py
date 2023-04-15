@@ -166,7 +166,7 @@ class LightController:
             if self.current_state != state_val:
                 self.changing_state = True
                 self.current_state = state_val
-                logging.info(f"LightController: {self.controller_name} is changing state to {state_val}")
+                logging.debug(f"LightController: {self.controller_name} is changing state to {state_val}")
                 for device in self.light_control_devices.values():
                     if hasattr(state, "on"):
                         device.set_on(state.on)

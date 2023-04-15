@@ -127,7 +127,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
     @background
     def run_monkey(self, monkey, state_after=None):
         url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
-        logging.info(f"Running monkey {monkey}")
+        logging.debug(f"Running monkey {monkey}")
         try:
             resp = requests.get(url)
         except requests.exceptions.ConnectionError as e:

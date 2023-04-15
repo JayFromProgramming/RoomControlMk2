@@ -56,7 +56,7 @@ class MagicHome:
         devices = []
         for device in hw_devices:
             try:
-                logging.info(f"MagicHome: Found device {device.macaddr}, creating device object")
+                logging.debug(f"MagicHome: Found device {device.macaddr}, creating device object")
                 devices.append(MagicDevice(self.api, device.macaddr, database=self.database))
             except magichue.exceptions.MagicHueAPIError as e:
                 logging.error(f"MagicHome: Error creating device object for {device.macaddr}: {e}")
