@@ -94,7 +94,7 @@ class BluetoothDetector:
         """Check if connections are alive, but doesn't run connect"""
         if not self.enabled:
             return
-        logging.info("BlueStalker: Starting Life Check")
+        logging.debug("BlueStalker: Starting Life Check")
 
         heartbeat_was_alive = self.heartbeat_alive
         try:
@@ -121,7 +121,7 @@ class BluetoothDetector:
 
     @background
     def scan(self):
-        logging.info("BlueStalker: Scanning for bluetooth devices")
+        logging.debug("BlueStalker: Scanning for bluetooth devices")
 
         if self.scanning:
             logging.warning("BlueStalker: Scan already in progress")
@@ -158,7 +158,7 @@ class BluetoothDetector:
 
     @background
     def refresh(self):
-        logging.info(f"BlueStalker: Refresh loop started, high frequency scan is {'enabled' if self.high_frequency_scan_enabled else 'disabled'}")
+        logging.debug(f"BlueStalker: Refresh loop started, high frequency scan is {'enabled' if self.high_frequency_scan_enabled else 'disabled'}")
         # Check OS, if not linux then return
         if os.name != "posix":
             logging.error("BlueStalker: In devmode, disabling bluetooth")
@@ -194,7 +194,7 @@ class BluetoothDetector:
         sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         sock.setblocking(True)  # Set the socket to non-blocking
         try:
-            logging.info(f"BlueStalker: Connecting to {address}, timeout {sock.gettimeout()}")
+            logging.debug(f"BlueStalker: Connecting to {address}, timeout {sock.gettimeout()}")
             sock.connect((address, 1))  # Start the connection (Will fail with EINPROGRESS)
         except bluetooth.btcommon.BluetoothError as e:
             if e.__str__() == "[Errno 111] Connection refused":  # Connection refused still counts as a connection as
@@ -206,7 +206,7 @@ class BluetoothDetector:
                     self.heartbeat_alive = True
                 return
             elif e.__str__() == "[Errno 115] Operation now in progress":  # This is the error we expect to see
-                logging.info(f"BlueStalker: Connection to {address} is in progress")
+                logging.debug(f"BlueStalker: Connection to {address} is in progress")
                 self.update_occupancy(address, False)
                 self.sockets[address] = sock  # Add the socket to the list of sockets
                 time.sleep(2.5)  # Wait for the connection to complete
@@ -227,7 +227,7 @@ class BluetoothDetector:
                 self.heartbeat_alive = False
             return
         else:
-            logging.info(f"BlueStalker: Connected to {address}")
+            logging.debug(f"BlueStalker: Connected to {address}")
             self.sockets[address] = sock
             if not is_heartbeat:
                 self.update_occupancy(address, True)
@@ -236,18 +236,18 @@ class BluetoothDetector:
 
     @background
     def conn_is_alive(self, connection, address, is_heartbeat=False):
-        logging.info(f"BlueStalker: Checking if {address} is alive")
+        logging.debug(f"BlueStalker: Checking if {address} is alive")
         try:
             connection.getpeername()
         except bluetooth.BluetoothError as e:
-            logging.info(f"BlueStalker: Connection to {address} is dead, reason: {e}")
+            logging.debug(f"BlueStalker: Connection to {address} is dead, reason: {e}")
             if not is_heartbeat:
                 self.update_occupancy(address, False)
             else:
                 self.heartbeat_alive = False
             self.sockets.pop(address)
         except OSError as e:
-            logging.info(f"BlueStalker: Connection to {address} is dead, reason: {e}")
+            logging.debug(f"BlueStalker: Connection to {address} is dead, reason: {e}")
             connection.close()
             if not is_heartbeat:
                 self.update_occupancy(address, False)
