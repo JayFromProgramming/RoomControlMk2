@@ -11,6 +11,9 @@ class ColorSelector {
         this.brightness = 255;
         this.white = false;
 
+        // Create a value to store an internal rate limit
+        this.last_update = 0;
+
         // Create the color picker element
         const label = document.createElement('label');
         const color_input = document.createElement('input');
@@ -44,8 +47,12 @@ class ColorSelector {
     // Update the selected color and call the onUpdate function
         console.log("ColorSelector handleColorInput");
         this.color = event.target.value;
+        if (this.last_update + 100 > Date.now()) {
+            return;
+        }
         sendCommand(this.device_id, {"color": [parseInt(this.color.substring(1,3), 16),
         parseInt(this.color.substring(3,5), 16), parseInt(this.color.substring(5,7), 16)]});
+        this.last_update = Date.now();
     }
 
     handleWhiteInput(event) {
