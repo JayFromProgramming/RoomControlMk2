@@ -184,5 +184,6 @@ class SetpointSelector {
         // Return the container element
         return this.container;
     }
-
 }
+
+class Occupancy

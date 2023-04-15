@@ -163,6 +163,10 @@ class NetAPI:
         browser = request.headers.get("User-Agent")
         endpoint = request.remote
 
+        # Sanitize the input to prevent SQL injection
+        username = username.replace("'", "").replace('"', "")
+        password = password.replace("'", "").replace('"', "")
+
         if endpoint in self.login_lockouts and self.login_lockouts[endpoint]["locked_out"]:
             logging.info(f"User {username} attempted to login from {browser} but is locked out")
             return web.Response(text="Locked out", status=403)
@@ -173,11 +177,8 @@ class NetAPI:
         if user is None:
             logging.info(f"User {username} does not exist")
             return web.Response(text="User does not exist", status=401)
-        else:
-            logging.info(f"User: {user[0]}, Password: {user[1]}")
         if user and user[1] == password:
             new_cookie = hashlib.sha256(f"{password}: {random.random()}".encode()).hexdigest()
-
             cursor.execute("""INSERT OR REPLACE INTO login_auth_relations (user_id, device_name, current_cookie, expires) 
                            VALUES (?, ?, ?, ?)""", (username, browser, new_cookie, int(time.time()) + 60 * 60 * 24 * 7))
             logging.info(f"User {username} logged in from {browser}")
