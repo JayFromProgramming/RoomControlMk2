@@ -86,6 +86,8 @@ class NetAPI:
         results = self.database.get("SELECT * FROM login_lockouts")
         self.login_lockouts = {row[0]: {"last_attempt": row[1], "attempts": row[2], "locked_out": row[3]} for row in
                                  results}   # type: dict
+        logging.info(f"Loaded {len(self.authorized_cookies)} authorized cookies")
+        logging.info(f"Loaded {len(self.login_lockouts)} login lockouts")
 
         # Load the schema
         with open("Modules/RoomControl/Configs/schema.json") as f:
@@ -144,7 +146,7 @@ class NetAPI:
             return False
 
     async def handle_login(self, request):
-        logging.info("Received LOGIN request from %s", request.remote)
+        logging.info(f"Received LOGIN request from {request.remote}")
 
         # Check if the user is already logged in
         if self.check_auth(request):
