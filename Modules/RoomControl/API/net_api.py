@@ -170,7 +170,11 @@ class NetAPI:
         logging.info(f"User: {username}, Password: {password}, Browser: {browser}, Endpoint: {endpoint}")
         cursor = self.database.cursor()
         user = cursor.execute("SELECT * FROM api_authorizations WHERE device_id=?", (username,)).fetchone()
-        logging.info(f"User: {user[0]}, Password: {user[1]}")
+        if user is None:
+            logging.info(f"User {username} does not exist")
+            return web.Response(text="User does not exist", status=401)
+        else:
+            logging.info(f"User: {user[0]}, Password: {user[1]}")
         if user and user[1] == password:
             new_cookie = hashlib.sha256(f"{password}: {random.random()}".encode()).hexdigest()
 

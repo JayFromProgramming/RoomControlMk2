@@ -4,6 +4,12 @@ class DeviceList {
         this.selected_device = null;
         this.container = document.createElement('div');
         this.container.id = "device_list";
+        this.label = document.createElement('label');
+        this.label.innerHTML = "Select a device:  ";
+        // Add a line at the bottom of the div and a bit of padding
+        this.container.style.borderBottom = "1px solid #000000";
+        this.container.style.paddingBottom = "5px";
+        this.container.appendChild(this.label);
         this.list_element = document.createElement('select');
         this.container.appendChild(this.list_element);
         this.selection_changed_callback = selection_changed_callback; // Callback function to be called when the selected device changes
