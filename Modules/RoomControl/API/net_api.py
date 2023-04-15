@@ -144,7 +144,7 @@ class NetAPI:
             return False
 
     async def handle_login(self, request):
-        logging.info("Received LOGIN request")
+        logging.info("Received LOGIN request from %s", request.remote)
 
         # Check if the user is already logged in
         if self.check_auth(request):
