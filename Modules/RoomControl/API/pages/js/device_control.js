@@ -57,18 +57,12 @@ class Device {
         // Based on the devices type attach the appropriate UI elements and the default UI elements
         // Eg. If the device is a light, attach a color selector and a brightness slider in addition to the toggle switch
         // If the device is a thermostat, attach a temperature slider and a mode selector in addition to the toggle switch
-
+        this.ui_elements.push(new ToggleSwitch(false, id));
         switch (this.type) {
             case "abstract_rgb":
-                this.ui_elements.push(new ToggleSwitch(false, id));
                 this.ui_elements.push(new ColorSelector("#000000", id));
                 break;
-            case "abstract_toggle_device":
-            case "VoiceMonkeyDevice":
-                this.ui_elements.push(new ToggleSwitch(false, id));
-                break;
             case "environment_controller":
-                this.ui_elements.push(new ToggleSwitch(false, id));
                 this.ui_elements.push(new SetpointSelector(this.state.target_value, id, this.info.units));
                 break;
             default:
