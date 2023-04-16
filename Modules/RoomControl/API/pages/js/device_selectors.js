@@ -185,5 +185,3 @@ class SetpointSelector {
         return this.container;
     }
 }
-
-class Occupancy
