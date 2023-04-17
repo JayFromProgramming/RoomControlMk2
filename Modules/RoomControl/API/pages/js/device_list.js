@@ -5,13 +5,21 @@ class DeviceList {
         this.container = document.createElement('div');
         this.container.id = "device_list";
         this.label = document.createElement('label');
+        this.last_updated_label = document.createElement('label');
         this.label.innerHTML = "Select a device:  ";
         // Add a line at the bottom of the div and a bit of padding
         this.container.style.borderBottom = "1px solid #000000";
         this.container.style.paddingBottom = "5px";
+
+        this.last_updated_label.id = "last_updated_label";
+        this.last_updated_label.innerHTML = "Last updated: ";
+        // Set the last updated label to be on the right
+        this.last_updated_label.style.float = "right";
+
         this.container.appendChild(this.label);
         this.list_element = document.createElement('select');
         this.container.appendChild(this.list_element);
+        this.container.appendChild(this.last_updated_label);
         this.selection_changed_callback = selection_changed_callback; // Callback function to be called when the selected device changes
         this.loadDevices();
         this.container.addEventListener('click', this.handleDeviceClick.bind(this));
@@ -63,11 +71,13 @@ class DeviceList {
         });
     }
 
-
-
     getContainer() {
         // Return the container element
         return this.container;
+    }
+
+    device_updated(){
+        this.last_updated_label.innerHTML = "Last updated: " + new Date().toLocaleString();
     }
 
 }

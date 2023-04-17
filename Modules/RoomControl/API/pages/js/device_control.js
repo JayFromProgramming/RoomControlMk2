@@ -5,6 +5,7 @@ if (raw_device_name_cache === null) {
 }
 var device_name_cache = JSON.parse(raw_device_name_cache);
 var device = null;
+var device_list = null;
 
 function getName(id) {
     // Use localStorage to cache device names
@@ -88,6 +89,7 @@ function periodic_update() {
     // Periodically update the device data
     if (device !== null) {
         device.updateData(getDeviceData(device.id));
+        device_list.device_updated();
         // Check if the device container is empty
         if ($("#device_container").children().length === 0) {
             // If it is, add the device elements back
@@ -109,7 +111,7 @@ function initialize_page(){
     } else {
         starting_device = null;
     }
-    const device_list = new DeviceList(starting_device, function(device_id, list_obj) {
+    device_list = new DeviceList(starting_device, function(device_id, list_obj) {
         // Callback function to be called when the selected device changes
         // Create a new DeviceObject and add it to the page
         $("#device_container").empty();
