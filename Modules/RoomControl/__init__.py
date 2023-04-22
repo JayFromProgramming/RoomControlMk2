@@ -1,4 +1,7 @@
 import json
+import socket
+
+import netifaces as netifaces
 from loguru import logger as logging
 import sqlite3
 import threading
@@ -16,6 +19,41 @@ from Modules.RoomControl.OccupancyDetection import OccupancyDetector
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
 from Modules.RoomControl.SensorHost import SensorHost
+
+
+def get_host_names():
+    """
+    Gets all the ip addresses that can be bound to
+    """
+    interfaces = []
+    for interface in netifaces.interfaces():
+        try:
+            if netifaces.AF_INET in netifaces.ifaddresses(interface):
+                for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+                    if link["addr"] != "":
+                        interfaces.append(link["addr"])
+        except Exception as e:
+            logging.debug(f"Error getting interface {interface}: {e}")
+            pass
+    return interfaces
+
+
+def check_interface_usage(port):
+    """
+    Returns a list of interfaces that are currently not being used
+    :return:
+    """
+    interfaces = get_host_names()
+    for interface in interfaces:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind((interface, port))
+            s.close()
+        except OSError:
+            logging.warning(f"Interface {interface}:{port} was already in use")
+            interfaces.remove(interface)
+    return interfaces
+
 
 class CustomLock:
 
@@ -61,11 +99,65 @@ class ConcurrentDatabase(sqlite3.Connection):
         self.lock.release()
         return cursor
 
+    def run_many(self, sql, *args, **kwargs):
+        self.lock.acquire()
+        cursor = super().cursor()
+        cursor.executemany(sql, *args)
+        if kwargs.get("commit", True):
+            try:
+                super().commit()
+            except sqlite3.OperationalError as e:
+                logging.info(f"Database Error: Commit failed {e}")
+        self.lock.release()
+        return cursor
+
     def get(self, sql, *args):
         cursor = self.run(sql, *args)
         result = cursor.fetchall()
         cursor.close()
         return result
+
+    def create_table(self, table_name, columns: dict):
+        self.run(f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join([f'{column} {columns[column]}' for column in columns])})")
+
+    def update_table(self, table_name, columns):
+        # TODO: Implement
+        pass
+
+    def insert(self, table_name, columns: dict, commit=True):
+        """
+        Inserts a row into a table
+        :param table_name: The name of the table to insert into
+        :param columns:  A dictionary of column names and values to insert
+        :param commit:  Whether to commit the changes to the database
+        :return:
+        """
+        self.run(f"INSERT INTO {table_name} ({', '.join(columns.keys())}) VALUES ({', '.join(['?' for _ in columns])})",
+                 tuple(columns.values()), commit=commit)
+
+    def insert_many(self, table_name, columns: list, commit=True):
+        """
+        Inserts multiple rows into a table
+        :param table_name: The name of the table to insert into
+        :param columns:  A list of dictionaries, each dictionary is a row to insert
+        :param commit: Whether to commit the changes to the database
+        :return:
+        """
+        self.run_many(f"INSERT INTO {table_name} ({', '.join(columns[0].keys())}) VALUES ({', '.join(['?' for _ in columns[0]])})",
+                      tuple(columns), commit=commit)
+
+    def update(self, table_name, columns: dict, where: dict, commit=True):
+        """
+        Updates a row in a table
+        :param table_name: The name of the table to update
+        :param columns: A dictionary of column names and values to update
+        :param where: A dictionary of column names and values to filter by
+        :param commit: Whether to commit the changes to the database
+        :return:
+        """
+        self.run(f"UPDATE {table_name} SET {', '.join([f'{column} = ?' for column in columns])} WHERE "
+                 f"{', '.join([f'{column} = ?' for column in where])}",
+                 tuple(columns.values()) + tuple(where.values()), commit=commit)
 
 
 def get_local_ip():
@@ -120,12 +212,8 @@ class RoomController:
         self.command_controller = CommandController(self.controllers)
 
         # Check what the operating system is to determine if we should run in dev mode
-        if os.name == "nt":  # Windows
-            address = "localhost"
-            logging.info("Running in dev mode, using localhost")
-        else:  # Anything else
-            address = "wopr.eggs.loafclan.org"
-            logging.info("Running in prod mode, using wopr.eggs.loafclan.org")
+        self.webserver_port = 47670
+        self.webserver_address = check_interface_usage(self.webserver_port)
 
         self.data_logging = DataLoggingHost(self.database,
                                             room_sensor_host=self.sensor_host, room_controllers=self.controllers)
@@ -136,7 +224,7 @@ class RoomController:
                                  occupancy_detector=self.occupancy_detector,
                                  scene_controller=self.scene_controller,
                                  command_controller=self.command_controller,
-                                 webserver_address=address,
+                                 webserver_address=self.webserver_address,
                                  datalogger=self.data_logging)
 
     def init_database(self):
