@@ -24,7 +24,7 @@ class APIMessageTX:
 
 class APIMessageRX:
 
-    def __init__(self, json_raw: typing.Union[str, bytes, MultiDictProxy]):
+    def __init__(self, json_raw: typing.Union[str, bytes, bytearray, dict, MultiDictProxy]):
         """Load the api content from bytes"""
 
         if isinstance(json_raw, bytes) or isinstance(json_raw, bytearray):

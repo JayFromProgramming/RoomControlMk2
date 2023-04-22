@@ -1,19 +1,5 @@
 import functools
 import threading
-from threading import Thread
-
-
-def background(func):
-    """Decorator to automatically launch a function in a thread"""
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):  # replaces original function...
-        # ...and launches the original in a thread
-        thread = Thread(target=func, args=args, kwargs=kwargs, daemon=True)
-        thread.start()
-        return thread
-
-    return wrapper
 
 
 class AbstractRGB:

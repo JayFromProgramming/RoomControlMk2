@@ -1,8 +1,7 @@
 import datetime
 import time
 
-from Modules.RoomControl.AbstractSmartDevices import background
-
+from Modules.RoomControl.Decorators import background
 from loguru import logger as logging
 
 class SensorHost:

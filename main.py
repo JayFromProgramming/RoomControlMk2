@@ -13,7 +13,7 @@ logging.add("logs/{time}.log", rotation="1 week", retention="1 hour", compressio
 
 from Modules import RoomControl
 import asyncio
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 
 room_controller = RoomControl.RoomController()
 

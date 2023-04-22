@@ -3,7 +3,7 @@ import os
 import sqlite3
 import time
 
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 import subprocess
 import pyparsing as pp
 

@@ -5,7 +5,8 @@ from pyvesync import VeSync
 import asyncio
 from threading import Thread
 
-from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
+from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
+from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 

@@ -14,7 +14,7 @@ from Modules.RoomControl.API import page_builder
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 

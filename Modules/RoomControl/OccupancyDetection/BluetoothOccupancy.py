@@ -5,6 +5,8 @@ import sqlite3
 import time
 from loguru import logger as logging
 
+from Modules.RoomControl.Decorators import background
+
 try:
     import bluetooth
 except ImportError:
@@ -16,8 +18,6 @@ try:
 except ImportError:
     logging.error("Bluetooth LE not available")
     bluetoothLE = None
-
-from Modules.RoomControl.AbstractSmartDevices import background
 
 
 class BluetoothDetector:

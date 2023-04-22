@@ -1,7 +1,7 @@
 import time
 
 from Modules.RoomControl.API.datagrams import APIMessageRX
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 
 from loguru import logger as logging

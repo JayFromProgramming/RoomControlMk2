@@ -2,7 +2,7 @@ import time
 import datetime
 
 from Modules.RoomControl.API.datagrams import APIMessageRX
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 

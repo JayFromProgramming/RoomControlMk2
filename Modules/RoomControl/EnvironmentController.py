@@ -1,7 +1,7 @@
 import time
 from loguru import logger as logging
-from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
-from Modules.RoomControl.Decorators import api_action
+from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
+from Modules.RoomControl.Decorators import background, api_action
 
 
 class EnvironmentControllerHost:

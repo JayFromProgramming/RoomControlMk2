@@ -5,7 +5,8 @@ import magichue
 import asyncio
 from threading import Thread
 
-from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, background
+from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
+from Modules.RoomControl.Decorators import background
 
 
 def bulb_type_to_string(bulb_type: magichue.light.bulb_types):

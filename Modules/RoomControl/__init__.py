@@ -10,7 +10,7 @@ import time
 
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 from Modules.RoomControl.CommandController import CommandController
 from Modules.RoomControl.DataLogger import DataLoggingHost
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost

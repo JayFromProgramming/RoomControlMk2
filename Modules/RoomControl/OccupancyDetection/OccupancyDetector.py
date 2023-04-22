@@ -1,7 +1,7 @@
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 import time
 
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 from Modules.RoomControl.OccupancyDetection.MTUNetOccupancy import NetworkOccupancyDetector
 
 from loguru import logger as logging
