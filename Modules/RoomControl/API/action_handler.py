@@ -5,12 +5,10 @@ from typing import Tuple
 from Modules.RoomControl.API.datagrams import APIMessageRX, APIMessageTX
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, AbstractToggleDevice
 
-import logging
+from loguru import logger as logging
 
 from Modules.RoomControl.EnvironmentController import EnvironmentController
 from Modules.RoomControl.LightController import LightController
-
-logging = logging.getLogger(__name__)
 
 
 def process_device_command(device:
@@ -21,24 +19,12 @@ typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message:
             raise ValueError(f"Device ({device}) not found")
         else:  # Device found
             print(message.__dict__)
-            if hasattr(message, "color") and hasattr(device, "color"):  # Check Message has an attribute called color
-                device.set_color(message.color)  # And the device has a method called color
-                preformed_actions.append(f"set_color to {message.color}")
-            if hasattr(message, "brightness") and hasattr(device, "brightness"):
-                device.set_brightness(message.brightness)
-                preformed_actions.append(f"set_brightness to {message.brightness}")
-            if hasattr(message, "white") and hasattr(device, "white"):
-                device.set_white(message.white)
-                preformed_actions.append(f"set_white to {message.white}")
-            if hasattr(message, "on") and hasattr(device, "on"):
-                device.on = message.on
-                preformed_actions.append(f"set_on to {message.on}")
-            if hasattr(message, "auto") and hasattr(device, "auto"):
-                device.set_auto(message.auto, "api")
-                preformed_actions.append(f"set_auto to {message.auto}")
-            if hasattr(message, "target_value") and hasattr(device, "setpoint"):
-                device.setpoint = message.target_value
-                preformed_actions.append(f"set_target_value to {message.target_value}")
+            for key, value in message.__dict__.items():  # Loop through all attributes in the message
+                if hasattr(device, key):  # Check the device has an attribute with the same name
+                    setattr(device, key, value)
+                    preformed_actions.append(f"set_{key} to {value}")
+                else:  # If the device doesn't have an attribute with the same name
+                    logging.warning(f"Device {device} has no attribute called {key}")
     except Exception as e:
         logging.error(f"Error processing device command: {e}")
         return (APIMessageTX(

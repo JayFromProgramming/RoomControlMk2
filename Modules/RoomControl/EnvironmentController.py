@@ -1,7 +1,7 @@
 import time
 from loguru import logger as logging
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
-
+from Modules.RoomControl.Decorators import api_action
 
 
 class EnvironmentControllerHost:
@@ -189,6 +189,14 @@ class EnvironmentController:
         cursor.execute("UPDATE enviv_controllers SET current_set_point=? WHERE name=?", (value, self.controller_name))
         cursor.close()
         self.database.commit()
+
+    @property
+    def target_value(self):
+        return self.setpoint
+
+    @target_value.setter
+    def target_value(self, value):
+        self.setpoint = value
 
     @property
     def current_value(self):
