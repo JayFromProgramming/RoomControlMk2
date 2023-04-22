@@ -10,7 +10,7 @@ import time
 from aiohttp import web
 import hashlib
 
-from Modules.RoomControl.API import page_builder
+# from Modules.RoomControl.API import page_builder
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
@@ -49,8 +49,8 @@ class NetAPI:
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
-            + [web.get('/web_control/{name}', self.handle_web_control)]
-            + [web.post('/web_control/{name}', self.handle_web_control)]
+            # + [web.get('/web_control/{name}', self.handle_web_control)]
+            # + [web.post('/web_control/{name}', self.handle_web_control)]
             + [web.get('/get_all', self.handle_get_all)]
             + [web.get('/occupancy', self.handle_occupancy)]
             + [web.get('/set_auto/{mode}', self.handle_auto)]
@@ -67,9 +67,9 @@ class NetAPI:
             + [web.get('/page/js/{file}', self.handle_js)]
             + [web.get('/page/img/{file}', self.handle_img)]
             + [web.get('/name/{device_id}', self.handle_name)]
-            + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
-            + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
-            + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
+            # + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
+            # + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
+            # + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
             + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
             + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
         )
@@ -330,17 +330,17 @@ class NetAPI:
             logging.warning(f"Page {sys.path[0]}/Modules/RoomControl/API/pages/{page}.html not found")
             return web.Response(text="Page not found", status=404)
 
-    async def handle_web_control(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-
-        logging.debug("Received WEB CONTROL request")
-
-        # Load the main page from "{root}\pages\main_view_page.html"
-        device = request.match_info['name']
-        hw_device = self.get_device(device)
-
-        return page_builder.generate_control_page(self, hw_device)
+    # async def handle_web_control(self, request):
+    #     if not self.check_auth(request):
+    #         raise web.HTTPUnauthorized()
+    #
+    #     logging.debug("Received WEB CONTROL request")
+    #
+    #     # Load the main page from "{root}\pages\main_view_page.html"
+    #     device = request.match_info['name']
+    #     hw_device = self.get_device(device)
+    #
+    #     return page_builder.generate_control_page(self, hw_device)
 
     async def handle_web_control_post(self, request):
         if not self.check_auth(request):
@@ -515,32 +515,32 @@ class NetAPI:
         device_name = self.get_device_display_name(device_id)
         return web.Response(text=device_name)
 
-    async def handle_status_string(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        # logging.info("Received STATUS_STRING request")
-        device_id = request.match_info['device_id']
-        device = self.get_device(device_id)
-        device_status = page_builder.state_to_string(device)
-        return web.Response(text=device_status)
+    # async def handle_status_string(self, request):
+    #     if not self.check_auth(request):
+    #         raise web.HTTPUnauthorized()
+    #     # logging.info("Received STATUS_STRING request")
+    #     device_id = request.match_info['device_id']
+    #     device = self.get_device(device_id)
+    #     device_status = page_builder.state_to_string(device)
+    #     return web.Response(text=device_status)
 
-    async def handle_health_string(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        # logging.info("Received HEALTH_STRING request")
-        device_id = request.match_info['device_id']
-        device = self.get_device(device_id)
-        device_health = page_builder.health_message(device)
-        return web.Response(text=device_health)
+    # async def handle_health_string(self, request):
+    #     if not self.check_auth(request):
+    #         raise web.HTTPUnauthorized()
+    #     # logging.info("Received HEALTH_STRING request")
+    #     device_id = request.match_info['device_id']
+    #     device = self.get_device(device_id)
+    #     device_health = page_builder.health_message(device)
+    #     return web.Response(text=device_health)
 
-    async def handle_action_string(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        # logging.info("Received ACTION_STRING request")
-        device_id = request.match_info['device_id']
-        device = self.get_device(device_id)
-        device_action = page_builder.generate_actions(device)
-        return web.Response(text=device_action)
+    # async def handle_action_string(self, request):
+    #     if not self.check_auth(request):
+    #         raise web.HTTPUnauthorized()
+    #     # logging.info("Received ACTION_STRING request")
+    #     device_id = request.match_info['device_id']
+    #     device = self.get_device(device_id)
+    #     device_action = page_builder.generate_actions(device)
+    #     return web.Response(text=device_action)
 
     async def handle_data_log_sources(self, request):
         if not self.check_auth(request):
