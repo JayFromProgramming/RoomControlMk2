@@ -5,6 +5,7 @@ import time
 import aiohttp
 import requests
 
+import ConcurrentDatabase
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
 
 from Modules.RoomControl.Decorators import background
@@ -17,14 +18,13 @@ template = "https://api.voicemonkey.io/trigger?access_token={token}&secret_token
 
 class VoiceMonkeyAPI:
 
-    def __init__(self, database):
+    def __init__(self, database: ConcurrentDatabase.Database):
         self.database = database
         self.init_database()
 
-        cursor = self.database.cursor()
-        self.api_key = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'VoiceMonkeyKey'").fetchone()[1]
-        self.api_secret = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'VoiceMonkeySecret'").fetchone()[1]
-        cursor.close()
+        secrets = self.database.get_table("secrets")
+        self.api_key = secrets.get_row(secret_name='VoiceMonkeyKey')['secret_value']
+        self.api_secret = secrets.get_row(secret_name='VoiceMonkeySecret')['secret_value']
 
         self.devices = []
         cursor = self.database.cursor()
@@ -38,11 +38,8 @@ class VoiceMonkeyAPI:
         pass
 
     def init_database(self):
-        cursor = self.database.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS "
-                       "voicemonkey_devices (device_name TEXT, on_monkey TEXT, off_monkey TEXT, current_state BOOLEAN)")
-        cursor.close()
-        self.database.commit()
+        self.database.create_table("voicemonkey_devices", {"device_name": "TEXT", "on_monkey": "TEXT",
+                                                           "off_monkey": "TEXT", "current_state": "BOOLEAN"})
 
     def get_device(self, device_name):
         for device in self.devices:
@@ -76,7 +73,7 @@ class VoiceMonkeyAPI:
 class VoiceMonkeyDevice(AbstractToggleDevice):
     """All voice monkey devices store their state in the database, so we don't need to query the device for its state"""
 
-    def __init__(self, device_id, database, monkey_token, monkey_secret):
+    def __init__(self, device_id, database: ConcurrentDatabase.Database, monkey_token, monkey_secret):
         super().__init__()
         self.device_id = device_id
         self.database = database
@@ -85,10 +82,12 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         self.enable_monkey = None
         self.disable_monkey = None
         self.current_state = None
-        self.load_state()
         self.online = True
         self.offline_reason = "Unknown"
         self.fault = False
+        self.voice_monkey_table = self.database.get_table("voicemonkey_devices")
+        self.row = self.voice_monkey_table.get_row(device_name=self.device_id)
+        self.load_state()
 
     def main_power_state(self, state):
         if not state:
@@ -99,18 +98,13 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
             self.offline_reason = "Unknown"
 
     def load_state(self):
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM voicemonkey_devices WHERE device_name = ?", (self.device_id,))
-        row = cursor.fetchone()
-        if row:
-            self.enable_monkey = row[1]
-            self.disable_monkey = row[2]
-            self.current_state = row[3]
+        if self.row:
+            self.enable_monkey = self.row["on_monkey"]
+            self.disable_monkey = self.row["off_monkey"]
+            self.current_state = self.row["current_state"]
             self.set_on(self.current_state)
         else:
             logging.error(f"Could not find {self.name} in database")
-
-        cursor.close()
 
     def get_type(self):
         return "VoiceMonkeyDevice"
@@ -142,16 +136,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                 logging.debug(f"Monkey {monkey} queued successfully")
                 if state_after is not None:
                     self.current_state = state_after
-                    db_busy = self.database.lock.acquire(timeout=2)
-                    if not db_busy:
-                        logging.warning("Database was busy, could not update VoiceMonkey device state")
-                        return
-                    cursor = self.database.cursor()
-                    cursor.execute("UPDATE voicemonkey_devices SET current_state = ? WHERE device_name = ?",
-                                   (state_after, self.device_id))
-                    cursor.close()
-                    self.database.commit()
-                    self.database.lock.release()
+                    self.row["current_state"] = state_after
                     self.online = True
                     self.offline_reason = "Unknown"
             else:
@@ -160,6 +145,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                 self.offline_reason = f"API Error, code: {resp.status_code}"
 
     def refresh_info(self):
+        self.row.flush()
         logging.debug(f"Refreshing {self.name} info")
 
     def get_status(self):

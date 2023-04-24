@@ -5,21 +5,22 @@ from pyvesync import VeSync
 import asyncio
 from threading import Thread
 
+import ConcurrentDatabase
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
 from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+
 class VeSyncAPI:
 
-    def __init__(self, database):
+    def __init__(self, database: ConcurrentDatabase.Database):
 
         self.database = database
-
-        email = self.database.cursor().execute("SELECT * FROM secrets WHERE secret_name = 'VesyncUsername'").fetchone()[1]
-        password = self.database.cursor().execute("SELECT * FROM secrets WHERE secret_name = 'VesyncPassword'").fetchone()[1]
-        self.database.cursor().close()
-        self.manager = VeSync(email, password, time_zone='America/New_York')
+        secretes_table = self.database.get_table("secrets")
+        email = secretes_table.get_row(secret_name='VesyncUsername')
+        password = secretes_table.get_row(secret_name='VesyncPassword')
+        self.manager = VeSync(email['secret_value'], password['secret_value'], time_zone='America/New_York')
         self.manager.login()
 
         self.manager.update()  # Populate the devices list
@@ -59,7 +60,7 @@ class VeSyncAPI:
 
 class VeSyncPlug(AbstractToggleDevice):
 
-    def __init__(self, device, database):
+    def __init__(self, device, database: ConcurrentDatabase.Database):
         super().__init__()
         self.device = device
         self.device_name = device.device_name
@@ -75,14 +76,12 @@ class VeSyncPlug(AbstractToggleDevice):
 
     def get_bounds(self):
         """Gets expected power draw bounds from the DB"""
-        cursor = self.database.cursor()
-        cursor.execute("SELECT upper_bound, lower_bound FROM vesync_device_bounds WHERE device_name = ?", (self.device_name,))
-        bounds = cursor.fetchone()
-        cursor.close()
+        device_bounds = self.database.get_table("vesync_device_bounds")
+        bounds = device_bounds.get_row(device_name=self.device_name)
         if bounds:
             logging.info(f"VeSyncAPI ({self.device_name}): Bounds found in DB: {bounds}")
-            self.upper_bounds = bounds[0]
-            self.lower_bounds = bounds[1]
+            self.upper_bounds = bounds["upper_bound"]
+            self.lower_bounds = bounds["lower_bound"]
         else:
             logging.info(f"VeSyncAPI ({self.device_name}): No bounds found in DB, setting to None")
             self.upper_bounds = None
@@ -106,7 +105,7 @@ class VeSyncPlug(AbstractToggleDevice):
             state = self.get_info()
             if state["active_time"] < 2:  # If the device has been on for less than 2 minutes
                 self.fault = False
-                return    # Its power draw is probably not accurate
+                return  # Its power draw is probably not accurate
             if state['power'] > self.upper_bounds:
                 self.fault = True
                 self.offline_reason = f"Power draw exceeded"

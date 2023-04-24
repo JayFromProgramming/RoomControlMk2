@@ -5,6 +5,7 @@ import magichue
 import asyncio
 from threading import Thread
 
+import ConcurrentDatabase
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
 from Modules.RoomControl.Decorators import background
 
@@ -26,13 +27,13 @@ class bulb_types:
 
 class MagicHome:
 
-    def __init__(self, database):
+    def __init__(self, database: ConcurrentDatabase.Database):
         self.database = database
 
-        cursor = self.database.cursor()
-        username = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'MagicHueUsername'").fetchone()[1]
-        password = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'MagicHuePassword'").fetchone()[1]
-        cursor.close()
+        secrets = self.database.get_table("secrets")
+        username = secrets.get_row(secret_name='MagicHueUsername')['secret_value']
+        password = secrets.get_row(secret_name='MagicHuePassword')['secret_value']
+
         try:
             self.api = magichue.RemoteAPI.login_with_user_password(user=username, password=password)
         except Exception as e:
@@ -204,6 +205,15 @@ class MagicDevice(AbstractRGB):
                 self.offline_reason = str(e)
         else:
             print(f"{self.macaddr} is offline")
+
+    def get_white(self):
+        if self.online:
+            if self.light.is_white:
+                return self.light.w
+            else:
+                return 0
+        else:
+            return 0
 
     @background
     def set_white(self, white: int):

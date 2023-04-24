@@ -1,14 +1,16 @@
 import time
 import datetime
 
+import ConcurrentDatabase
 from Modules.RoomControl.API.datagrams import APIMessageRX
 from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+
 class SceneController:
 
-    def __init__(self, database, room_controllers):
+    def __init__(self, database: ConcurrentDatabase.Database, room_controllers):
         logging.info("Initializing SceneController instance")
         self.database = database
         self._init_database()
@@ -25,26 +27,31 @@ class SceneController:
         self._load_triggers()
 
     def _init_database(self):
-        cursor = self.database.cursor()
+        # cursor = self.database.cursor()
         #  The scenes table contains the scenes and their associated action data
-        cursor.execute('''CREATE TABLE IF NOT EXISTS scenes (scene_id TEXT UNIQUE PRIMARY KEY, scene_data TEXT)''')
+        # cursor.execute('''CREATE TABLE IF NOT EXISTS scenes (scene_id TEXT UNIQUE PRIMARY KEY, scene_data TEXT)''')
+        self.database.create_table("scenes", {"scene_id": "TEXT UNIQUE PRIMARY KEY", "scene_data": "TEXT"})
         # The scene_timer table contains the scene_id and the time it should be executed
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS scene_triggers (scene_id TEXT REFERENCES scenes(scene_id) NOT NULL, 
-            trigger_id TEXT UNIQUE PRIMARY KEY NOT NULL, 
-            trigger_name TEXT NOT NULL, trigger_type TEXT NOT NULL, trigger_value TEXT NULL, active boolean)
-        ''')
-        self.database.commit()
+        # cursor.execute('''
+        #     CREATE TABLE IF NOT EXISTS scene_triggers (scene_id TEXT REFERENCES scenes(scene_id) NOT NULL,
+        #     trigger_id TEXT UNIQUE PRIMARY KEY NOT NULL,
+        #     trigger_name TEXT NOT NULL, trigger_type TEXT NOT NULL, trigger_value TEXT NULL, active boolean)
+        # ''')
+        self.database.create_table("scene_triggers", {"scene_id": "TEXT REFERENCES scenes(scene_id) NOT NULL",
+                                                      "trigger_id": "TEXT UNIQUE PRIMARY KEY NOT NULL",
+                                                      "trigger_name": "TEXT NOT NULL",
+                                                      "trigger_type": "TEXT NOT NULL",
+                                                      "trigger_value": "TEXT NULL",
+                                                      "active": "BOOLEAN"})
+        # self.database.commit()
 
     def _load_scenes(self):
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM scenes")
-        scenes = cursor.fetchall()
-        cursor.close()
+        table = self.database.get_table("scenes")
+        scenes = table.get_all()
         for scene in scenes:
-            self.scenes[scene[0]] = {
-                "name": scene[1],
-                "data": scene[2]
+            self.scenes[scene['scene_id']] = {
+                "name": scene['scene_name'],
+                "data": scene['scene_data']
             }
 
     def get_scenes(self):
@@ -56,16 +63,15 @@ class SceneController:
 
     def _load_triggers(self):
         logging.info("SceneController: Loading triggers...")
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM scene_triggers")
-        triggers = cursor.fetchall()
-        cursor.close()
+        table = self.database.get_table("scene_triggers")
+        triggers = table.get_all()
         for trigger in triggers:
             self.triggers.update({
-                trigger[1]: SceneTrigger(trigger[0], trigger[1],
-                                         trigger[2], trigger[3], trigger[4],
-                                         trigger[5], self.database, self.execute_scene,
-                                         self.action_to_str(trigger[0]))})
+                trigger['trigger_id']:
+                    SceneTrigger(trigger['scene_id'], trigger['trigger_id'], trigger['trigger_name'],
+                                 trigger['trigger_type'], trigger['trigger_value'], trigger['active'],
+                                 self.database, self.execute_scene, self.action_to_str(trigger['scene_id']))
+            })
 
     def execute_trigger(self, trigger_id):
         if trigger_id not in self.triggers:
@@ -133,7 +139,7 @@ class SceneController:
 class SceneTrigger:
 
     def __init__(self, scene_id, trigger_id, trigger_name, trigger_type,
-                 trigger_value, active, database, callback, action_string):
+                 trigger_value, active, database: ConcurrentDatabase.Database, callback, action_string):
         self.scene_id = scene_id
         self.trigger_id = trigger_id
         self.trigger_name = trigger_name
@@ -250,10 +256,14 @@ class SceneTrigger:
                 return False
 
     def toggle_active(self):
-        self.active = not self.active
-        cursor = self.database.cursor()
-        cursor.execute("UPDATE scene_triggers SET active=? WHERE trigger_id=?", (self.active, self.trigger_id))
-        self.database.commit()
+        # self.active = not self.active
+        # cursor = self.database.cursor()
+        # cursor.execute("UPDATE scene_triggers SET active=? WHERE trigger_id=?", (self.active, self.trigger_id))
+        # self.database.commit()
+
+        table = self.database.get_table("scene_triggers")
+        row = table.get_row(trigger_id=self.trigger_id)
+        row.active = self.active
 
     def execute(self):
         """Executes the scene associated with this trigger"""

@@ -8,6 +8,7 @@ import threading
 import os
 import time
 
+from ConcurrentDatabase.Database import Database
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.Decorators import background
@@ -55,111 +56,6 @@ def check_interface_usage(port):
     return interfaces
 
 
-class CustomLock:
-
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.lock_count = 0
-        self.queued_lock_count = 0
-
-    def acquire(self, blocking=True, timeout=-1):
-        self.lock_count += 1
-        logging.debug(f"Acquiring lock #{self.lock_count} (Queued: {self.queued_lock_count})")
-        self.queued_lock_count += 1
-        acquired = self.lock.acquire(blocking, timeout)
-        if acquired:
-            logging.debug(f"Acquired lock #{self.lock_count}")
-            return True
-        else:
-            logging.debug(f"Failed to acquire lock #{self.lock_count}")
-            self.queued_lock_count -= 1
-            return False
-
-    def release(self):
-        logging.debug(f"Releasing lock #{self.lock_count} (Queued: {self.queued_lock_count})")
-        self.queued_lock_count -= 1
-        self.lock.release()
-
-
-class ConcurrentDatabase(sqlite3.Connection):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.lock = CustomLock()
-
-    def run(self, sql, *args, **kwargs):
-        self.lock.acquire()
-        cursor = super().cursor()
-        cursor.execute(sql, *args)
-        if kwargs.get("commit", True):
-            try:
-                super().commit()
-            except sqlite3.OperationalError as e:
-                logging.info(f"Database Error: Commit failed {e}")
-        self.lock.release()
-        return cursor
-
-    def run_many(self, sql, *args, **kwargs):
-        self.lock.acquire()
-        cursor = super().cursor()
-        cursor.executemany(sql, *args)
-        if kwargs.get("commit", True):
-            try:
-                super().commit()
-            except sqlite3.OperationalError as e:
-                logging.info(f"Database Error: Commit failed {e}")
-        self.lock.release()
-        return cursor
-
-    def get(self, sql, *args):
-        cursor = self.run(sql, *args)
-        result = cursor.fetchall()
-        cursor.close()
-        return result
-
-    def create_table(self, table_name, columns: dict):
-        self.run(f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join([f'{column} {columns[column]}' for column in columns])})")
-
-    def update_table(self, table_name, columns):
-        # TODO: Implement
-        pass
-
-    def insert(self, table_name, columns: dict, commit=True):
-        """
-        Inserts a row into a table
-        :param table_name: The name of the table to insert into
-        :param columns:  A dictionary of column names and values to insert
-        :param commit:  Whether to commit the changes to the database
-        :return:
-        """
-        self.run(f"INSERT INTO {table_name} ({', '.join(columns.keys())}) VALUES ({', '.join(['?' for _ in columns])})",
-                 tuple(columns.values()), commit=commit)
-
-    def insert_many(self, table_name, columns: list, commit=True):
-        """
-        Inserts multiple rows into a table
-        :param table_name: The name of the table to insert into
-        :param columns:  A list of dictionaries, each dictionary is a row to insert
-        :param commit: Whether to commit the changes to the database
-        :return:
-        """
-        self.run_many(f"INSERT INTO {table_name} ({', '.join(columns[0].keys())}) VALUES ({', '.join(['?' for _ in columns[0]])})",
-                      tuple(columns), commit=commit)
-
-    def update(self, table_name, columns: dict, where: dict, commit=True):
-        """
-        Updates a row in a table
-        :param table_name: The name of the table to update
-        :param columns: A dictionary of column names and values to update
-        :param where: A dictionary of column names and values to filter by
-        :param commit: Whether to commit the changes to the database
-        :return:
-        """
-        self.run(f"UPDATE {table_name} SET {', '.join([f'{column} = ?' for column in columns])} WHERE "
-                 f"{', '.join([f'{column} = ?' for column in where])}",
-                 tuple(columns.values()) + tuple(where.values()), commit=commit)
-
-
 def get_local_ip():
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -169,7 +65,7 @@ def get_local_ip():
 class RoomController:
 
     def __init__(self, db_path: str = "room_data.db"):
-        self.database = ConcurrentDatabase(db_path, check_same_thread=False)
+        self.database = Database(db_path)
         self.init_database()
 
         self.magic_home = MagicHueAPI.MagicHome(database=self.database)
@@ -228,13 +124,16 @@ class RoomController:
                                  datalogger=self.data_logging)
 
     def init_database(self):
-        cursor = self.database.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS auto_lights (device_id TEXT, is_auto BOOLEAN, current_mode TEXT)''')
-        cursor.execute('''CREATE TABLE IF NOT EXISTS auto_plugs (device_id TEXT, is_auto BOOLEAN, policy_name TEXT)''')
+        # cursor = self.database.cursor()
+        # cursor.execute('''CREATE TABLE IF NOT EXISTS auto_lights (device_id TEXT, is_auto BOOLEAN, current_mode TEXT)''')
+        self.database.create_table("auto_lights", {"device_id": "TEXT", "is_auto": "BOOLEAN", "current_mode": "TEXT"})
+        # cursor.execute('''CREATE TABLE IF NOT EXISTS auto_plugs (device_id TEXT, is_auto BOOLEAN, policy_name TEXT)''')
+        self.database.create_table("auto_plugs", {"device_id": "TEXT", "is_auto": "BOOLEAN", "policy_name": "TEXT"})
         # cursor.execute('''CREATE TABLE IF NOT EXISTS scenes (scene_name TEXT, scene_data TEXT)''')
-
-        cursor.execute('''CREATE TABLE IF NOT EXISTS secrets (secret_name TEXT, secret_value TEXT)''')
-        self.database.commit()
+        self.database.create_table("scenes", {"scene_name": "TEXT", "scene_data": "TEXT"})
+        # cursor.execute('''CREATE TABLE IF NOT EXISTS secrets (secret_name TEXT, secret_value TEXT)''')
+        self.database.create_table("secrets", {"secret_name": "TEXT", "secret_value": "TEXT"})
+        # self.database.commit()
 
     def refresh(self):
         # logging.info("Refreshing devices")

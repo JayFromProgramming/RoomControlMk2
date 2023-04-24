@@ -4,6 +4,7 @@ import time
 from Modules.RoomControl.Decorators import background
 from loguru import logger as logging
 
+
 class SensorHost:
 
     def __init__(self):
