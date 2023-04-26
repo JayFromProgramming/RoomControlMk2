@@ -94,6 +94,7 @@ class EnvironmentController:
         self.devices = []
         table = self.database.get_table("enviv_control_devices")
         devices = table.get_rows(control_source=self.controller_name)
+        self._fault = False
 
         for device in devices:
             self.devices.append(ControlledDevice(device['device_id'], self.get_device(device['device_id']), self.database))
@@ -120,12 +121,16 @@ class EnvironmentController:
                 if self.enabled:
                     if not self.source.get_fault():
                         for device in self.devices:
+                            device.fault = False
                             device.check(self.source.get_value(), self.current_setpoint)
+                        self._fault = False
                         self._reason = "Unknown"
                     else:
                         logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
                         for device in self.devices:
-                            device.fault_encountered()
+                            if not device.fault:
+                                device.fault = True
+                                device.fault_encountered()
                         self._reason = "Source is offline"
                 time.sleep(30)
         else:
@@ -240,6 +245,7 @@ class ControlledDevice:
         self.action_direction = int(device['action_direction'])
         self.lower_hysteresis = float(device['lower_delta'])
         self.upper_hysteresis = float(device['upper_delta'])
+        self.fault = False
 
     def check(self, current_value, setpoint):
         """
@@ -264,11 +270,17 @@ class ControlledDevice:
                     self.device.on = True
                     logging.info(f"ControlledDevice ({self.name}): Turning on")
 
+    @background
     def fault_encountered(self):
         """
         Called when the temperature sensor encounters a fault
         The device will be turned off and will not be turned on until the fault is resolved
         or the device is manually turned on
         """
-        if self.device.auto and self.device.on:
-            self.device.on = False
+        while self.fault:
+            if self.device.auto:
+                if self.device.on:
+                    self.device.on = False
+                self.device.fault = True
+                self.device.offline_reason = "SRC CTLR SENSOR FAULT"
+            time.sleep(1)
