@@ -19,23 +19,23 @@ class ColumnWrapper:
                 self.validate(item)
             return
         # Validate the duck type of the column is correct (aka if it is a string of an integer its still an integer)
-        if self.type == "INTEGER":
+        if self.type.upper() == "INTEGER":
             try:
                 int(value)
             except ValueError:
                 raise ValueError(f"Column {self.name} must of duck type {self.type}")
-        elif self.type == "REAL":
+        elif self.type.upper() == "REAL":
             try:
                 float(value)
             except ValueError:
                 raise ValueError(f"Column {self.name} must of duck type {self.type}")
-        elif self.type == "TEXT":
+        elif self.type.upper() == "TEXT":
             if not isinstance(value, str) and not isinstance(value, int) and not isinstance(value, float):
                 raise ValueError(f"Column {self.name} must of duck type {self.type}")
-        elif self.type == "BLOB":
+        elif self.type.upper() == "BLOB":
             if not isinstance(value, bytes):
                 raise ValueError(f"Column {self.name} must of exact type {self.type}")
-        elif self.type == "BOOLEAN":
+        elif self.type.upper() == "BOOLEAN":
             if not isinstance(value, bool):
                 raise ValueError(f"Column {self.name} must of exact type {self.type}")
         else:
