@@ -82,15 +82,19 @@ class ColumnWrapper:
         """
         if value is None:
             return "NULL"
-        elif self.type == "TEXT":
+        elif self.type.upper() == "TEXT":
             return f"'{value}'"
-        elif self.type == "INTEGER":
+        elif self.type.upper() == "INTEGER":
             return str(value)
-        elif self.type == "BOOLEAN":
+        elif self.type.upper() == "BOOLEAN":
             return str(value)
-        elif self.type == "REAL":
+        elif self.type.upper() == "REAL":
             return str(value)
-        elif self.type == "BLOB":
+        elif self.type.upper() == "BLOB":
+            return str(value)
+        elif self.type.upper() == "DATE":
+            return f"'{value}'"
+        elif self.type.upper() == "TIMESTAMP":
             return str(value)
         else:
             raise TypeError(f"Unknown column type {self.type}")
