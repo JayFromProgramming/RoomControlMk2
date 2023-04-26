@@ -116,6 +116,7 @@ class DataLogger:
         logging.info(f"DataLogger ({name}): Initializing")
         self.name = name
         self.database = database
+        self.table = self.database.get_table("data_logging")
         self.source = source
         self.logging_interval = logging_interval
         self.unit = unit
@@ -124,7 +125,6 @@ class DataLogger:
         self.uuid = uuid
         self.senicide()  # Remove old logs
         self.start_logging()
-        self.table = self.database.get_table("data_logging")
 
     @background
     def start_logging(self):

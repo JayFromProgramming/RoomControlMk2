@@ -1,3 +1,6 @@
+import datetime
+
+
 class ColumnWrapper:
 
     def __init__(self, table, pragma):
@@ -37,6 +40,12 @@ class ColumnWrapper:
                 raise ValueError(f"Column {self.name} must of exact type {self.type}")
         elif self.type.upper() == "BOOLEAN":
             if not isinstance(value, bool):
+                raise ValueError(f"Column {self.name} must of exact type {self.type}")
+        elif self.type.upper() == "DATE":
+            if not isinstance(value, datetime.date):
+                raise ValueError(f"Column {self.name} must of exact type {self.type}")
+        elif self.type.upper() == "TIMESTAMP":
+            if not isinstance(value, int):
                 raise ValueError(f"Column {self.name} must of exact type {self.type}")
         else:
             raise ValueError(f"Column {self.name} has an unknown type {self.type}")
