@@ -10,6 +10,14 @@ from loguru import logger as logging
 from Modules.RoomControl.OccupancyDetection.OccupancyDetector import OccupancyDetector
 
 
+class StateEnumerator:
+    inactive = 0
+    active = 1
+    motion = 2
+    fault = 3
+    dnd = 4
+
+
 class LightControllerHost:
 
     def __init__(self, database: ConcurrentDatabase.Database,
@@ -37,37 +45,12 @@ class LightControllerHost:
         self.periodic_update()
 
     def database_init(self):
-        # cursor = self.database.cursor()
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS
-        #                 light_controllers (
-        #                 name text,
-        #                 active_state text NOT NULL,
-        #                 inactive_state text NOT NULL,
-        #                 enabled boolean DEFAULT TRUE,
-        #                 current_state integer DEFAULT 0,
-        #                 door_motion_state TEXT DEFAULT null,
-        #                 fault_state TEXT DEFAULT null
-        #                 )""")
         self.database.create_table("light_controllers",
                                    {"name": "TEXT", "active_state": "TEXT", "inactive_state": "TEXT",
                                     "enabled": "BOOLEAN", "current_state": "BOOLEAN", "door_motion_state": "TEXT",
                                     "fault_state": "TEXT"})
-
-
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS
-        #                 light_control_devices (
-        #                 device_id text,
-        #                 control_source text
-        #                 )""")
         self.database.create_table("light_control_devices", {"device_id": "TEXT", "control_source": "TEXT"})
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS
-        #                 light_control_targets (
-        #                 device_uuid integer,
-        #                 control_source text
-        #                 )""")
         self.database.create_table("light_control_targets", {"device_uuid": "INTEGER", "control_source": "TEXT"})
-        # cursor.close()
-        # self.database.commit()
 
     def get_all_devices(self):
         return self.light_controllers.values()
@@ -102,10 +85,8 @@ class LightController:
         self.database = database
         self.room_controllers = room_controllers
 
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM light_controllers WHERE name=?", (name,))
-        controller = cursor.fetchone()
-        cursor.close()
+        self.database.update_table("light_controllers", 1,
+                                   ["""alter table light_controllers add dnd_state TEXT default null"""])
 
         table = self.database.get_table("light_controllers")
         controller = table.get_row(name=name)
@@ -118,6 +99,7 @@ class LightController:
         self.inactive_state = APIMessageRX(controller['inactive_state']) if controller['inactive_state'] is not None else None
         self.door_motion_state = APIMessageRX(controller['door_motion_state']) if controller['door_motion_state'] is not None else None
         self.fault_state = APIMessageRX(controller['fault_state']) if controller['fault_state'] is not None else None
+        self.dnd_state = APIMessageRX(controller['dnd_state']) if controller['dnd_state'] is not None else None
         self.enabled = True if controller['enabled'] == 1 else False
 
         self.online = True
@@ -158,19 +140,24 @@ class LightController:
 
     def update(self):
         if self.enabled and not self.changing_state:
-            if self.current_state != 1 and self.current_state != 2:  # If the state isn't already on or motion
+            if self.current_state == StateEnumerator.dnd:
+                if self.dnd_state is not None:
+                    self.set_state(StateEnumerator.dnd, self.dnd_state)
+                    return
+            # If the state isn't already on or motion
+            if self.current_state != StateEnumerator.inactive and self.current_state != StateEnumerator.motion:
                 if self.occupancy_detector.bluetooth_offline():  # If the bluetooth detector has faulted
                     if self.fault_state is not None:  # If there is a fault state to go to
-                        self.set_state(3, self.fault_state)  # Set the state to fault
-            if self.current_state != 1:  # If the state is off or faulted
+                        self.set_state(StateEnumerator.fault, self.fault_state)  # Set the state to fault
+            if self.current_state != StateEnumerator.active:  # If the state is off or faulted
                 if self.occupancy_detector.was_activity_recent():  # If there was activity in the room recently
                     if self.door_motion_state is not None:
-                        self.set_state(2, self.door_motion_state)
+                        self.set_state(StateEnumerator.motion, self.door_motion_state)
             if not self.occupancy_detector.bluetooth_offline():  # If the bluetooth detector has faulted
                 if self._check_occupancy():
-                    self.set_state(1, self.active_state)
+                    self.set_state(StateEnumerator.active, self.active_state)
                 elif not self.occupancy_detector.was_activity_recent():
-                    self.set_state(0, self.inactive_state)
+                    self.set_state(StateEnumerator.inactive, self.inactive_state)
 
     @background
     def set_state(self, state_val, state=None):
