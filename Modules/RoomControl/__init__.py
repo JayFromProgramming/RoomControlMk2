@@ -73,8 +73,11 @@ class RoomController:
 
     def __init__(self, db_path: str = "room_data.db"):
         self.database = Database(db_path)
-        self.backup_database = sqlite3.connect(f"{db_path}.bak")
-        self.database.backup(target=self.backup_database, progress=database_backup)
+        try:
+            self.backup_database = sqlite3.connect(f"{db_path}.bak")
+            self.database.backup(target=self.backup_database, progress=database_backup)
+        except sqlite3.OperationalError:
+            logging.warning("Backup database is already in use, skipping backup")
         self.init_database()
 
         self.magic_home = MagicHueAPI.MagicHome(database=self.database)
