@@ -31,6 +31,11 @@
       "device": "loft_light_controller"
     },
     {
+      "slot": -1,
+      "name": "Door Lights",
+      "device": "door_light_controller"
+    },
+    {
       "slot": 0,
       "type": "rgb_light",
       "name": "Room Lights",
