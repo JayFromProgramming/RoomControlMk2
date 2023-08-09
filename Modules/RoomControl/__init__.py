@@ -62,10 +62,19 @@ def get_local_ip():
     raise NotImplementedError
 
 
+def database_backup(status, remaining, total):
+    if remaining == 0:
+        logging.info(f"Database backup complete, {total} pages backed up")
+    else:
+        logging.info(f"Database backup {status}, {remaining} pages remaining")
+
+
 class RoomController:
 
     def __init__(self, db_path: str = "room_data.db"):
         self.database = Database(db_path)
+        self.backup_database = sqlite3.connect(f"{db_path}.bak")
+        self.database.backup(target=self.backup_database, progress=database_backup)
         self.init_database()
 
         self.magic_home = MagicHueAPI.MagicHome(database=self.database)

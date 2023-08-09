@@ -40,12 +40,12 @@ class NetAPI:
         self.init_database()
 
         self.app = web.Application()
-        self.app.add_routes(
+        self.app.add_routes(  # Yes this could be done with a loop, but this is easier for me to keep track of
             [web.get('', self.handle_web)]
             + [web.get("/page/{page}", self.handle_page)]
             + [web.get('/login', self.handle_login)]
             + [web.post('/login_auth', self.handle_login_auth)]
-            + [web.get('/auth/{api_key}', self.handle_auth)]  # When visited it will set a cookie to allow access to the API
+            + [web.get('/auth/{api_key}', self.handle_auth)]
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
