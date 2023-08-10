@@ -164,10 +164,10 @@ class DataLogger:
         end_stamp = datetime.datetime.fromtimestamp(int(end_time)).strftime("%Y-%m-%dT%H:%M:%S")
         logging.info(f"DataLogger ({self.name}): Getting logs between {start_stamp} and {end_stamp}")
         fetch_start = time.time()
-        # result = self.database.get("SELECT * FROM data_logging WHERE id = ? AND timestamp >= ? AND timestamp <= ?",
-        #                            (self.uuid, start_time, end_time))
+        result = self.database.get("SELECT * FROM data_logging WHERE id = ? AND timestamp >= ? AND timestamp <= ?",
+                                   (self.uuid, start_time, end_time))
 
-        result = self.table.get_all(id=self.uuid, timestamp=[start_time, end_time])
+        # result = self.table.get_all(id=self.uuid, timestamp=[start_time, end_time])
 
         logging.info(f"DataLogger ({self.name}): {len(result)} logs fetched in {time.time() - fetch_start} seconds")
         return result
