@@ -179,6 +179,7 @@ class LightController:
                                 setattr(device, key, value)
                 self.changing_state = False
                 time.sleep(5)
+                logging.debug(f"Validating state change for {self.controller_name}")
                 # Validate the state change
                 for device in self.light_control_devices.values():
                     if device is None:
