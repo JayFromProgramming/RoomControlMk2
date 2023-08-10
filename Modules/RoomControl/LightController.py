@@ -39,7 +39,8 @@ class LightControllerHost:
 
         for controller in controllers:
             self.light_controllers[controller['name']] = \
-                LightController(controller['name'], self.database, self.occupancy_detector, room_controllers=self.room_controllers)
+                LightController(controller['name'], self.database, self.occupancy_detector,
+                                room_controllers=self.room_controllers)
 
         logging.info("Light Controller Host Initialized")
         self.periodic_update()
@@ -96,8 +97,10 @@ class LightController:
         self.current_state = True if controller['current_state'] == 1 else False
 
         self.active_state = APIMessageRX(controller['active_state']) if controller['active_state'] is not None else None
-        self.inactive_state = APIMessageRX(controller['inactive_state']) if controller['inactive_state'] is not None else None
-        self.door_motion_state = APIMessageRX(controller['door_motion_state']) if controller['door_motion_state'] is not None else None
+        self.inactive_state = APIMessageRX(controller['inactive_state']) if controller[
+                                                                                'inactive_state'] is not None else None
+        self.door_motion_state = APIMessageRX(controller['door_motion_state']) if controller[
+                                                                                      'door_motion_state'] is not None else None
         self.fault_state = APIMessageRX(controller['fault_state']) if controller['fault_state'] is not None else None
         self.dnd_state = APIMessageRX(controller['dnd_state']) if controller['dnd_state'] is not None else None
         self.enabled = True if controller['enabled'] == 1 else False
@@ -271,10 +274,9 @@ class LightController:
 
     @enable_dnd.setter
     def enable_dnd(self, value):
-        self.current_state = StateEnumerator.dnd if value else StateEnumerator.inactive
+        self.set_state(StateEnumerator.dnd, self.dnd_state if value else self.inactive_state)
         logging.info(f"LightController: {self.controller_name} state set to {self.current_state}")
-        self.changing_state = False
-
+        self.changing_state = True
 
     def set_on(self, value):
         self.on = value
