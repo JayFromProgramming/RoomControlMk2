@@ -271,7 +271,9 @@ class LightController:
     @enable_dnd.setter
     def enable_dnd(self, value):
         self.current_state = StateEnumerator.dnd if value else StateEnumerator.inactive
+        logging.info(f"LightController: {self.controller_name} state set to {self.current_state}")
         self.changing_state = False
+
 
     def set_on(self, value):
         self.on = value
