@@ -69,7 +69,7 @@ class Device {
             case "light_controller":
                 this.ui_elements.push(
                     new ToggleSwitch(
-                        this.state.current_state === 5, id, "Set DND", "enable_dnd"));
+                        this.state.dnd_active, id, "Set DND", "enable_dnd"));
                 break;
             default:
                 break;

@@ -215,6 +215,7 @@ class LightController:
     def get_state(self):
         return {
             "on": self.enabled,
+            "dnd_active": self.dnd_active,
             "current_state": self.current_state
         }
 
