@@ -144,7 +144,7 @@ class LightController:
 
     def update(self):
         if self.enabled and not self.changing_state:
-            if self.dnd_active and self.current_state != StateEnumerator.dnd:
+            if self.dnd_active:
                 if self.dnd_state is not None:
                     self.set_state(StateEnumerator.dnd, self.dnd_state)
                     return
