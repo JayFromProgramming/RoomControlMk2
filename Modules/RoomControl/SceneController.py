@@ -104,6 +104,8 @@ class SceneController:
                         device.white = value
                     if action == "target_value" and hasattr(device, "setpoint"):
                         device.setpoint = value
+                    if action == "enable_dnd" and hasattr(device, "enable_dnd"):
+                        device.enable_dnd = value
 
     def action_to_str(self, scene_id):
         """
