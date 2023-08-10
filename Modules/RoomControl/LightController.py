@@ -168,7 +168,7 @@ class LightController:
             if self.current_state != state_val:
                 self.changing_state = True
                 self.current_state = state_val
-                logging.debug(f"LightController: {self.controller_name} is changing state to {state_val}")
+                logging.info(f"LightController: {self.controller_name} is changing state to {state_val}")
                 # Use the API action_handler method to process the state change
                 for device in self.light_control_devices.values():
                     if device is None:
@@ -179,7 +179,7 @@ class LightController:
                                 setattr(device, key, value)
                 self.changing_state = False
                 time.sleep(5)
-                logging.debug(f"Validating state change for {self.controller_name}")
+                logging.info(f"Validating state change for {self.controller_name}")
                 # Validate the state change
                 for device in self.light_control_devices.values():
                     if device is None:
