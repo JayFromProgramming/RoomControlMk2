@@ -107,6 +107,7 @@ class LightController:
 
         self.online = True
         self.changing_state = False
+        self.dnd_active = False
 
         self.occupancy_detector = occupancy_detector
 
@@ -143,7 +144,7 @@ class LightController:
 
     def update(self):
         if self.enabled and not self.changing_state:
-            if self.current_state == StateEnumerator.dnd:
+            if self.dnd_active and self.current_state != StateEnumerator.dnd:
                 if self.dnd_state is not None:
                     self.set_state(StateEnumerator.dnd, self.dnd_state)
                     return
@@ -274,9 +275,8 @@ class LightController:
 
     @enable_dnd.setter
     def enable_dnd(self, value):
-        self.set_state(StateEnumerator.dnd, self.dnd_state if value else self.inactive_state)
-        logging.info(f"LightController: {self.controller_name} state set to {self.current_state}")
-        self.changing_state = True
+        self.dnd_active = value
+        self.update()
 
     def set_on(self, value):
         self.on = value
