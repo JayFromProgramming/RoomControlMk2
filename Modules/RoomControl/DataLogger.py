@@ -154,9 +154,9 @@ class DataLogger:
 
         timestamp = int(time.time())
 
-        self.table.add(id=self.uuid, timestamp=timestamp, value=value, compression_level=1)
+        # self.table.add(id=self.uuid, timestamp=timestamp, value=value, compression_level=1)
 
-        # self.database.run("INSERT INTO data_logging VALUES (?, ?, ?, ?)", (self.uuid, timestamp, value, 1))
+        self.database.run("INSERT INTO data_logging VALUES (?, ?, ?, ?)", (self.uuid, timestamp, value, 1))
 
     def get_logs(self, start_time, end_time):
         """Get the logs between the start and end time"""
