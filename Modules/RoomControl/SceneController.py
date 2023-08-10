@@ -121,17 +121,26 @@ class SceneController:
                 device_command = getattr(command, device.name())
                 for action, value in device_command.items():
                     if action == "on":
-                        actions.append("Turns {name} {value}".format(name=f"[{device.name()}]", value='on' if value else 'off'))
-                    if action == "brightness":
-                        actions.append("Sets {name} brightness to {value}".format(name=f"[{device.name()}]", value=value))
-                    if action == "color":
+                        actions.append("Turns {name} {value}".format(name=f"[{device.name()}]",
+                                                                     value='on' if value else 'off'))
+                    elif action == "brightness":
+                        actions.append("Sets {name} brightness to {value}".format(name=f"[{device.name()}]",
+                                                                                  value=value))
+                    elif action == "color":
                         r, g, b = value
                         color = f"({r}, {g}, {b})"
                         actions.append("Sets {name} color to {value}".format(name=f"[{device.name()}]", value=color))
-                    if action == "white":
+                    elif action == "white":
                         actions.append("Sets {name} white to {value}".format(name=f"[{device.name()}]", value=value))
-                    if action == "target_value":
+                    elif action == "target_value":
                         actions.append("Sets {name} setpoint to {value}".format(name=f"[{device.name()}]", value=value))
+                    elif action == "enable_dnd":
+                        actions.append("Turns {name} DND {value}".format(name=f"[{device.name()}]",
+                                                                            value='on' if value else 'off'))
+                    else:
+                        actions.append("Preforms unknown action {action} on {name}".format(action=action,
+                                                                                             name=f"[{device.name()}]"))
+
 
         return ", ".join(actions)
 
