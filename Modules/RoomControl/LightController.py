@@ -218,6 +218,7 @@ class LightController:
             "name": self.controller_name,
             "active_state": self.active_state.__str__(),
             "inactive_state": self.inactive_state.__str__(),
+            "dnd_state": self.dnd_state.__str__(),
             "targets": self.get_targets_info()
         }
 
@@ -270,6 +271,7 @@ class LightController:
     @enable_dnd.setter
     def enable_dnd(self, value):
         self.current_state = StateEnumerator.dnd if value else StateEnumerator.inactive
+        self.changing_state = False
 
     def set_on(self, value):
         self.on = value
