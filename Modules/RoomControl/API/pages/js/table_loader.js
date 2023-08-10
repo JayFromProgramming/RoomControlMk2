@@ -107,6 +107,9 @@ function getState(device_json) {
                     case 3:
                         state_string += "State: FAULT"
                         break;
+                    case 4:
+                        state_string += "State: DND";
+                        break;
                     default:
                         state_string += "State: UNKNOWN"
                 }
