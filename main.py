@@ -1,4 +1,3 @@
-import subprocess
 
 from loguru import logger as logging
 import sys
@@ -24,7 +23,8 @@ async def main():
     logging.info("Starting main")
     # Check if running on linux
     if sys.platform == "linux":
-        subprocess.Popen(args="fuser -k 47670/tcp", shell=True)
+        # Kill any process bound to port 47670
+        os.system("sudo kill -9 $(sudo lsof -t -i:47670)")
     while True:
         await asyncio.sleep(5)
         room_controller.refresh()
