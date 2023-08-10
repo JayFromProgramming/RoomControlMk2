@@ -22,9 +22,9 @@ room_controller = RoomControl.RoomController()
 async def main():
     logging.info("Starting main")
     # Check if running on linux
-    if sys.platform == "linux":
+    # if sys.platform == "linux":
         # Kill any process bound to port 47670
-        os.system("sudo kill -9 $(sudo lsof -t -i:47670)")
+        # os.system("sudo kill -9 $(sudo lsof -t -i:47670)")
     while True:
         await asyncio.sleep(5)
         room_controller.refresh()
