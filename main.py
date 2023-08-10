@@ -1,3 +1,5 @@
+import subprocess
+
 from loguru import logger as logging
 import sys
 import os
@@ -20,6 +22,9 @@ room_controller = RoomControl.RoomController()
 
 async def main():
     logging.info("Starting main")
+    # Check if running on linux
+    if sys.platform == "linux":
+        subprocess.Popen(args="fuser -k 47670/tcp", shell=True)
     while True:
         await asyncio.sleep(5)
         room_controller.refresh()
