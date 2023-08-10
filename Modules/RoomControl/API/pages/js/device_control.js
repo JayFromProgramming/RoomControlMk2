@@ -1,15 +1,15 @@
-var device_name_cache = {};
-var raw_device_name_cache = localStorage.getItem("device_name_cache");
+let device_name_cache = {};
+let raw_device_name_cache = localStorage.getItem("device_name_cache");
 if (raw_device_name_cache === null) {
     raw_device_name_cache = "{}";
 }
-var device_name_cache = JSON.parse(raw_device_name_cache);
-var device = null;
-var device_list = null;
+device_name_cache = JSON.parse(raw_device_name_cache);
+let device = null;
+let device_list = null;
 
 function getName(id) {
     // Use localStorage to cache device names
-    var name = id;
+    let name = id;
     if (device_name_cache[id] !== undefined) {
         name = device_name_cache[id];
     } else { // Queue the name to be fetched, but don't wait for it
@@ -29,7 +29,7 @@ function getName(id) {
 
 function getDeviceData(device_id) {
     // Get the device data from the server
-    device_data = null;
+    let device_data = null;
     $.ajax({
         url: '/get/' + device_id,
         type: 'GET',
@@ -66,6 +66,11 @@ class Device {
             case "environment_controller":
                 this.ui_elements.push(new SetpointSelector(this.state.target_value, id, this.info.units));
                 break;
+            case "light_controller":
+                this.ui_elements.push(
+                    new ToggleSwitch(
+                        this.state.current_state === 5, id, "Set DND", "enable_dnd"));
+                break;
             default:
                 break;
         }
@@ -78,7 +83,7 @@ class Device {
 
     updateData(json_data) {
         // Update the UI elements with the new data
-        for (var i = 0; i < this.ui_elements.length; i++) {
+        for (let i = 0; i < this.ui_elements.length; i++) {
             this.ui_elements[i].updateData(json_data);
         }
     }
@@ -93,8 +98,8 @@ function periodic_update() {
         // Check if the device container is empty
         if ($("#device_container").children().length === 0) {
             // If it is, add the device elements back
-            var device_elements = device.getElements();
-            for (var i = 0; i < device_elements.length; i++) {
+            const device_elements = device.getElements();
+            for (let i = 0; i < device_elements.length; i++) {
                 $("#device_container").append(device_elements[i].getContainer());
             }
         }
@@ -115,10 +120,10 @@ function initialize_page(){
         // Callback function to be called when the selected device changes
         // Create a new DeviceObject and add it to the page
         $("#device_container").empty();
-        var device_name = getName(device_id);
+        const device_name = getName(device_id);
         device = new Device(device_name, device_id, getDeviceData(device_id));
-        var device_elements = device.getElements();
-        for (var i = 0; i < device_elements.length; i++) {
+        const device_elements = device.getElements();
+        for (let i = 0; i < device_elements.length; i++) {
             console.log("Adding element " + device_elements[i]);
             $("#device_container").append(device_elements[i].getContainer());
         }

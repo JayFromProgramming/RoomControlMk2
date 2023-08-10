@@ -158,6 +158,8 @@ class LightController:
                     self.set_state(StateEnumerator.active, self.active_state)
                 elif not self.occupancy_detector.was_activity_recent():
                     self.set_state(StateEnumerator.inactive, self.inactive_state)
+        elif self.changing_state:
+            logging.info(f"LightController: {self.controller_name} is changing state")
 
     @background
     def set_state(self, state_val, state=None):
@@ -187,13 +189,17 @@ class LightController:
                                 if isinstance(getattr(device, key), tuple):
                                     # If the attribute is a tuple then cast it to a list for comparison
                                     if list(getattr(device, key)) != list(value):
-                                        logging.error(f"LightController: {self.controller_name} failed to change state to {state_val}")
-                                        logging.error(f"LightController: {self.controller_name} failed to change {key} to {value} current value is "
+                                        logging.error(f"LightController: {self.controller_name} failed to change "
+                                                      f"state to {state_val}")
+                                        logging.error(f"LightController: {self.controller_name} failed to change {key}"
+                                                      f" to {value} current value is "
                                                       f"{getattr(device, key)}")
                                         self.current_state = prev_state
                                 elif getattr(device, key) != value:
-                                    logging.error(f"LightController: {self.controller_name} failed to change state to {state_val}")
-                                    logging.error(f"LightController: {self.controller_name} failed to change {key} to {value} current value is "
+                                    logging.error(f"LightController: {self.controller_name} failed to change state"
+                                                  f" to {state_val}")
+                                    logging.error(f"LightController: {self.controller_name} failed to change {key} "
+                                                  f"to {value} current value is "
                                                   f"{getattr(device, key)}")
                                     self.current_state = prev_state
         except Exception as e:
@@ -246,6 +252,7 @@ class LightController:
     def on(self, value):
         self.enabled = value
         self.changing_state = False
+        self.current_state = StateEnumerator.inactive
         table = self.database.get_table("light_controllers")
         row = table.get_row(name=self.controller_name)
         row.set(enabled=value)
@@ -255,6 +262,14 @@ class LightController:
                 device.is_auto = value
             else:
                 logging.warning(f"Device {device} does not have is_auto attribute")
+
+    @property
+    def enable_dnd(self):
+        return self.dnd_state is not None
+
+    @enable_dnd.setter
+    def enable_dnd(self, value):
+        self.current_state = StateEnumerator.dnd if value else StateEnumerator.inactive
 
     def set_on(self, value):
         self.on = value

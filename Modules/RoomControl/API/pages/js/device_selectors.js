@@ -90,7 +90,7 @@ class ColorSelector {
 }
 
 class ToggleSwitch{
-    constructor(initialState, device_id) {
+    constructor(initialState, device_id, action_name="Enabled: ", api_name="on") {
         this.device_id = device_id;
         console.log("ToggleSwitch constructed");
         // Create a container for the toggle switch
@@ -99,10 +99,12 @@ class ToggleSwitch{
         // Set the selected state and onUpdate function
         this.state = initialState;
 
+        this.api_name = api_name;
+
         // Create the toggle switch element
         const label = document.createElement('label');
         const toggle_switch = document.createElement('input');
-        label.innerHTML = 'Enabled: ';
+        label.innerHTML = action_name;
         this.container.appendChild(label);
         toggle_switch.type = 'checkbox';
         toggle_switch.id = 'toggle_switch';
@@ -116,7 +118,8 @@ class ToggleSwitch{
         // Update the selected state and call the onUpdate function
         console.log("ToggleSwitch handleToggleSwitch");
         this.state = event.target.checked;
-        sendCommand(this.device_id, {"on": this.state});
+        const api_name = this.api_name;
+        sendCommand(this.device_id, {[api_name]: this.state});
     }
 
     updateData(json_data){

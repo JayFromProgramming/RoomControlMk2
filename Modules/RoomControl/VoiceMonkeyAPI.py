@@ -136,7 +136,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                 logging.debug(f"Monkey {monkey} queued successfully")
                 if state_after is not None:
                     self.current_state = state_after
-                    self.row["current_state"] = state_after
+                    self.row.set(current_state=state_after)
                     self.online = True
                     self.offline_reason = "Unknown"
             else:
@@ -145,7 +145,6 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                 self.offline_reason = f"API Error, code: {resp.status_code}"
 
     def refresh_info(self):
-        self.row.flush()
         logging.debug(f"Refreshing {self.name} info")
 
     def get_status(self):
