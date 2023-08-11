@@ -58,7 +58,7 @@ class Device {
         // Based on the devices type attach the appropriate UI elements and the default UI elements
         // Eg. If the device is a light, attach a color selector and a brightness slider in addition to the toggle switch
         // If the device is a thermostat, attach a temperature slider and a mode selector in addition to the toggle switch
-        this.ui_elements.push(new ToggleSwitch(false, id));
+        this.ui_elements.push(new ToggleSwitch(id));
         switch (this.type) {
             case "abstract_rgb":
                 this.ui_elements.push(new ColorSelector("#000000", id));
@@ -68,8 +68,7 @@ class Device {
                 break;
             case "light_controller":
                 this.ui_elements.push(
-                    new ToggleSwitch(
-                        this.state.dnd_active, id, "Set DND", "enable_dnd"));
+                    new ToggleSwitch(id,"dnd_active", "Set DND", "enable_dnd"));
                 break;
             default:
                 break;

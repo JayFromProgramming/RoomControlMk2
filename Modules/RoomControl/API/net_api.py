@@ -278,7 +278,7 @@ class NetAPI:
         device = self.get_device(device_name)
         result, success = process_device_command(device, msg)
         if not success:
-            return web.Response(text=result, status=503)
+            return web.Response(text=result.__str__(), status=503)
         return web.Response(text=result.__str__())
 
     async def handle_get_all(self, request):
