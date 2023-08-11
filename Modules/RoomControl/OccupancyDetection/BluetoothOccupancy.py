@@ -2,7 +2,10 @@ import datetime
 import json
 import os
 import sqlite3
+import sys
 import time
+
+import psutil
 from loguru import logger as logging
 
 from Modules.RoomControl.Decorators import background
@@ -37,6 +40,12 @@ class BluetoothDetector:
         self.enabled = True
         self.scan_lockout_time = 0
 
+        self.reboot_locked_out = False
+        self.reboot_timer = None
+
+        if bluetooth is None or bluetoothLE is None:
+            self.reboot_locked_out = True
+
         self.heartbeat_device = "38:1D:D9:F7:6D:44"
         self.heartbeat_alive = False  # If the heartbeat device is alive
 
@@ -51,12 +60,45 @@ class BluetoothDetector:
 
         self.refresh()
 
+    def auto_reboot_check(self):
+        if sys.platform != "linux":
+            return
+        # Called only when the bluetooth detector is not functioning
+        psutil_uptime = time.time() - psutil.boot_time()
+        # If the pi has been up for less than 5 minutes but not more than 10 minutes
+        # Then we don't trigger a reboot_lockout because it is likely that initialization is still happening
+        if 300 > psutil_uptime > 600:
+            return
+        elif 600 > psutil_uptime > 3600:
+            # If the pi has not been up for more than 1 hour and bluetooth is still not working then
+            # is not likely to fix the problem, and we should not reboot to avoid a reboot loop
+            self.reboot_locked_out = True
+            logging.warning("BlueStalker: Failed startup precheck, auto reboot locked out")
+            return
+        elif psutil_uptime > 3600:
+            # If bluetooth was working and then stopped working after 1 hour then we should reboot
+            # to try and fix the problem
+            if self.reboot_locked_out:
+                return
+            elif self.reboot_timer is None:
+                logging.warning("BlueStalker: Bluetooth failed, rebooting in 5 minutes")
+                self.reboot_timer = datetime.datetime.now().timestamp() + 300
+            else:
+                # Check if the reboot timer has expired
+                if self.reboot_timer < datetime.datetime.now().timestamp():
+                    logging.warning("BlueStalker: Rebooting")
+                    # Run the reboot command with a 1 minute delay to allow the log to be written
+                    self.reboot_locked_out = True
+                    os.system("sudo shutdown -r +1")
+                    return
+
     def init_database(self):
         cursor = self.database.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS bluetooth_targets"
                        " (uuid integer constraint table_name_pk primary key "
                        "autoincrement, address TEXT UNIQUE, name TEXT, role TEXT)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS bluetooth_occupancy (uuid INTEGER UNIQUE, in_room BOOLEAN, last_changed INTEGER)")
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS bluetooth_occupancy (uuid INTEGER UNIQUE, in_room BOOLEAN, last_changed INTEGER)")
         cursor.close()
 
     def add_target(self, address: str, name: str, role: str):
@@ -150,7 +192,11 @@ class BluetoothDetector:
             if len(self.sockets) == 0:
                 self.fault = True
                 self.online = False
-                self.fault_message = "Radio Unresponsive"
+                if self.reboot_locked_out:
+                    self.fault_message = "Radio Failure"
+                else:
+                    self.fault_message = "Radio Unresponsive"
+                self.auto_reboot_check()
             else:
                 self.fault = True
                 self.online = True
@@ -158,7 +204,8 @@ class BluetoothDetector:
 
     @background
     def refresh(self):
-        logging.debug(f"BlueStalker: Refresh loop started, high frequency scan is {'enabled' if self.high_frequency_scan_enabled else 'disabled'}")
+        logging.debug(
+            f"BlueStalker: Refresh loop started, high frequency scan is {'enabled' if self.high_frequency_scan_enabled else 'disabled'}")
         # Check OS, if not linux then return
         if os.name != "posix":
             logging.error("BlueStalker: In devmode, disabling bluetooth")
