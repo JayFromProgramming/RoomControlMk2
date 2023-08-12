@@ -122,7 +122,8 @@ class RoomController:
 
         # Check what the operating system is to determine if we should run in dev mode
         self.webserver_port = 47670
-        if os.name != "posix":
+        if os.name == "posix":
+            logging.info(f"Terminating all processes bound to port {self.webserver_port}")
             # Kill any processes that are using the port
             fuser_out = os.popen(f"fuser {self.webserver_port}/tcp").read()
             # Parse the output
