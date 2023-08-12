@@ -126,23 +126,7 @@ class RoomController:
         if os.name == "posix":
             logging.info(f"Terminating all processes bound to port {self.webserver_port}")
             # Kill any processes that are using the port
-            try:
-                fuser_out = subprocess.check_output(["fuser", f"{self.webserver_port}/tcp"])
-                # Parse the output
-                fuser_out = fuser_out.splitlines()
-                logging.info(fuser_out)
-                for line in fuser_out:
-                    _, pid = line.split(":")
-                    # Remove all padding spaces
-                    pid = pid.strip()
-                    # Verify that we are not killing ourselves
-                    if int(pid) != os.getpid():
-                        logging.info(f"Killing process {pid} to free up port {self.webserver_port}")
-                        os.system(f"sudo kill {pid}")
-                    else:
-                        logging.info(f"Skipping killing process {pid} as it is the current process")
-            except subprocess.CalledProcessError:
-                logging.info(f"No processes bound to port {self.webserver_port}")
+            subprocess.run(["fuser", "-k", f"{self.webserver_port}/tcp"])
 
         time.sleep(2.5)
 
