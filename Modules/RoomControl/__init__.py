@@ -1,5 +1,6 @@
 import json
 import socket
+import sys
 
 import netifaces as netifaces
 from loguru import logger as logging
@@ -121,6 +122,9 @@ class RoomController:
 
         # Check what the operating system is to determine if we should run in dev mode
         self.webserver_port = 47670
+        if sys.platform == "linux":
+            # Kill any processes that are using the port
+            os.system(f"sudo kill -9 $(sudo lsof -t -i:{self.webserver_port})")
         self.webserver_address = check_interface_usage(self.webserver_port)
 
         self.data_logging = DataLoggingHost(self.database,
