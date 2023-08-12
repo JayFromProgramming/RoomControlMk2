@@ -39,6 +39,7 @@ class MagicHome:
         except Exception as e:
             logging.error(f"MagicHueAPI: Failed to login to MagicHue API: {e}")
             self.devices = []
+            self.ready = False
         else:
             self.devices = []
             self.ready = False

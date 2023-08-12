@@ -94,7 +94,7 @@ class LightController:
 
         print(controller)
 
-        self.current_state = True if controller['current_state'] == 1 else False
+        self.current_state = controller['current_state']
 
         self.active_state = APIMessageRX(controller['active_state']) if controller['active_state'] is not None else None
         self.inactive_state = APIMessageRX(controller['inactive_state']) if controller[
@@ -107,7 +107,7 @@ class LightController:
 
         self.online = True
         self.changing_state = False
-        self.dnd_active = False
+        self.dnd_active = True if self.current_state == StateEnumerator.dnd else False
 
         self.occupancy_detector = occupancy_detector
 
@@ -149,11 +149,12 @@ class LightController:
                     self.set_state(StateEnumerator.dnd, self.dnd_state)
                     return
             # If the state isn't already on or motion
-            if self.current_state != StateEnumerator.inactive and self.current_state != StateEnumerator.motion:
+            if self.current_state != StateEnumerator.active and self.current_state != StateEnumerator.motion:
                 if self.occupancy_detector.bluetooth_offline():  # If the bluetooth detector has faulted
                     if self.fault_state is not None:  # If there is a fault state to go to
                         self.set_state(StateEnumerator.fault, self.fault_state)  # Set the state to fault
-            if self.current_state != StateEnumerator.active:  # If the state is off or faulted
+            # If the state is off or faulted
+            if self.current_state == StateEnumerator.inactive or self.current_state == StateEnumerator.fault:
                 if self.occupancy_detector.was_activity_recent():  # If there was activity in the room recently
                     if self.door_motion_state is not None:
                         self.set_state(StateEnumerator.motion, self.door_motion_state)
@@ -181,7 +182,6 @@ class LightController:
                         for key, value in state.__dict__.items():  # Loop through all attributes in the message
                             if hasattr(device, key):  # Check the device has an attribute with the same name
                                 setattr(device, key, value)
-                self.changing_state = False
                 time.sleep(5)
                 logging.info(f"Validating state change for {self.controller_name}")
                 # Validate the state change
@@ -210,7 +210,12 @@ class LightController:
         except Exception as e:
             logging.error(f"LightController: {self.controller_name} failed to change state to {state_val} due to {e}")
             self.current_state = prev_state
+        finally:
             self.changing_state = False
+            # Update current state in the database
+            table = self.database.get_table("light_controllers")
+            row = table.get_row(name=self.controller_name)
+            row.set(current_state=self.current_state)
 
     def get_state(self):
         return {
