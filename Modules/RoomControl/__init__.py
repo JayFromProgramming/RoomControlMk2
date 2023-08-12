@@ -128,7 +128,7 @@ class RoomController:
             fuser_out = os.popen(f"fuser {self.webserver_port}/tcp").read()
             # Parse the output
             fuser_out = fuser_out.splitlines()
-            logging.debug(fuser_out)
+            logging.info(fuser_out)
             for line in fuser_out:
                 _, pid = line.split(":")
                 # Remove all padding spaces
