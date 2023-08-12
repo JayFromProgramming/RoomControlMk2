@@ -131,7 +131,12 @@ class RoomController:
                 _, pid = line.split(":")
                 # Verify that we are not killing ourselves
                 if int(pid) != os.getpid():
+                    logging.info(f"Killing process {pid} to free up port {self.webserver_port}")
                     os.system(f"sudo kill {pid}")
+                else:
+                    logging.info(f"Skipping killing process {pid} as it is the current process")
+
+        time.sleep(2.5)
 
         self.webserver_address = check_interface_usage(self.webserver_port)
 
