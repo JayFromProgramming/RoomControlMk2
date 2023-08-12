@@ -129,6 +129,8 @@ class RoomController:
             fuser_out = fuser_out.splitlines()
             for line in fuser_out:
                 _, pid = line.split(":")
+                # Remove all padding spaces
+                pid = pid.strip()
                 # Verify that we are not killing ourselves
                 if int(pid) != os.getpid():
                     logging.info(f"Killing process {pid} to free up port {self.webserver_port}")
