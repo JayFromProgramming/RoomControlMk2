@@ -124,7 +124,15 @@ class RoomController:
         self.webserver_port = 47670
         if sys.platform == "linux":
             # Kill any processes that are using the port
-            os.system(f"sudo kill -9 $(sudo lsof -t -i:{self.webserver_port})")
+            fuser_out = os.popen(f"fuser {self.webserver_port}/tcp").read()
+            # Parse the output
+            fuser_out = fuser_out.splitlines()
+            for line in fuser_out:
+                _, pid = line.split(":")
+                # Verify that we are not killing ourselves
+                if int(pid) != os.getpid():
+                    os.system(f"sudo kill {pid}")
+
         self.webserver_address = check_interface_usage(self.webserver_port)
 
         self.data_logging = DataLoggingHost(self.database,
