@@ -126,7 +126,7 @@ class RoomController:
         if os.name == "posix":
             logging.info(f"Terminating all processes bound to port {self.webserver_port}")
             # Kill any processes that are using the port
-            fuser_out = subprocess.check_output(["fuser", "-k", f"{self.webserver_port}/tcp"])
+            fuser_out = subprocess.check_output(["fuser", f"{self.webserver_port}/tcp"])
             # Parse the output
             fuser_out = fuser_out.splitlines()
             logging.info(fuser_out)
