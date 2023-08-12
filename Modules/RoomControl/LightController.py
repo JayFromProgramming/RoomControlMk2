@@ -89,21 +89,25 @@ class LightController:
         self.database.update_table("light_controllers", 1,
                                    ["""alter table light_controllers add dnd_state TEXT default null"""])
 
-        table = self.database.get_table("light_controllers")
-        controller = table.get_row(name=name)
+        self.table = self.database.get_table("light_controllers")
+        self.controller = self.table.get_row(name=name)
 
-        print(controller)
+        print(self.controller)
 
-        self.current_state = controller['current_state']
+        self.current_state = self.controller['current_state']
 
-        self.active_state = APIMessageRX(controller['active_state']) if controller['active_state'] is not None else None
-        self.inactive_state = APIMessageRX(controller['inactive_state']) if controller[
+        self.active_state = APIMessageRX(self.controller['active_state']) if self.controller['active_state'] \
+                                                                             is not None else None
+        self.inactive_state = APIMessageRX(self.controller['inactive_state']) if self.controller[
                                                                                 'inactive_state'] is not None else None
-        self.door_motion_state = APIMessageRX(controller['door_motion_state']) if controller[
-                                                                                      'door_motion_state'] is not None else None
-        self.fault_state = APIMessageRX(controller['fault_state']) if controller['fault_state'] is not None else None
-        self.dnd_state = APIMessageRX(controller['dnd_state']) if controller['dnd_state'] is not None else None
-        self.enabled = True if controller['enabled'] == 1 else False
+        self.door_motion_state = APIMessageRX(self.controller['door_motion_state']) if self.controller[
+                                                                                      'door_motion_state'] \
+                                                                                       is not None else None
+        self.fault_state = APIMessageRX(self.controller['fault_state']) if self.controller['fault_state'] \
+                                                                           is not None else None
+        self.dnd_state = APIMessageRX(self.controller['dnd_state']) if self.controller['dnd_state'] \
+                                                                       is not None else None
+        self.enabled = True if self.controller['enabled'] == 1 else False
 
         self.online = True
         self.changing_state = False
@@ -214,9 +218,7 @@ class LightController:
             self.changing_state = False
             try:
                 # Update current state in the database
-                table = self.database.get_table("light_controllers")
-                row = table.get_row(name=self.controller_name)
-                row.set(current_state=self.current_state)
+                self.controller.set(current_state=self.current_state)
             except Exception as e:
                 logging.error(f"LightController: {self.controller_name} failed to update database due to {e}")
 
