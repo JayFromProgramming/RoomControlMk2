@@ -1,5 +1,6 @@
 import json
 import socket
+import subprocess
 import sys
 
 import netifaces as netifaces
@@ -125,7 +126,7 @@ class RoomController:
         if os.name == "posix":
             logging.info(f"Terminating all processes bound to port {self.webserver_port}")
             # Kill any processes that are using the port
-            fuser_out = os.popen(f"fuser {self.webserver_port}/tcp").read()
+            fuser_out = subprocess.check_output(["fuser", "-k", f"{self.webserver_port}/tcp"])
             # Parse the output
             fuser_out = fuser_out.splitlines()
             logging.info(fuser_out)
