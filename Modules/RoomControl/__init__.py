@@ -51,8 +51,8 @@ def check_interface_usage(port):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.bind((interface, port))
             s.close()
-        except OSError:
-            logging.warning(f"Interface {interface}:{port} was already in use")
+        except OSError as e:
+            logging.warning(f"Interface {interface}:{port} was already in use: {e}")
             interfaces.remove(interface)
     return interfaces
 
@@ -122,7 +122,7 @@ class RoomController:
 
         # Check what the operating system is to determine if we should run in dev mode
         self.webserver_port = 47670
-        if sys.platform == "linux":
+        if os.name != "posix":
             # Kill any processes that are using the port
             fuser_out = os.popen(f"fuser {self.webserver_port}/tcp").read()
             # Parse the output
