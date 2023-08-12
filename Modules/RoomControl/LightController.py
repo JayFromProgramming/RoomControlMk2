@@ -212,10 +212,13 @@ class LightController:
             self.current_state = prev_state
         finally:
             self.changing_state = False
-            # Update current state in the database
-            table = self.database.get_table("light_controllers")
-            row = table.get_row(name=self.controller_name)
-            row.set(current_state=self.current_state)
+            try:
+                # Update current state in the database
+                table = self.database.get_table("light_controllers")
+                row = table.get_row(name=self.controller_name)
+                row.set(current_state=self.current_state)
+            except Exception as e:
+                logging.error(f"LightController: {self.controller_name} failed to update database due to {e}")
 
     def get_state(self):
         return {
