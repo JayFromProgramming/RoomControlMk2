@@ -138,11 +138,10 @@ class SceneController:
                         actions.append("Sets {name} setpoint to {value}".format(name=f"[{device.name()}]", value=value))
                     elif action == "enable_dnd":
                         actions.append("Turns {name} DND {value}".format(name=f"[{device.name()}]",
-                                                                            value='on' if value else 'off'))
+                                                                         value='on' if value else 'off'))
                     else:
                         actions.append("Preforms unknown action {action} on {name}".format(action=action,
-                                                                                             name=f"[{device.name()}]"))
-
+                                                                                           name=f"[{device.name()}]"))
 
         return ", ".join(actions)
 
@@ -183,7 +182,8 @@ class SceneTrigger:
             case _:
                 logging.error(f"SceneTrigger ({self.trigger_name}) has an invalid trigger type ({self.trigger_type})")
                 return
-        logging.info(f"SceneTrigger ({self.trigger_name}): Initialized with trigger type {self.trigger_type} and api action {self.api_action}")
+        logging.info(
+            f"SceneTrigger ({self.trigger_name}): Initialized with trigger type {self.trigger_type} and api action {self.api_action}")
 
     def _prep_interval_trigger(self, interval_type: str, interval_value: str):
         """
@@ -271,10 +271,15 @@ class SceneTrigger:
         # cursor = self.database.cursor()
         # cursor.execute("UPDATE scene_triggers SET active=? WHERE trigger_id=?", (self.active, self.trigger_id))
         # self.database.commit()
+        self.active = not self.active
+        logging.info(f"SceneTrigger ({self.trigger_name}): Toggled active to {self.active}")
 
-        table = self.database.get_table("scene_triggers")
-        row = table.get_row(trigger_id=self.trigger_id)
-        row.active = self.active
+        self.database.run("UPDATE scene_triggers SET active=? WHERE trigger_id=?",
+                              (0 if self.active is False else 1, self.trigger_id))
+
+        # table = self.database.get_table("scene_triggers")
+        # row = table.get_row(trigger_id=self.trigger_id)
+        # row.active = self.active
 
     def execute(self):
         """Executes the scene associated with this trigger"""
