@@ -129,9 +129,13 @@ class DataLogger:
     @background
     def start_logging(self):
         while True:
-            if self.enabled:
-                self.log()
-            time.sleep(self.logging_interval)
+            try:
+                if self.enabled:
+                    self.log()
+            except Exception as e:
+                logging.error(f"DataLogger ({self.name}): {e}")
+            finally:
+                time.sleep(self.logging_interval)
 
     def log(self):
         """Log the current value of the data source"""
