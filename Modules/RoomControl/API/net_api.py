@@ -28,7 +28,7 @@ class NetAPI:
 
     def __init__(self, database, device_controllers=None, occupancy_detector=None,
                  scene_controller=None, command_controller=None, webserver_address="localhost",
-                 datalogger=None):
+                 datalogger=None, weather_relay=None):
         self.database = database  # type: ConcurrentDatabase
         self.other_apis = device_controllers
         self.occupancy_detector = occupancy_detector  # type: BluetoothDetector
@@ -36,6 +36,7 @@ class NetAPI:
         self.scene_controller = scene_controller  # type: SceneController
         self.command_controller = command_controller  # type: CommandController
         self.data_logger = datalogger  # type: DataLoggerHost
+        self.weather_relay = weather_relay  # type: WeatherRelay
 
         self.init_database()
 
@@ -72,6 +73,9 @@ class NetAPI:
             # + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
             + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
             + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
+            + [web.get('/weather/now', self.handle_weather_now)]
+            + [web.get('/weather/forecast/{from_time}/{to_time}', self.handle_weather_forecast)]
+            + [web.get('/weather/past/{from_time}/{to_time}', self.handle_weather_past)]
         )
 
         # Set webserver address and port
@@ -515,33 +519,6 @@ class NetAPI:
         device_name = self.get_device_display_name(device_id)
         return web.Response(text=device_name)
 
-    # async def handle_status_string(self, request):
-    #     if not self.check_auth(request):
-    #         raise web.HTTPUnauthorized()
-    #     # logging.info("Received STATUS_STRING request")
-    #     device_id = request.match_info['device_id']
-    #     device = self.get_device(device_id)
-    #     device_status = page_builder.state_to_string(device)
-    #     return web.Response(text=device_status)
-
-    # async def handle_health_string(self, request):
-    #     if not self.check_auth(request):
-    #         raise web.HTTPUnauthorized()
-    #     # logging.info("Received HEALTH_STRING request")
-    #     device_id = request.match_info['device_id']
-    #     device = self.get_device(device_id)
-    #     device_health = page_builder.health_message(device)
-    #     return web.Response(text=device_health)
-
-    # async def handle_action_string(self, request):
-    #     if not self.check_auth(request):
-    #         raise web.HTTPUnauthorized()
-    #     # logging.info("Received ACTION_STRING request")
-    #     device_id = request.match_info['device_id']
-    #     device = self.get_device(device_id)
-    #     device_action = page_builder.generate_actions(device)
-    #     return web.Response(text=device_action)
-
     async def handle_data_log_sources(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
@@ -559,6 +536,28 @@ class NetAPI:
         end = request.match_info['end']
         data = self.data_logger.get_data(source, start, end)
         msg = APIMessageTX(data_log=data, source=source)
+        return web.Response(text=msg.__str__())
+
+    async def handle_weather_now(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_NOW request")
+        return web.json_response(self.weather_relay.current_weather.to_dict())
+
+    async def handle_weather_forecast(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_FORECAST request")
+        data = self.weather_relay.get_forecast()
+        msg = APIMessageTX(weather_forecast=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_weather_past(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_PAST request")
+        data = self.weather_relay.get_past()
+        msg = APIMessageTX(weather_past=data)
         return web.Response(text=msg.__str__())
 
     async def handle_device_ping_update(self, request):

@@ -22,6 +22,7 @@ from Modules.RoomControl.OccupancyDetection import OccupancyDetector
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
 from Modules.RoomControl.SensorHost import SensorHost
+from Modules.RoomControl.WeatherRelay import WeatherRelay
 
 
 def get_host_names():
@@ -102,6 +103,8 @@ class RoomController:
 
         self.sensor_host = SensorHost()
 
+        self.weather_relay = WeatherRelay(self.database)
+
         self.environment_host = EnvironmentControllerHost(
             self.database,
             sensor_host=self.sensor_host,
@@ -142,7 +145,7 @@ class RoomController:
                                  scene_controller=self.scene_controller,
                                  command_controller=self.command_controller,
                                  webserver_address=self.webserver_address,
-                                 datalogger=self.data_logging)
+                                 datalogger=self.data_logging, weather_relay=self.weather_relay)
 
     def init_database(self):
         # cursor = self.database.cursor()
