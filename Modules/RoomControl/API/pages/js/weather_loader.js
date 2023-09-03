@@ -29,7 +29,8 @@ function time_delta_to_stamp (timestamp, inverse = false) {
     var hours = Math.floor(delta / 3600);
     // Zero pad the hours to always be 2 digits
     hours = ('0' + hours).slice(-2);
-    var minutes = Math.floor((delta - (hours * 3600)) / 60);
+    // Zero pad the minutes to always be 2 digits
+    var minutes = ('0' + Math.floor((delta % 3600) / 60)).slice(-2);
     return 'T' + sign + hours + ':' + minutes;
 }
 
