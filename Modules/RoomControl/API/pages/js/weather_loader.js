@@ -64,15 +64,22 @@ function update_weather () {
                 visibility_to_string(data["visibility_distance"]) + '</td></tr>');
             // For sunset and sunrise display only the one that is closest to the current time
             // And display a T- time under it
-            if (data["sunrise_time"] > data["sunset_time"]) {
+            var now = Date.now() / 1000;
+            if (now < data["sunrise_time"] && now < data["sunset_time"]) { // Before sunrise
                 weather_box.append('<tr><td>Sunrise:</td><td align="right"> ' +
                     timestamp_to_time(data["sunrise_time"]) +'\n' +
                     time_delta_to_stamp(data["sunrise_time"]) + '</td></tr>');
-            } else {
+            } else if (now > data["sunrise_time"] && now < data["sunset_time"]) { // After sunrise
                 weather_box.append('<tr><td>Sunset:</td><td align="right"> ' +
                     timestamp_to_time(data["sunset_time"]) + '\n' +
                     time_delta_to_stamp(data["sunset_time"]) + '</td></tr>');
+            } else if (now > data["sunrise_time"] && now > data["sunset_time"]) { // After sunset
+                // If we don't have tomorrow's sunrise time yet, use todays sunrise time and add 24 hours
+                weather_box.append('<tr><td>Sunrise:</td><td align="right"> ~' +
+                    timestamp_to_time(data["sunrise_time"] + 86400) + '\n' +
+                    time_delta_to_stamp(data["sunrise_time"] + 86400, true) + '</td></tr>');
             }
+
             // Add a last updated timestamp
             weather_box.append('<tr><td>Last Update:</td><td align="right"> ' +
                 timestamp_to_time(data["reference_time"]) + '</td></tr>');
