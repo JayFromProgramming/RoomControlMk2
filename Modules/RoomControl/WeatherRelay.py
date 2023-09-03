@@ -26,7 +26,8 @@ class WeatherRelay:
             logging.debug("Checking for new weather data")
             self.current_weather = self.mgr.weather_at_place("Houghton, Michigan, US").weather
             self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
-            if self.current_weather.reference_time() >= self.current_reference_time:
+            if self.current_weather.reference_time() <= self.current_reference_time and \
+                self.current_reference_time is not None:
                 logging.debug("Reference time has not changed, will check again in 1 minute")
             else:
                 self.current_reference_time = self.current_weather.reference_time()
