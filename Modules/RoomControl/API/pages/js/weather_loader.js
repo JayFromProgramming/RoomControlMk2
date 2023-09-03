@@ -52,7 +52,7 @@ function update_weather () {
             var weather_box = $('#weather');
             weather_box.empty();
             weather_box.append('<table>');
-            weather_bix.append('<tr><td colspan="2" align="center"><h2>'
+            weather_box.append('<tr><td colspan="2" align="center"><h2>'
             + data["status"] + '</h2></td></tr>');
             weather_box.append('<tr><td>Temperature:</td><td align="right"> '
                 + KtoF(data["temperature"]['temp']) + '°F</td></tr>');
