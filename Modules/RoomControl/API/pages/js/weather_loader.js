@@ -64,7 +64,7 @@ function update_weather () {
                 visibility_to_string(data["visibility_distance"]) + '</td></tr>');
             // For sunset and sunrise display only the one that is closest to the current time
             // And display a T- time under it
-            if (data["sunrise"] > data["sunset"]) {
+            if (data["sunrise_time"] > data["sunset_time"]) {
                 weather_box.append('<tr><td>Sunrise:</td><td align="right"> ' +
                     timestamp_to_time(data["sunrise_time"]) +'\n' +
                     time_delta_to_stamp(data["sunrise_time"]) + '</td></tr>');
