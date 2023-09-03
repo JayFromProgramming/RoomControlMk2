@@ -26,13 +26,12 @@ class WeatherRelay:
             logging.debug("Checking for new weather data")
             self.current_weather = self.mgr.weather_at_place("Houghton, Michigan, US").weather
             self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
-            if self.current_weather.reference_time() <= self.current_reference_time:
+            if self.current_weather.reference_time() >= self.current_reference_time:
                 logging.debug("Reference time has not changed, will check again in 1 minute")
-                time.sleep(60)
-                continue
-            self.current_reference_time = self.current_weather.reference_time()
-            self.save_current_weather()
-            logging.debug(f"Updated weather for {self.current_weather.reference_time(timeformat='iso')}")
+            else:
+                self.current_reference_time = self.current_weather.reference_time()
+                self.save_current_weather()
+                logging.debug(f"Updated weather for {self.current_weather.reference_time(timeformat='iso')}")
             time.sleep(60)
 
     def init_database(self):
