@@ -23,14 +23,19 @@ class WeatherRelay:
 
     def update(self):
         while True:
-            logging.debug("Checking for new weather data")
-            self.current_weather = self.mgr.weather_at_place("Houghton, Michigan, US").weather
-            self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
-            # Check if the there is a newer weather report
+            try:
+                logging.debug("Checking for new weather data")
+                observation = self.mgr.weather_at_place("Houghton, Michigan, US")
+                self.current_weather = observation.weather
+                self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+                # Check if the there is a newer weather report
+                self.save_current_weather()
+                logging.debug(f"Updated weather for {self.current_weather.reference_time(timeformat='iso')}")
+            except Exception as e:
+                logging.exception(e)
+            finally:
+                time.sleep(90)
 
-            self.save_current_weather()
-            logging.debug(f"Updated weather for {self.current_weather.reference_time(timeformat='iso')}")
-            time.sleep(90)
 
     def init_database(self):
         self.database.create_table("weather_records", {
