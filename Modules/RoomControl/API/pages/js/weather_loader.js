@@ -43,6 +43,11 @@ function visibility_to_string(visibility) {
     }
 }
 
+function capitalizeAllWords (str) {
+    return str.replace(/\w\S*/g,
+     function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+}
+
 function update_weather () {
     $.ajax({
         url: "/weather/now",
@@ -53,7 +58,7 @@ function update_weather () {
             weather_box.empty();
             weather_box.append('<table>');
             weather_box.append('<tr><td colspan="2" align="center"><h2>'
-            + data["status"] + '</h2></td></tr>');
+            + capitalizeAllWords(data["detailed_status"]) + '</h2></td></tr>');
             weather_box.append('<tr><td>Temperature:</td><td align="right"> '
                 + KtoF(data["temperature"]['temp']) + '°F</td></tr>');
             weather_box.append('<tr><td>Feels Like:</td><td align="right"> '
