@@ -36,7 +36,6 @@ class WeatherRelay:
             finally:
                 time.sleep(90)
 
-
     def init_database(self):
         self.database.create_table("weather_records", {
             "timestamp": "integer", "weather_code": "integer",
@@ -70,12 +69,15 @@ class WeatherRelay:
             updated = self.current_weather.reference_time()
             probability = self.current_weather.precipitation_probability
             table = self.database.get_table("weather_records")
-            table.update_or_add(timestamp=updated, weather_code=weather_code,
-                                temperature=temp['temp'], feels=temp['feels_like'], humidity=humidity,
-                                wind_speed=wind_speed, wind_direction=wind_direction, wind_gust=wind_gust,
-                                status=status, chance=probability,
-                                secondary_status=secondary_status, visibility=visibility, rain=rain, snow=snow,
-                                clouds=clouds)
+            table.add(timestamp=updated, weather_code=weather_code,
+                      temperature=temp['temp'], feels=temp['feels_like'], humidity=humidity,
+                      wind_speed=wind_speed, wind_direction=wind_direction, wind_gust=wind_gust,
+                      status=status, chance=probability,
+                      secondary_status=secondary_status, visibility=visibility, rain=rain, snow=snow,
+                      clouds=clouds)
+            logging.info(f"Saved weather record for {self.current_weather.reference_time()}")
+        except ValueError:
+            pass
         except Exception as e:
             logging.error(f"Error saving current weather: {e}")
             logging.exception(e)
