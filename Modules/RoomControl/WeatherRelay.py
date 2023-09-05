@@ -78,3 +78,4 @@ class WeatherRelay:
                                 clouds=clouds)
         except Exception as e:
             logging.error(f"Error saving current weather: {e}")
+            logging.exception(e)

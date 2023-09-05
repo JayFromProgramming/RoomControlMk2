@@ -77,13 +77,22 @@ class DataLoggingHost:
 
     def get_data(self, source, start_time, end_time):
         """Convert log data into a list of tuples"""
-        cursor = self.loggers[source].get_logs(start_time, end_time)
-        data = []
-        for row in cursor:
-            # Generate an ISO 8601 timestamp
-            # timestamp = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(row[1]))
-            data.append((row[1], row[2]))
-        return data
+        if source.startswith("weather_"):
+            results = self.database.get(f"SELECT timestamp, {source[8:]} "
+                                        f"FROM main.weather_records WHERE timestamp >= ? AND timestamp <= ?",
+                                        (start_time, end_time))
+            data = []
+            for row in results:
+                data.append((row[0], row[1]))
+            return data
+        else:
+            cursor = self.loggers[source].get_logs(start_time, end_time)
+            data = []
+            for row in cursor:
+                # Generate an ISO 8601 timestamp
+                # timestamp = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(row[1]))
+                data.append((row[1], row[2]))
+            return data
 
     def get_presets(self):
         presets = self.database.get("SELECT * FROM web_graphing_presets")
@@ -92,14 +101,19 @@ class DataLoggingHost:
 
         for preset in presets:
 
+            # If the source is not a number but instead a weather_ source then we just want to return the name
+            # of the source
+
             if preset[1] is None:
                 sources = self.database.get("SELECT * FROM data_sources")
+                sources += ["weather_temperature", "weather_feels", "weather_humidity", "weather_wind_speed"]
             else:
-                sources = self.database.get("SELECT * FROM data_sources WHERE uuid IN ({})".format(preset[1]))
+                sources = preset[1].split(",")
 
+            print(sources)
             source_names = []
             for source in sources:
-                source_names.append(source[0])
+                source_names.append(source)
 
             results[preset[0]] = {
                 "time_range": preset[2],
