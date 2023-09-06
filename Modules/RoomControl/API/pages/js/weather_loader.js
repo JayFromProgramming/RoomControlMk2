@@ -66,6 +66,10 @@ function update_weather () {
             weather_box.append('<tr><td>Humidity:</td><td align="right"> ' + data["humidity"] + '%</td></tr>');
             weather_box.append('<tr><td>Wind:</td><td align="right"> '
                 + mps_to_mph(data["wind"]['speed']) + ' mph</td></tr>');
+            if ("gust" in data["wind"]) {
+                weather_box.append('<tr><td>Gust:</td><td align="right"> '
+                    + mps_to_mph(data["wind"]['gust']) + ' mph</td></tr>');
+            }
             weather_box.append('<tr><td>Clouds:</td><td align="right"> ' + data["clouds"] + '%</td></tr>');
             weather_box.append('<tr><td>Visibility:</td><td align="right"> ' +
                 visibility_to_string(data["visibility_distance"]) + '</td></tr>');
