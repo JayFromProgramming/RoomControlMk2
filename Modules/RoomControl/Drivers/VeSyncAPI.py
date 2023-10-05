@@ -11,10 +11,16 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+from Modules.RoomControl.Drivers.__driver import Driver
 
-class VeSyncAPI:
+
+class VeSyncAPI(Driver):
+
+    name = "VeSync"
+    should_load = True
 
     def __init__(self, database: ConcurrentDatabase.Database):
+        super().__init__(database)
 
         self.database = database
         secretes_table = self.database.get_table("secrets")

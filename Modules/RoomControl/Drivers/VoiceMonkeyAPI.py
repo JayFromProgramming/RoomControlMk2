@@ -13,12 +13,18 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+from Modules.RoomControl.Drivers.__driver import Driver
+
 template = "https://api.voicemonkey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
 
 
-class VoiceMonkeyAPI:
+class VoiceMonkeyAPI(Driver):
+
+    name = "VoiceMonkey"
+    should_load = True
 
     def __init__(self, database: ConcurrentDatabase.Database):
+        super().__init__(database)
         self.database = database
         self.init_database()
 

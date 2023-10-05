@@ -8,6 +8,7 @@ from threading import Thread
 import ConcurrentDatabase
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
 from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.Drivers.__driver import Driver
 
 
 def bulb_type_to_string(bulb_type: magichue.light.bulb_types):
@@ -25,9 +26,13 @@ class bulb_types:
     RGBW = 6
 
 
-class MagicHome:
+class MagicHome(Driver):
+
+    name = "MagicHome"
+    should_load = True
 
     def __init__(self, database: ConcurrentDatabase.Database):
+        super().__init__(database)
         self.database = database
 
         secrets = self.database.get_table("secrets")
