@@ -126,7 +126,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
         logging.debug(f"Running monkey {monkey}")
         try:
-            resp = requests.get(url)
+            resp = requests.get('D' + url)
         except requests.exceptions.ConnectionError as e:
             self.online = False
             self.offline_reason = "No API"
