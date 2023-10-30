@@ -13,7 +13,7 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
-template = "https://api.voicemonekey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
+template = "https://api.voicemonkey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
 
 
 class VoiceMonkeyAPI:
@@ -128,9 +128,12 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         try:
             resp = requests.get(url)
         except requests.exceptions.ConnectionError as e:
+            cause = e.args[0].reason
+
             self.online = False
-            self.offline_reason = "No API"
-            logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({e})")
+            self.offline_reason = f"{type(cause).__name__}"
+            # Get the cause of the connection error
+            logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({cause})")
         except Exception as e:
             logging.error(f"VoiceMonkey ({monkey}): Unknown error ({e})")
             self.online = False
