@@ -123,14 +123,18 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
 
     @background
     def run_monkey(self, monkey, state_after=None):
-        url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
+        url = template.format(token=self.monkey_token, secret=self.monkey_secret + "D", monkey=monkey)
         logging.debug(f"Running monkey {monkey}")
         try:
-            resp = requests.get('D' + url)
+            resp = requests.get(url)
         except requests.exceptions.ConnectionError as e:
             self.online = False
             self.offline_reason = "No API"
             logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({e})")
+        except Exception as e:
+            logging.error(f"VoiceMonkey ({monkey}): Unknown error ({e})")
+            self.online = False
+            self.offline_reason = "Request Error"
         else:
             if resp.status_code == 200:
                 logging.debug(f"Monkey {monkey} queued successfully")
@@ -140,7 +144,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                     self.online = True
                     self.offline_reason = "Unknown"
             else:
-                logging.error(f"Monkey {monkey} failed to queue, status code {resp.status_code}")
+                logging.error(f"Monkey {monkey} failed to queue, status code {resp.status_code}\n{resp.text}")
                 self.online = False
                 self.offline_reason = f"API Error, code: {resp.status_code}"
 
