@@ -13,7 +13,7 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
-template = "https://api.voicemonkey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
+template = "https://api.voicemonekey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
 
 
 class VoiceMonkeyAPI:
@@ -123,7 +123,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
 
     @background
     def run_monkey(self, monkey, state_after=None):
-        url = template.format(token=self.monkey_token, secret=self.monkey_secret + "D", monkey=monkey)
+        url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
         logging.debug(f"Running monkey {monkey}")
         try:
             resp = requests.get(url)
