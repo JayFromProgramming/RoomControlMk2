@@ -75,7 +75,7 @@ class DataLoggingHost:
     def get_sources(self):
         return self.loggers.values()
 
-    def get_data(self, source, start_time, end_time, max_points=256):
+    def get_data(self, source, start_time, end_time):
         """Convert log data into a list of tuples"""
         if source.startswith("weather_"):
             results = self.database.get(f"SELECT timestamp, {source[8:]} "
@@ -86,7 +86,7 @@ class DataLoggingHost:
                 data.append((row[0], row[1]))
             return data
         else:
-            cursor = self.loggers[source].get_logs(start_time, end_time, max_points)
+            cursor = self.loggers[source].get_logs(start_time, end_time)
             data = []
             for row in cursor:
                 # Generate an ISO 8601 timestamp
@@ -176,46 +176,19 @@ class DataLogger:
 
         self.database.run("INSERT INTO data_logging VALUES (?, ?, ?, ?)", (self.uuid, timestamp, value, 1))
 
-    def get_logs(self, start_time, end_time, max_points=256):
+    def get_logs(self, start_time, end_time):
         """Get the logs between the start and end time"""
         start_stamp = datetime.datetime.fromtimestamp(int(start_time)).strftime("%Y-%m-%dT%H:%M:%S")
         end_stamp = datetime.datetime.fromtimestamp(int(end_time)).strftime("%Y-%m-%dT%H:%M:%S")
+        logging.info(f"DataLogger ({self.name}): Getting logs between {start_stamp} and {end_stamp}")
+        fetch_start = time.time()
+        result = self.database.get("SELECT * FROM data_logging WHERE id = ? AND timestamp >= ? AND timestamp <= ?",
+                                   (self.uuid, start_time, end_time))
 
-        # Check how many logs there are between the start and end time
-        count = self.database.get(f"SELECT COUNT(*) FROM data_logging WHERE timestamp >= ? AND timestamp <= ?",
-                                    (start_time, end_time))[0][0]
+        # result = self.table.get_all(id=self.uuid, timestamp=[start_time, end_time])
 
-        if count > max_points:
-            # If there are more logs than the max points then we need to downsample
-            # Group the logs in the database into groups of size count/max_points
-            group_size = int(count / max_points)
-            # Then create a view of the database that groups the logs into groups of size group_size
-            self.database.run(f"""CREATE TEMP VIEW IF NOT EXISTS down_sampled AS 
-                                            SELECT id, timestamp, value, compression_level,
-                                            (SELECT COUNT(*) FROM data_logging AS t2
-                                            WHERE t2.timestamp <= t1.timestamp) / {group_size} AS group_id
-                                            FROM data_logging AS t1
-                                            WHERE timestamp >= ? AND timestamp <= ?""", (start_time, end_time))
-
-            # Then get the average of each group
-            result = self.database.get(f"""SELECT id, timestamp, AVG(value) AS value, compression_level
-                                            FROM down_sampled
-                                            GROUP BY group_id""")
-
-            # Then delete the view
-            self.database.run("DROP VIEW down_sampled")
-            print(result)
-            return result
-        else:
-            logging.info(f"DataLogger ({self.name}): Getting logs between {start_stamp} and {end_stamp}")
-            fetch_start = time.time()
-            result = self.database.get("SELECT * FROM data_logging WHERE id = ? AND timestamp >= ? AND timestamp <= ?",
-                                       (self.uuid, start_time, end_time))
-
-            # result = self.table.get_all(id=self.uuid, timestamp=[start_time, end_time])
-
-            logging.info(f"DataLogger ({self.name}): {len(result)} logs fetched in {time.time() - fetch_start} seconds")
-            return result
+        logging.info(f"DataLogger ({self.name}): {len(result)} logs fetched in {time.time() - fetch_start} seconds")
+        return result
 
     def senicide(self):
         """Remove logs older than 4 days"""
