@@ -95,7 +95,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
             self.offline_reason = "Power Outage"
         else:
             self.fault = False
-            self.offline_reason = "Unknown"
+            # self.offline_reason = "Unknown"
 
     def load_state(self):
         if self.row:
