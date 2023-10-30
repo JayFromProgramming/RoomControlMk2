@@ -128,8 +128,8 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         try:
             resp = requests.get(url)
         except requests.exceptions.ConnectionError as e:
-            # self.online = False
-            # self.offline_reason = "No API"
+            self.online = False
+            self.offline_reason = "No API"
             logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({e})")
         else:
             if resp.status_code == 200:
@@ -138,7 +138,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                     self.current_state = state_after
                     self.row.set(current_state=state_after)
                     self.online = True
-                    self.offline_reason = "Unknown"
+                    # self.offline_reason = "Unknown"
             else:
                 logging.error(f"Monkey {monkey} failed to queue, status code {resp.status_code}")
                 self.online = False
