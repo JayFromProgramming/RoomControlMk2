@@ -138,7 +138,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
                     self.current_state = state_after
                     self.row.set(current_state=state_after)
                     self.online = True
-                    # self.offline_reason = "Unknown"
+                    self.offline_reason = "Unknown"
             else:
                 logging.error(f"Monkey {monkey} failed to queue, status code {resp.status_code}")
                 self.online = False
