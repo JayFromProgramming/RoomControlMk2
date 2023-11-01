@@ -89,14 +89,6 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         self.row = self.voice_monkey_table.get_row(device_name=self.device_id)
         self.load_state()
 
-    def main_power_state(self, state):
-        if not state:
-            self.fault = True
-            self.offline_reason = "Power Outage"
-        else:
-            self.fault = False
-            # self.offline_reason = "Unknown"
-
     def load_state(self):
         if self.row:
             self.enable_monkey = self.row["on_monkey"]
@@ -128,12 +120,17 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         try:
             resp = requests.get(url)
         except requests.exceptions.ConnectionError as e:
-            cause = e.args[0].reason
+            try:
+                cause = e.args[0].reason
 
-            self.online = False
-            self.offline_reason = f"{type(cause).__name__}"
-            # Get the cause of the connection error
-            logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({cause})")
+                self.online = False
+                self.offline_reason = f"{type(cause).__name__}"
+                # Get the cause of the connection error
+                logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({cause})")
+            except Exception:
+                logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server, unknown error")
+                self.online = False
+                self.offline_reason = "UnknownConnError"
         except Exception as e:
             logging.error(f"VoiceMonkey ({monkey}): Unknown error ({e})")
             self.online = False
@@ -141,11 +138,11 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         else:
             if resp.status_code == 200:
                 logging.debug(f"Monkey {monkey} queued successfully")
+                self.online = True
+                self.offline_reason = "Unknown"
                 if state_after is not None:
                     self.current_state = state_after
                     self.row.set(current_state=state_after)
-                    self.online = True
-                    self.offline_reason = "Unknown"
             else:
                 logging.error(f"Monkey {monkey} failed to queue, status code {resp.status_code}\n{resp.text}")
                 self.online = False

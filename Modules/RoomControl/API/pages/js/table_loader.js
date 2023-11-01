@@ -225,11 +225,11 @@ class DeviceObject {
         this.row.appendChild(this.health_row);
 
         this.locked = false;
-        if (this.id === "plug_1") {
-            this.locked = true;
-            this.button.disabled = true;
-            this.button.innerHTML = "Locked";
-        }
+        // if (this.id === "plug_1") {
+        //     this.locked = true;
+        //     this.button.disabled = true;
+        //     this.button.innerHTML = "Locked";
+        // }
 
         this.updateRow(device_json);
     }
