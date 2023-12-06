@@ -23,6 +23,9 @@ class DeviceBus:
                         self.drivers[obj.name] = obj(self.database)
                         logging.info(f"Loaded driver {obj.name}")
 
+    def load_sensors(self):
+
+
     def load_devices(self):
         for driver in self.drivers.values():
             loaded = 0

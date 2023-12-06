@@ -4,10 +4,8 @@ import ConcurrentDatabase
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageRX
 from Modules.RoomControl.Decorators import background
-from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 
 from loguru import logger as logging
-from Modules.RoomControl.OccupancyDetection.OccupancyDetector import OccupancyDetector
 
 
 class StateEnumerator:
@@ -20,8 +18,7 @@ class StateEnumerator:
 
 class LightControllerHost:
 
-    def __init__(self, database: ConcurrentDatabase.Database,
-                 occupancy_detector: OccupancyDetector, room_controllers=None):
+    def __init__(self, database: ConcurrentDatabase.Database, room_controllers=None):
 
         logging.info("Initializing Light Controller Host")
 
@@ -32,7 +29,7 @@ class LightControllerHost:
         self.database_init()
         self.room_controllers = room_controllers
         self.light_controllers = {}
-        self.occupancy_detector = occupancy_detector
+        self.occupancy_detector = self.device_bus.get_sensor("occupancy_detector")
 
         table = self.database.get_table("light_controllers")
         controllers = table.get_all()
@@ -76,7 +73,7 @@ class LightControllerHost:
 class LightController:
 
     def __init__(self, name, database: ConcurrentDatabase.Database,
-                 occupancy_detector: OccupancyDetector, room_controllers=None):
+                 occupancy_detector, room_controllers=None):
         logging.info(f"LightController: {name} is being initialised")
 
         if room_controllers is None:

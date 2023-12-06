@@ -18,10 +18,7 @@ from Modules.RoomControl.DataLogger import DataLoggingHost
 from Modules.RoomControl.DeviceBus import DeviceBus
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
 from Modules.RoomControl.LightController import LightControllerHost
-from Modules.RoomControl.OccupancyDetection import OccupancyDetector
-from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
-from Modules.RoomControl.SensorHost import SensorHost
 from Modules.RoomControl.WeatherRelay import WeatherRelay
 
 
@@ -79,13 +76,15 @@ class RoomController:
 
         self.device_bus = DeviceBus(self.database)
         self.device_bus.load_drivers()
+        self.device_bus.load_sensors()
+        self.device_bus.load_controllers()
+
         try:
             self.backup_database = sqlite3.connect(f"{db_path}.bak")
             self.database.backup(target=self.backup_database, progress=database_backup)
         except sqlite3.OperationalError:
             logging.warning("Backup database is already in use, skipping backup")
         self.init_database()
-        self.occupancy_detector = OccupancyDetector.OccupancyDetector(self.database)
 
 
         # with open("Modules/RoomControl/Configs/bluetooth_targets.json", "r") as f:
@@ -100,8 +99,6 @@ class RoomController:
         #     controller.wait_for_ready()
 
         self.device_bus.load_devices()
-
-        self.sensor_host = SensorHost()
 
         self.weather_relay = WeatherRelay(self.database)
 
