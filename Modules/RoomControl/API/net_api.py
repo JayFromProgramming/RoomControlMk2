@@ -89,7 +89,7 @@ class NetAPI:
         self.authorized_cookies += [cookie[0] for cookie in results]
         results = self.database.get("SELECT * FROM login_lockouts")
         self.login_lockouts = {row[0]: {"last_attempt": row[1], "attempts": row[2], "locked_out": row[3]} for row in
-                                 results}   # type: dict
+                               results}  # type: dict
         logging.info(f"Loaded {len(self.authorized_cookies)} authorized cookies")
         logging.info(f"Loaded {len(self.login_lockouts)} login lockouts")
 
@@ -196,9 +196,17 @@ class NetAPI:
         if user and user[1] == password:
             expiry_time = int(time.time()) + 60 * 60 * 24 * 30  # 7 days
             new_cookie = hashlib.sha256(f"{password}: {random.random()}".encode()).hexdigest()
-            cursor.execute("""INSERT INTO login_auth_relations 
-            (user_id, device_name, current_cookie, expires) VALUES (?, ?, ?, ?)""",
-                           (username, device_id, new_cookie, expiry_time))
+            # Check if the device already exists in the database, if so, update the cookie
+            existing_device = cursor.execute("SELECT * FROM login_auth_relations WHERE user_id=? AND device_name=?",
+                                             (username, device_id)).fetchone()
+            if existing_device:
+                cursor.execute(
+                    "UPDATE login_auth_relations SET current_cookie=?, expires=? WHERE user_id=? AND device_name=?",
+                    (new_cookie, expiry_time, username, device_id))
+            else:
+                cursor.execute("""INSERT INTO login_auth_relations 
+                    (user_id, device_name, current_cookie, expires) VALUES (?, ?, ?, ?)""",
+                               (username, device_id, new_cookie, expiry_time))
             logging.info(f"User {username} logged in from {device_id}")
             response = web.Response(text="Authorized", status=302)
             response.set_cookie("auth", new_cookie, max_age=expiry_time)
