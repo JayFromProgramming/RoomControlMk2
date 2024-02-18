@@ -97,9 +97,9 @@ class LightController:
         self.active_state = APIMessageRX(self.controller['active_state']) if self.controller['active_state'] \
                                                                              is not None else None
         self.inactive_state = APIMessageRX(self.controller['inactive_state']) if self.controller[
-                                                                                'inactive_state'] is not None else None
+                                                                                     'inactive_state'] is not None else None
         self.door_motion_state = APIMessageRX(self.controller['door_motion_state']) if self.controller[
-                                                                                      'door_motion_state'] \
+                                                                                           'door_motion_state'] \
                                                                                        is not None else None
         self.fault_state = APIMessageRX(self.controller['fault_state']) if self.controller['fault_state'] \
                                                                            is not None else None
@@ -146,7 +146,6 @@ class LightController:
                               f" as the device does not support the attribute {key}")
                 return False
         return True
-
 
     def _get_device(self, device_name):
         for room_controller in self.room_controllers:
@@ -203,7 +202,7 @@ class LightController:
                                 setattr(device, key, value)
                             else:
                                 logging.error(f"LightController: {self.controller_name} failed to change {device} "
-                                                f"state to {state_val}")
+                                              f"state to {state_val}")
                 time.sleep(5)
                 logging.info(f"Validating state change for {self.controller_name}")
                 # Validate the state change

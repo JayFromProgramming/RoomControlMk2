@@ -118,6 +118,14 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         else:
             self.set_on(False)
 
+    @property
+    def on(self):
+        return self.current_state
+
+    @on.setter
+    def on(self, value):
+        self.set_on(value)
+
     def set_on(self, on: bool):
         if on:
             self.run_monkey(self.enable_monkey, True)
