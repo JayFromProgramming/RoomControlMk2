@@ -125,6 +125,9 @@ class EnvironmentController:
                             device.check(self.source.get_value(), self.current_setpoint)
                         self._fault = False
                         self._reason = "Unknown"
+                    elif self.all_controlled_devices_down():
+                        self._fault = True
+                        self._reason = "No working devices"
                     else:
                         logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
                         for device in self.devices:
@@ -164,6 +167,15 @@ class EnvironmentController:
             "fault": bool(self.source.get_fault()),
             "reason": self.source.get_reason() if self.source.get_fault() else self._reason
         }
+
+    def all_controlled_devices(self):
+        return self.devices
+
+    def all_controlled_devices_down(self):
+        for device in self.devices:
+            if not device.device.online or not device.device.fault:
+                return False
+        return True
 
     @staticmethod
     def get_type():

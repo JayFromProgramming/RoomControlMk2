@@ -5,16 +5,32 @@
     <title>WOPR Login</title>
 </head>
 <body>
+    <script>
+        /* This scripts job is to check if this browser has a unique ID stored in local storage otherwise
+            it will generate one and store it in local storage. This ID will be used to identify this client
+            to the server. */
+        function generateUniqueID() {
+            let d = new Date().getTime();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = (d + Math.random() * 16) % 16 | 0;
+                d = Math.floor(d / 16);
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+        let uniqueID = localStorage.getItem("uniqueID");
+        if (uniqueID == null) {
+            uniqueID = generateUniqueID();
+            localStorage.setItem("uniqueID", uniqueID);
+        }
+        // Add the unique ID to cookies so that it can be accessed by the server.
+        document.cookie = "uniqueID=" + uniqueID;
+    </script>
 
      <form action="/login_auth" method="post" accept-charset="utf-8"
           enctype="application/x-www-form-urlencoded">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" value="" autofocus/>
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" value=""/>
-
+        <input id="username" name="username" type="text" placeholder="Username" required autofocus>
+        <input id="password" name="password" type="password" placeholder="Password" required>
         <input type="submit" value="login"/>
-
     </form>
 </body>
 </html>

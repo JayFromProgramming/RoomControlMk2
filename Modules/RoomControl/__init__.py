@@ -165,6 +165,4 @@ class RoomController:
     @background
     def background(self):
         while True:
-            for device in self.monkey.get_all_devices():
-                device.main_power_state(self.vesync.get_device("plug_1").on)
             time.sleep(15)

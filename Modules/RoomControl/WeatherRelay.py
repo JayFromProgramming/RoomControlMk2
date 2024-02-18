@@ -27,7 +27,7 @@ class WeatherRelay:
                 logging.debug("Checking for new weather data")
                 observation = self.mgr.weather_at_place("Houghton, Michigan, US")
                 self.current_weather = observation.weather
-                self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+                # self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
                 # Check if the there is a newer weather report
                 self.save_current_weather()
                 logging.debug(f"Updated weather for {self.current_weather.reference_time(timeformat='iso')}")
@@ -44,6 +44,14 @@ class WeatherRelay:
             "status": "text", "secondary_status": "text",
             "visibility": "real", "chance": "real", "rain": "real", "snow": "real", "clouds": "real"
         }, primary_keys=["timestamp"])
+
+    def process_probability(self, probability):
+        if probability is None:
+            return 0
+        if "1h" in probability:
+            return probability["1h"]
+        else:
+            return 0
 
     def save_current_weather(self):
         """
@@ -63,8 +71,8 @@ class WeatherRelay:
             # convert the list of secondary statuses to a comma separated string
             secondary_status = ",".join([status["main"] for status in secondary_status_list])
             visibility = self.current_weather.visibility() if self.current_weather.visibility() < 10000 else math.inf
-            rain = self.current_weather.rain or 0
-            snow = self.current_weather.snow or 0
+            rain = self.process_probability(self.current_weather.rain)
+            snow = self.process_probability(self.current_weather.snow)
             clouds = self.current_weather.clouds or 0
             updated = self.current_weather.reference_time()
             probability = self.current_weather.precipitation_probability
