@@ -38,19 +38,25 @@
     {
       "slot": 0,
       "type": "rgb_light",
-      "name": "Living Room Edge",
+      "name": "Living Room",
       "device": "B4E842D7A9F8"
     },
     {
       "slot": 1,
       "type": "rgb_light",
-      "name": "Bedroom Lights",
+      "name": "Bedroom",
       "device": "18B905D086A5"
     },
     {
       "slot": 2,
       "type": "rgb_light",
-      "name": "Kitchen Lights",
+      "name": "Kitchen",
+      "device": "B4E842136DA6"
+    },
+    {
+      "slot": 3,
+      "type": "rgb_light",
+      "name": "Loft",
       "device": "B4E842136DA6"
     },
     {
@@ -76,6 +82,19 @@
       ],
       "device_names": [
         "Lamp",
+        "???"
+      ]
+    },
+    {
+      "slot": 6,
+      "type": "combo_plug",
+      "name": "Unassigned",
+      "device": [
+        "rad_fan",
+        "rad_fan"
+      ],
+      "device_names": [
+        "???",
         "???"
       ]
     },
