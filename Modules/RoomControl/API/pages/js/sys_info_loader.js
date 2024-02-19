@@ -24,9 +24,9 @@ function device_table() {
             }
 
 
-            sys_info_box.append('<tr><td>CPU Usage:</td><td align="right"> ' + sys_cpu + '%</td></tr>');
+            sys_info_box.append('<tr><td>CPU Load:</td><td align="right"> ' + sys_cpu + '%</td></tr>');
             sys_info_box.append('<tr><td>Mem Usage:</td><td align="right"> ' + sys_mem + '%</td></tr>');
-            sys_info_box.append('<tr><td>Sys Uptime: </td><td align="right"> ' + new Date(sys_uptime * 1000).toISOString().substr(11, 8) + '</td></tr>');
+            sys_info_box.append('<tr><td>Sys  Uptime: </td><td align="right"> ' + new Date(sys_uptime * 1000).toISOString().substr(11, 8) + '</td></tr>');
             sys_info_box.append('<tr><td>Prog Uptime: </td><td align="right"> ' + new Date(prog_uptime * 1000).toISOString().substr(11, 8) + '</td></tr>');
             sys_info_box.append('</table>');
         },

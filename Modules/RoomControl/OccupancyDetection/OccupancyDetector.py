@@ -1,11 +1,10 @@
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
-import logging
 import time
 
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 from Modules.RoomControl.OccupancyDetection.MTUNetOccupancy import NetworkOccupancyDetector
 
-logging = logging.getLogger(__name__)
+from loguru import logger as logging
 
 try:
     import RPi.GPIO as GPIO
@@ -24,7 +23,7 @@ class OccupancyDetector:
         self.last_activity = 0  # type: int # Last time a user was detected either by door or motion sensor
 
         self.blue_stalker = BluetoothDetector(self.database, high_frequency_scan_enabled=False if GPIO else True)
-        self.net_stalker = NetworkOccupancyDetector(self.database)
+        # self.net_stalker = NetworkOccupancyDetector(self.database)
 
         if GPIO:
             GPIO.setmode(GPIO.BOARD)
@@ -90,8 +89,8 @@ class OccupancyDetector:
         self.last_activity = time.time()
         self.blue_stalker.should_scan()
 
-    def bluetooth_fault(self):
-        return self.blue_stalker.fault or not self.blue_stalker.online
+    def bluetooth_offline(self):
+        return not self.blue_stalker.online
 
     def was_activity_recent(self, seconds=60):
         return self.last_activity + seconds > time.time()

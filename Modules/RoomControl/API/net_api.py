@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import json
-import logging
 import functools
 import os
 import random
@@ -11,13 +10,13 @@ import time
 from aiohttp import web
 import hashlib
 
-from Modules.RoomControl.API import page_builder
+# from Modules.RoomControl.API import page_builder
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 
-logging = logging.getLogger(__name__)
+from loguru import logger as logging
 
 
 def login_redirect():
@@ -29,7 +28,7 @@ class NetAPI:
 
     def __init__(self, database, device_controllers=None, occupancy_detector=None,
                  scene_controller=None, command_controller=None, webserver_address="localhost",
-                 datalogger=None):
+                 datalogger=None, weather_relay=None):
         self.database = database  # type: ConcurrentDatabase
         self.other_apis = device_controllers
         self.occupancy_detector = occupancy_detector  # type: BluetoothDetector
@@ -37,21 +36,22 @@ class NetAPI:
         self.scene_controller = scene_controller  # type: SceneController
         self.command_controller = command_controller  # type: CommandController
         self.data_logger = datalogger  # type: DataLoggerHost
+        self.weather_relay = weather_relay  # type: WeatherRelay
 
         self.init_database()
 
         self.app = web.Application()
-        self.app.add_routes(
+        self.app.add_routes(  # Yes this could be done with a loop, but this is easier for me to keep track of
             [web.get('', self.handle_web)]
             + [web.get("/page/{page}", self.handle_page)]
             + [web.get('/login', self.handle_login)]
             + [web.post('/login_auth', self.handle_login_auth)]
-            + [web.get('/auth/{api_key}', self.handle_auth)]  # When visited it will set a cookie to allow access to the API
+            + [web.get('/auth/{api_key}', self.handle_auth)]
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
-            + [web.get('/web_control/{name}', self.handle_web_control)]
-            + [web.post('/web_control/{name}', self.handle_web_control)]
+            # + [web.get('/web_control/{name}', self.handle_web_control)]
+            # + [web.post('/web_control/{name}', self.handle_web_control)]
             + [web.get('/get_all', self.handle_get_all)]
             + [web.get('/occupancy', self.handle_occupancy)]
             + [web.get('/set_auto/{mode}', self.handle_auto)]
@@ -68,11 +68,14 @@ class NetAPI:
             + [web.get('/page/js/{file}', self.handle_js)]
             + [web.get('/page/img/{file}', self.handle_img)]
             + [web.get('/name/{device_id}', self.handle_name)]
-            + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
-            + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
-            + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
+            # + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
+            # + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
+            # + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
             + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
             + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
+            + [web.get('/weather/now', self.handle_weather_now)]
+            + [web.get('/weather/forecast/{from_time}/{to_time}', self.handle_weather_forecast)]
+            + [web.get('/weather/past/{from_time}/{to_time}', self.handle_weather_past)]
         )
 
         # Set webserver address and port
@@ -80,29 +83,42 @@ class NetAPI:
         self.webserver_port = 47670
 
         # List of cookies that are authorized to access the API
-        cursor = self.database.cursor()
-        cursor.execute("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))
-        self.authorized_cookies = [cookie[0] for cookie in cursor.fetchall()]
-        cursor.execute("SELECT current_cookie FROM api_authorizations")
-        self.authorized_cookies += [cookie[0] for cookie in cursor.fetchall()]
+        results = self.database.get("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))
+        self.authorized_cookies = [cookie[0] for cookie in results]
+        results = self.database.get("SELECT current_cookie FROM api_authorizations")
+        self.authorized_cookies += [cookie[0] for cookie in results]
+        results = self.database.get("SELECT * FROM login_lockouts")
+        self.login_lockouts = {row[0]: {"last_attempt": row[1], "attempts": row[2], "locked_out": row[3]} for row in
+                               results}  # type: dict
+        logging.info(f"Loaded {len(self.authorized_cookies)} authorized cookies")
+        logging.info(f"Loaded {len(self.login_lockouts)} login lockouts")
 
         # Load the schema
         with open("Modules/RoomControl/Configs/schema.json") as f:
             self.schema = json.load(f)
+        logging.info("Loaded schema")
         self.runner = web.AppRunner(self.app)
+        logging.info("Created runner")
 
     def run(self):
         logging.info("Starting webserver")
         web.run_app(self.app, host=self.webserver_address, port=self.webserver_port,
                     access_log=None)
+        logging.error("Webserver stopped")
 
     def init_database(self):
-
         self.database.run("CREATE TABLE IF NOT EXISTS "
                           "api_authorizations (device_id TEXT, api_secret TEXT, current_cookie TEXT)")
+
         self.database.run("""
-        CREATE TABLE IF NOT EXISTS login_auth_relations (user_id TEXT UNIQUE REFERENCES api_authorizations(device_id),
-        device_name TEXT, current_cookie TEXT, expires INTEGER)""")
+        CREATE TABLE IF NOT EXISTS login_auth_relations 
+        (user_id TEXT REFERENCES api_authorizations(device_id),
+        device_name TEXT, current_cookie TEXT, expires INTEGER,
+        PRIMARY KEY (user_id, device_name))""")
+
+        self.database.run("""
+        CREATE TABLE IF NOT EXISTS login_lockouts 
+        (endpoint TEXT, last_attempt INTEGER, attempts INTEGER, locked_out BOOLEAN)""")
 
     def get_device(self, device_name):
         for api in self.other_apis:
@@ -139,7 +155,7 @@ class NetAPI:
             return False
 
     async def handle_login(self, request):
-        logging.info("Received LOGIN request")
+        logging.info(f"Received LOGIN request from {request.remote}")
 
         # Check if the user is already logged in
         if self.check_auth(request):
@@ -152,23 +168,44 @@ class NetAPI:
 
     async def handle_login_auth(self, request):
         logging.info("Received LOGIN AUTH request")
-        data = await request.post()
+        data = await request.post()  # type: dict
         username = data['username']
         password = data['password']
-        logging.info(f"Username: {username}, Password: {password}")
+        # Get unique device id from the client (user-agent is insufficient)
+        # The device id is stored in the cookies
+        device_id = request.cookies.get("uniqueID", None)
+        if device_id is None:
+            logging.warning("Received LOGIN AUTH request without uniqueID cookie")
+            raise web.HTTPBadRequest()
+        endpoint = request.remote
+
+        if endpoint in self.login_lockouts and self.login_lockouts[endpoint]["locked_out"]:
+            logging.info(f"User {username} attempted to login from {device_id} but is locked out")
+            return web.Response(text="Locked out", status=403)
+
+        logging.info(f"User: {username}, Password: {password}, Browser: {device_id}, Endpoint: {endpoint}")
         cursor = self.database.cursor()
         user = cursor.execute("SELECT * FROM api_authorizations WHERE device_id=?", (username,)).fetchone()
-        logging.info(f"User: {user[0]}, Password: {user[1]}")
+        if user is None:
+            logging.info(f"User {username} does not exist")
+            return web.Response(text="User does not exist", status=401)
         if user and user[1] == password:
-
+            expiry_time = int(time.time()) + 60 * 60 * 24 * 30  # 7 days
             new_cookie = hashlib.sha256(f"{password}: {random.random()}".encode()).hexdigest()
-            browser = request.headers.get("User-Agent")
-
-            cursor.execute("""INSERT OR REPLACE INTO login_auth_relations (user_id, device_name, current_cookie, expires) 
-                           VALUES (?, ?, ?, ?)""", (username, browser, new_cookie, int(time.time()) + 60 * 60 * 24 * 7))
-            logging.info(f"User {username} logged in from {browser}")
+            # Check if the device already exists in the database, if so, update the cookie
+            existing_device = cursor.execute("SELECT * FROM login_auth_relations WHERE user_id=? AND device_name=?",
+                                             (username, device_id)).fetchone()
+            if existing_device:
+                cursor.execute(
+                    "UPDATE login_auth_relations SET current_cookie=?, expires=? WHERE user_id=? AND device_name=?",
+                    (new_cookie, expiry_time, username, device_id))
+            else:
+                cursor.execute("""INSERT INTO login_auth_relations 
+                    (user_id, device_name, current_cookie, expires) VALUES (?, ?, ?, ?)""",
+                               (username, device_id, new_cookie, expiry_time))
+            logging.info(f"User {username} logged in from {device_id}")
             response = web.Response(text="Authorized", status=302)
-            response.set_cookie("auth", new_cookie, max_age=60 * 60 * 24 * 365)
+            response.set_cookie("auth", new_cookie, max_age=expiry_time)
 
             self.authorized_cookies.append(new_cookie)
 
@@ -178,6 +215,17 @@ class NetAPI:
             response.headers["Location"] = "/"
             return response
         else:
+            logging.info(f"Host: {endpoint} failed to login")
+            if endpoint not in self.login_lockouts:
+                self.login_lockouts[endpoint] = {"last_attempt": time.time(), "attempts": 1, "locked_out": False}
+            else:
+                self.login_lockouts[endpoint]["attempts"] += 1
+                if self.login_lockouts[endpoint]["attempts"] > 5:
+                    self.login_lockouts[endpoint]["locked_out"] = True
+                    self.login_lockouts[endpoint]["last_attempt"] = time.time()
+                    logging.info(f"Host: {endpoint} has been locked out")
+                else:
+                    self.login_lockouts[endpoint]["last_attempt"] = time.time()
             cursor.close()
             raise web.HTTPUnauthorized()
 
@@ -190,7 +238,8 @@ class NetAPI:
             logging.info("API key is valid")
             # Make a new cookie based on a hash of the api_secret
             new_cookie = hashlib.sha256(api_secret[0].encode()).hexdigest()
-            cursor.execute("UPDATE api_authorizations SET current_cookie = ? WHERE api_secret = ?", (new_cookie, api_key))
+            cursor.execute("UPDATE api_authorizations SET current_cookie = ? WHERE api_secret = ?",
+                           (new_cookie, api_key))
             self.database.commit()
             self.authorized_cookies.append(api_secret)
             response = web.Response(text="Authorized")
@@ -250,7 +299,7 @@ class NetAPI:
         device = self.get_device(device_name)
         result, success = process_device_command(device, msg)
         if not success:
-            return web.Response(text=result, status=503)
+            return web.Response(text=result.__str__(), status=503)
         return web.Response(text=result.__str__())
 
     async def handle_get_all(self, request):
@@ -302,17 +351,17 @@ class NetAPI:
             logging.warning(f"Page {sys.path[0]}/Modules/RoomControl/API/pages/{page}.html not found")
             return web.Response(text="Page not found", status=404)
 
-    async def handle_web_control(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-
-        logging.debug("Received WEB CONTROL request")
-
-        # Load the main page from "{root}\pages\main_view_page.html"
-        device = request.match_info['name']
-        hw_device = self.get_device(device)
-
-        return page_builder.generate_control_page(self, hw_device)
+    # async def handle_web_control(self, request):
+    #     if not self.check_auth(request):
+    #         raise web.HTTPUnauthorized()
+    #
+    #     logging.debug("Received WEB CONTROL request")
+    #
+    #     # Load the main page from "{root}\pages\main_view_page.html"
+    #     device = request.match_info['name']
+    #     hw_device = self.get_device(device)
+    #
+    #     return page_builder.generate_control_page(self, hw_device)
 
     async def handle_web_control_post(self, request):
         if not self.check_auth(request):
@@ -487,33 +536,6 @@ class NetAPI:
         device_name = self.get_device_display_name(device_id)
         return web.Response(text=device_name)
 
-    async def handle_status_string(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        # logging.info("Received STATUS_STRING request")
-        device_id = request.match_info['device_id']
-        device = self.get_device(device_id)
-        device_status = page_builder.state_to_string(device)
-        return web.Response(text=device_status)
-
-    async def handle_health_string(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        # logging.info("Received HEALTH_STRING request")
-        device_id = request.match_info['device_id']
-        device = self.get_device(device_id)
-        device_health = page_builder.health_message(device)
-        return web.Response(text=device_health)
-
-    async def handle_action_string(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        # logging.info("Received ACTION_STRING request")
-        device_id = request.match_info['device_id']
-        device = self.get_device(device_id)
-        device_action = page_builder.generate_actions(device)
-        return web.Response(text=device_action)
-
     async def handle_data_log_sources(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
@@ -531,6 +553,28 @@ class NetAPI:
         end = request.match_info['end']
         data = self.data_logger.get_data(source, start, end)
         msg = APIMessageTX(data_log=data, source=source)
+        return web.Response(text=msg.__str__())
+
+    async def handle_weather_now(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_NOW request")
+        return web.json_response(self.weather_relay.current_weather.to_dict())
+
+    async def handle_weather_forecast(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_FORECAST request")
+        data = self.weather_relay.get_forecast()
+        msg = APIMessageTX(weather_forecast=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_weather_past(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_PAST request")
+        data = self.weather_relay.get_past()
+        msg = APIMessageTX(weather_past=data)
         return web.Response(text=msg.__str__())
 
     async def handle_device_ping_update(self, request):

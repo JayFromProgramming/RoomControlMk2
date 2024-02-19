@@ -1,14 +1,15 @@
 import time
-import logging
+from loguru import logger as logging
 
-from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
-
-logging = logging.getLogger(__name__)
+import ConcurrentDatabase
+from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
+from Modules.RoomControl.Decorators import background, api_action
 
 
 class EnvironmentControllerHost:
 
-    def __init__(self, database, sensor_host=None, room_controllers=None):
+    def __init__(self, database: ConcurrentDatabase.Database,
+                 sensor_host=None, room_controllers=None):
 
         if room_controllers is None:
             room_controllers = []
@@ -20,33 +21,41 @@ class EnvironmentControllerHost:
         self.room_controllers = room_controllers
         self.enviv_controllers = {}
 
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM enviv_controllers")
-        controllers = cursor.fetchall()
+        table = self.database.get_table("enviv_controllers")
+        controllers = table.get_all()
+
         for controller in controllers:
-            self.enviv_controllers[controller[0]] = \
-                EnvironmentController(controller[0], self.database, room_controllers=self.room_controllers,
+            self.enviv_controllers[controller['name']] = \
+                EnvironmentController(controller['name'], self.database,
+                                      room_controllers=self.room_controllers,
                                       sensor_host=self.sensor_host)
 
     def database_init(self):
-        cursor = self.database.cursor()
-        cursor.execute("""CREATE TABLE IF NOT EXISTS 
-                        enviv_controllers (
-                        name text,
-                        current_set_point integer,
-                        source_name text,
-                        enabled boolean
-                        )""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS
-                        enviv_control_devices (
-                        device_id text,
-                        lower_delta float,
-                        upper_delta float,
-                        action_direction integer,
-                        control_source text
-                        )""")
-        cursor.close()
-        self.database.commit()
+        # cursor = self.database.cursor()
+        # cursor.execute("""CREATE TABLE IF NOT EXISTS
+        #                 enviv_controllers (
+        #                 name text,
+        #                 current_set_point integer,
+        #                 source_name text,
+        #                 enabled boolean
+        #                 )""")
+        self.database.create_table("enviv_controllers", {"name": "TEXT", "current_set_point": "INTEGER",
+                                                         "source_name": "TEXT", "enabled": "BOOLEAN"},
+                                   primary_keys=["name"])
+        # cursor.execute("""CREATE TABLE IF NOT EXISTS
+        #                 enviv_control_devices (
+        #                 device_id text,
+        #                 lower_delta float,
+        #                 upper_delta float,
+        #                 action_direction integer,
+        #                 control_source text
+        #                 )""")
+        self.database.create_table("enviv_control_devices", {"device_id": "TEXT", "lower_delta": "FLOAT",
+                                                             "upper_delta": "FLOAT", "action_direction": "INTEGER",
+                                                             "control_source": "TEXT"},
+                                   primary_keys=["device_id", "control_source"])
+        # cursor.close()
+        # self.database.commit()
 
     def refresh_all(self):
         pass
@@ -62,7 +71,8 @@ class EnvironmentControllerHost:
 
 class EnvironmentController:
 
-    def __init__(self, name, database, room_controllers=None, sensor_host=None):
+    def __init__(self, name, database: ConcurrentDatabase.Database,
+                 room_controllers=None, sensor_host=None):
 
         if room_controllers is None:
             room_controllers = []
@@ -75,20 +85,19 @@ class EnvironmentController:
         self.online = True
         self._reason = "Unknown"
 
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM enviv_controllers WHERE name=?", (self.controller_name,))
-        controller = cursor.fetchone()
-        cursor.close()
-        self.current_setpoint = controller[1]
-        self.source = self.sensor_host.get_sensor(controller[2])
-        self.enabled = (False if controller[3] == 0 else True)
+        table = self.database.get_table("enviv_controllers")
+        self.controller_entry = table.get_row(name=self.controller_name)
+        self.current_setpoint = self.controller_entry['current_set_point']
+        self.source = self.sensor_host.get_sensor(self.controller_entry['source_name'])
+        self.enabled = (False if self.controller_entry['enabled'] == 0 else True)
 
         self.devices = []
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM enviv_control_devices WHERE control_source=?", (self.controller_name,))
-        devices = cursor.fetchall()
+        table = self.database.get_table("enviv_control_devices")
+        devices = table.get_rows(control_source=self.controller_name)
+        self._fault = False
+
         for device in devices:
-            self.devices.append(ControlledDevice(device[0], self.get_device(device[0]), self.database))
+            self.devices.append(ControlledDevice(device['device_id'], self.get_device(device['device_id']), self.database))
 
         for device in self.devices:
             device.device.auto = self.enabled
@@ -112,12 +121,19 @@ class EnvironmentController:
                 if self.enabled:
                     if not self.source.get_fault():
                         for device in self.devices:
+                            device.fault = False
                             device.check(self.source.get_value(), self.current_setpoint)
+                        self._fault = False
                         self._reason = "Unknown"
+                    elif self.all_controlled_devices_down():
+                        self._fault = True
+                        self._reason = "No working devices"
                     else:
                         logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
                         for device in self.devices:
-                            device.fault_encountered()
+                            if not device.fault:
+                                device.fault = True
+                                device.fault_encountered()
                         self._reason = "Source is offline"
                 time.sleep(30)
         else:
@@ -152,6 +168,15 @@ class EnvironmentController:
             "reason": self.source.get_reason() if self.source.get_fault() else self._reason
         }
 
+    def all_controlled_devices(self):
+        return self.devices
+
+    def all_controlled_devices_down(self):
+        for device in self.devices:
+            if not device.device.online or not device.device.fault:
+                return False
+        return True
+
     @staticmethod
     def get_type():
         return "environment_controller"
@@ -173,10 +198,13 @@ class EnvironmentController:
         for device in self.devices:
             device.device.auto = value
 
-        cursor = self.database.cursor()
-        cursor.execute("UPDATE enviv_controllers SET enabled=? WHERE name=?", (int(value), self.controller_name))
-        cursor.close()
-        self.database.commit()
+        # cursor = self.database.cursor()
+        # cursor.execute("UPDATE enviv_controllers SET enabled=? WHERE name=?", (int(value), self.controller_name))
+        # cursor.close()
+        # self.database.commit()
+
+        self.controller_entry.set(enabled=value)
+
         logging.info(f"EnvironmentController ({self.controller_name}): Enabled set to {value}")
 
     @property
@@ -187,10 +215,20 @@ class EnvironmentController:
     def setpoint(self, value):
         value = float(value)  # Make sure it's an integer because sometimes the api sends a string
         self.current_setpoint = value
-        cursor = self.database.cursor()
-        cursor.execute("UPDATE enviv_controllers SET current_set_point=? WHERE name=?", (value, self.controller_name))
-        cursor.close()
-        self.database.commit()
+        # cursor = self.database.cursor()
+        # cursor.execute("UPDATE enviv_controllers SET current_set_point=? WHERE name=?", (value, self.controller_name))
+        # cursor.close()
+        # self.database.commit()
+
+        self.controller_entry.set(current_set_point=value)
+
+    @property
+    def target_value(self):
+        return self.setpoint
+
+    @target_value.setter
+    def target_value(self, value):
+        self.setpoint = value
 
     @property
     def current_value(self):
@@ -207,26 +245,24 @@ class EnvironmentController:
 
 class ControlledDevice:
 
-    def __init__(self, name, device: AbstractToggleDevice, database):
+    def __init__(self, name, device: AbstractToggleDevice, database: ConcurrentDatabase.Database):
         self.name = name
         self.device = device
         self.database = database
 
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM enviv_control_devices WHERE device_id=?", (self.name,))
-        device = cursor.fetchone()
-        cursor.close()
-        self.control_source = device[4]
-        self.action_direction = int(device[3])  # 1 if this device causes the source to increase, -1 if it causes it to decrease
-        # The action direction changes what the following values do
-        self.lower_hysteresis = float(device[1])  # Threshold for turning the device on if the action direction is positive and off if it is negative
-        self.upper_hysteresis = float(device[2])  # Threshold for turning the device off if the action direction is positive and on if it is negative
+        table = self.database.get_table("enviv_control_devices")
+        device = table.get_row(device_id=self.name)
 
-    """
-    Checks if this particular device should be on or off 
-    """
+        self.control_source = device['control_source']  # The name of the controller that controls this device
+        self.action_direction = int(device['action_direction'])
+        self.lower_hysteresis = float(device['lower_delta'])
+        self.upper_hysteresis = float(device['upper_delta'])
+        self.fault = False
 
     def check(self, current_value, setpoint):
+        """
+        Checks if this particular device should be on or off
+        """
         if self.action_direction == 1:  # If the action direction is positive (the device causes the source to increase)
             if self.device.on:  # If the device is on check if it should be turned off
                 if current_value > setpoint + self.upper_hysteresis:  # If the current value is above the setpoint plus the upper hysteresis
@@ -246,11 +282,17 @@ class ControlledDevice:
                     self.device.on = True
                     logging.info(f"ControlledDevice ({self.name}): Turning on")
 
+    @background
     def fault_encountered(self):
         """
         Called when the temperature sensor encounters a fault
         The device will be turned off and will not be turned on until the fault is resolved
         or the device is manually turned on
         """
-        if self.device.auto and self.device.on:
-            self.device.on = False
+        while self.fault:
+            if self.device.auto:
+                if self.device.on:
+                    self.device.on = False
+                self.device.fault = True
+                self.device.offline_reason = "SRC CTLR SENSOR FAULT"
+            time.sleep(1)

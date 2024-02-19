@@ -1,25 +1,26 @@
-import logging
+import datetime
 import typing
 
 from pyvesync import VeSync
 import asyncio
 from threading import Thread
 
-from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice, background
+import ConcurrentDatabase
+from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
+from Modules.RoomControl.Decorators import background
 
-logging = logging.getLogger(__name__)
+from loguru import logger as logging
 
 
 class VeSyncAPI:
 
-    def __init__(self, database):
+    def __init__(self, database: ConcurrentDatabase.Database):
 
         self.database = database
-
-        email = self.database.cursor().execute("SELECT * FROM secrets WHERE secret_name = 'VesyncUsername'").fetchone()[1]
-        password = self.database.cursor().execute("SELECT * FROM secrets WHERE secret_name = 'VesyncPassword'").fetchone()[1]
-        self.database.cursor().close()
-        self.manager = VeSync(email, password, time_zone='America/New_York')
+        secretes_table = self.database.get_table("secrets")
+        email = secretes_table.get_row(secret_name='VesyncUsername')
+        password = secretes_table.get_row(secret_name='VesyncPassword')
+        self.manager = VeSync(email['secret_value'], password['secret_value'], time_zone='America/New_York')
         self.manager.login()
 
         self.manager.update()  # Populate the devices list
@@ -59,13 +60,14 @@ class VeSyncAPI:
 
 class VeSyncPlug(AbstractToggleDevice):
 
-    def __init__(self, device, database):
+    def __init__(self, device, database: ConcurrentDatabase.Database):
         super().__init__()
         self.device = device
         self.device_name = device.device_name
         self.cached_details = {}
         self.online = True
         self.fault = False
+        self.last_update = datetime.datetime.now()
         self.database = database
 
         self.upper_bounds = None
@@ -74,14 +76,12 @@ class VeSyncPlug(AbstractToggleDevice):
 
     def get_bounds(self):
         """Gets expected power draw bounds from the DB"""
-        cursor = self.database.cursor()
-        cursor.execute("SELECT upper_bound, lower_bound FROM vesync_device_bounds WHERE device_name = ?", (self.device_name,))
-        bounds = cursor.fetchone()
-        cursor.close()
+        device_bounds = self.database.get_table("vesync_device_bounds")
+        bounds = device_bounds.get_row(device_name=self.device_name)
         if bounds:
             logging.info(f"VeSyncAPI ({self.device_name}): Bounds found in DB: {bounds}")
-            self.upper_bounds = bounds[0]
-            self.lower_bounds = bounds[1]
+            self.upper_bounds = bounds["upper_bound"]
+            self.lower_bounds = bounds["lower_bound"]
         else:
             logging.info(f"VeSyncAPI ({self.device_name}): No bounds found in DB, setting to None")
             self.upper_bounds = None
@@ -101,12 +101,11 @@ class VeSyncPlug(AbstractToggleDevice):
     @background
     def refresh_info(self):
         logging.debug(f"Refreshing {self.device_name} info")
-        self.device.update()
         if self.upper_bounds and self.lower_bounds:
             state = self.get_info()
             if state["active_time"] < 2:  # If the device has been on for less than 2 minutes
                 self.fault = False
-                return    # Its power draw is probably not accurate
+                return  # Its power draw is probably not accurate
             if state['power'] > self.upper_bounds:
                 self.fault = True
                 self.offline_reason = f"Power draw exceeded"
@@ -117,16 +116,40 @@ class VeSyncPlug(AbstractToggleDevice):
                 logging.warning(f"VeSyncAPI ({self.device_name}): Power draw is below lower bounds")
             else:
                 self.fault = False
+        # if self.last_update < datetime.datetime.now() - datetime.timedelta(minutes=1):
+        #     self.online = False
+        #     self.offline_reason = f"Data Stale"
+        #     logging.warning(f"VeSyncAPI ({self.device_name}): Device has not updated in 1 minute")
 
     def get_info(self):
+        try:
+            self.device.get_details()
+            self.device.update()
+            self.device.update_energy()
+        except Exception as e:
+            logging.warning(f"VeSyncAPI ({self.device_name}): Error getting device details: {e}")
+            self.online = False
+            self.offline_reason = f"API Error"
+            return self.cached_details
         if len(self.device.details) > 1:
-            details = self.device.details
-            details.update({"connection": "online"})
+            # Check if the data is different from the last time we got it
+            self.cached_details = self.device.details
             self.online = True
+            details = self.device.details
+            if self.device.update_energy_ts is not None:
+                self.last_update = datetime.datetime.fromtimestamp(self.device.update_energy_ts)
+
+            # details.update({"connection": self.device.connection_status})
+            # if self.device.connection_status == "offline":
+            #     self.online = False
+            #     self.offline_reason = f"No Response"
+            #     logging.warning(f"VeSyncAPI ({self.device_name}): Device is offline")
+            details.update({"connection": "online"})
             return details
         else:
             self.online = False
-            return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0, "connection": "offline"}
+            return {"active_time": 0, "energy": 0, "power": 0, "voltage": 0,
+                    "connection": "offline"}
 
     def __str__(self):
         return f"{self.device_name}: {self.get_info()}"

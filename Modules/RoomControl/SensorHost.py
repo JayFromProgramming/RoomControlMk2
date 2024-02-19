@@ -1,10 +1,8 @@
 import datetime
-import logging
 import time
 
-from Modules.RoomControl.AbstractSmartDevices import background
-
-logging = logging.getLogger(__name__)
+from Modules.RoomControl.Decorators import background
+from loguru import logger as logging
 
 
 class SensorHost:
@@ -109,7 +107,7 @@ class EnvironmentSensor(Sensor):
     def __init__(self, name):
         super().__init__(name)
         self.values["temperature"] = SensorValue("room_temp", 0, "°F", True, 5)
-        self.values["humidity"] = SensorValue("room_humid", 0, "%", True, 5)
+        self.values["humidity"] = SensorValue("room_humid", 0, "°%", True, 5)
         try:  # If the controller is not running on a Raspberry Pi, this will fail
             logging.info(f"EnvironmentSensor ({self.name}): Initialising DHT22 sensor")
             import Adafruit_DHT

@@ -1,19 +1,27 @@
 import time
 
+import ConcurrentDatabase
+from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageRX
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 
-import logging
-
+from loguru import logger as logging
 from Modules.RoomControl.OccupancyDetection.OccupancyDetector import OccupancyDetector
 
-logging = logging.getLogger(__name__)
+
+class StateEnumerator:
+    inactive = 0
+    active = 1
+    motion = 2
+    fault = 3
+    dnd = 4
 
 
 class LightControllerHost:
 
-    def __init__(self, database, occupancy_detector: OccupancyDetector, room_controllers=None):
+    def __init__(self, database: ConcurrentDatabase.Database,
+                 occupancy_detector: OccupancyDetector, room_controllers=None):
 
         logging.info("Initializing Light Controller Host")
 
@@ -26,43 +34,24 @@ class LightControllerHost:
         self.light_controllers = {}
         self.occupancy_detector = occupancy_detector
 
-        cursor = self.database.cursor()
-        self.database.lock.acquire()
-        cursor.execute("SELECT * FROM light_controllers")
-        controllers = cursor.fetchall()
-        cursor.close()
-        self.database.lock.release()
+        table = self.database.get_table("light_controllers")
+        controllers = table.get_all()
+
         for controller in controllers:
-            self.light_controllers[controller[0]] = \
-                LightController(controller[0], self.database, self.occupancy_detector, room_controllers=self.room_controllers)
+            self.light_controllers[controller['name']] = \
+                LightController(controller['name'], self.database, self.occupancy_detector,
+                                room_controllers=self.room_controllers)
 
         logging.info("Light Controller Host Initialized")
         self.periodic_update()
 
     def database_init(self):
-        cursor = self.database.cursor()
-        cursor.execute("""CREATE TABLE IF NOT EXISTS 
-                        light_controllers (
-                        name text,
-                        active_state text NOT NULL,
-                        inactive_state text NOT NULL,
-                        enabled boolean DEFAULT TRUE,
-                        current_state integer DEFAULT 0,
-                        door_motion_state TEXT DEFAULT null,
-                        fault_state TEXT DEFAULT null
-                        )""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS
-                        light_control_devices (
-                        device_id text,
-                        control_source text
-                        )""")
-        cursor.execute("""CREATE TABLE IF NOT EXISTS
-                        light_control_targets (
-                        device_uuid integer,
-                        control_source text
-                        )""")
-        cursor.close()
-        self.database.commit()
+        self.database.create_table("light_controllers",
+                                   {"name": "TEXT", "active_state": "TEXT", "inactive_state": "TEXT",
+                                    "enabled": "BOOLEAN", "current_state": "BOOLEAN", "door_motion_state": "TEXT",
+                                    "fault_state": "TEXT"})
+        self.database.create_table("light_control_devices", {"device_id": "TEXT", "control_source": "TEXT"})
+        self.database.create_table("light_control_targets", {"device_uuid": "INTEGER", "control_source": "TEXT"})
 
     def get_all_devices(self):
         return self.light_controllers.values()
@@ -86,7 +75,8 @@ class LightControllerHost:
 
 class LightController:
 
-    def __init__(self, name, database, occupancy_detector: OccupancyDetector, room_controllers=None):
+    def __init__(self, name, database: ConcurrentDatabase.Database,
+                 occupancy_detector: OccupancyDetector, room_controllers=None):
         logging.info(f"LightController: {name} is being initialised")
 
         if room_controllers is None:
@@ -96,48 +86,72 @@ class LightController:
         self.database = database
         self.room_controllers = room_controllers
 
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM light_controllers WHERE name=?", (name,))
-        controller = cursor.fetchone()
-        cursor.close()
+        self.database.update_table("light_controllers", 1,
+                                   ["""alter table light_controllers add dnd_state TEXT default null"""])
 
-        self.enabled = True if controller[3] == 1 else False
-        self.current_state = True if controller[4] == 1 else False
+        self.table = self.database.get_table("light_controllers")
+        self.controller = self.table.get_row(name=name)
 
-        self.active_state = APIMessageRX(controller[1]) if controller[1] is not None else None
-        self.inactive_state = APIMessageRX(controller[2]) if controller[2] is not None else None
-        self.door_motion_state = APIMessageRX(controller[5]) if controller[5] is not None else None
-        self.fault_state = APIMessageRX(controller[6]) if controller[6] is not None else None
-        self.enabled = True if controller[3] == 1 else False
+        self.current_state = self.controller['current_state']
+
+        self.active_state = APIMessageRX(self.controller['active_state']) if self.controller['active_state'] \
+                                                                             is not None else None
+        self.inactive_state = APIMessageRX(self.controller['inactive_state']) if self.controller[
+                                                                                     'inactive_state'] is not None else None
+        self.door_motion_state = APIMessageRX(self.controller['door_motion_state']) if self.controller[
+                                                                                           'door_motion_state'] \
+                                                                                       is not None else None
+        self.fault_state = APIMessageRX(self.controller['fault_state']) if self.controller['fault_state'] \
+                                                                           is not None else None
+        self.dnd_state = APIMessageRX(self.controller['dnd_state']) if self.controller['dnd_state'] \
+                                                                       is not None else None
+        self.enabled = True if self.controller['enabled'] == 1 else False
 
         self.online = True
         self.changing_state = False
-        self.current_state = controller[4]
+        self.dnd_active = True if self.current_state == StateEnumerator.dnd else False
 
         self.occupancy_detector = occupancy_detector
 
         self.light_control_devices = {}
         self.light_control_targets = []
 
-        cursor = self.database.cursor()
-        cursor.execute("SELECT * FROM light_control_devices WHERE control_source=?", (self.controller_name,))
-        devices = cursor.fetchall()
-        for device in devices:
-            self.light_control_devices[device[0]] = self._get_device(device[0])
+        devices_table = self.database.get_table("light_control_devices")
+        devices = devices_table.get_rows(control_source=self.controller_name)
 
-        cursor.execute("SELECT * FROM light_control_targets WHERE control_source=?", (self.controller_name,))
-        targets = cursor.fetchall()
+        for device in devices:
+            self.light_control_devices[device['device_id']] = self._get_device(device['device_id'])
+
+        targets_table = self.database.get_table("light_control_targets")
+        targets = targets_table.get_rows(control_source=self.controller_name)
+
         for target in targets:
-            self.light_control_targets.append(target[0])
+            self.light_control_targets.append(target['device_uuid'])
 
         self.on = self.enabled
         logging.info(f"LightController: {name} has been initialised,"
                      f" {len(self.light_control_devices)} devices and {len(self.light_control_targets)} targets")
 
+    def _check_device_support(self, device):
+        # Check if the device supports the required attributes to achieve the desired states
+        logging.debug(f"LightController: {self.controller_name} checking {device} for support")
+        for key, value in self.active_state.__dict__.items():
+            if not hasattr(device, key):
+                logging.error(f"LightController: {self.controller_name} failed to change {key} to {value}"
+                              f" as the device does not support the attribute {key}")
+                return False
+        for key, value in self.inactive_state.__dict__.items():
+            if not hasattr(device, key):
+                logging.error(f"LightController: {self.controller_name} failed to change {key} to {value}"
+                              f" as the device does not support the attribute {key}")
+                return False
+        return True
+
     def _get_device(self, device_name):
         for room_controller in self.room_controllers:
             if device := room_controller.get_device(device_name):
-                return device
+                if self._check_device_support(device):
+                    return device
         return None
 
     def _check_occupancy(self):
@@ -148,19 +162,27 @@ class LightController:
 
     def update(self):
         if self.enabled and not self.changing_state:
-            if self.current_state != 1 and self.current_state != 2:  # If the state isn't already on or motion
-                if self.occupancy_detector.bluetooth_fault():  # If the bluetooth detector has faulted
+            if self.dnd_active:
+                if self.dnd_state is not None:
+                    self.set_state(StateEnumerator.dnd, self.dnd_state)
+                    return
+            # If the state isn't already on or motion
+            if self.current_state != StateEnumerator.active and self.current_state != StateEnumerator.motion:
+                if self.occupancy_detector.bluetooth_offline():  # If the bluetooth detector has faulted
                     if self.fault_state is not None:  # If there is a fault state to go to
-                        self.set_state(3, self.fault_state)  # Set the state to fault
-            if self.current_state != 1:  # If the state is off or faulted
+                        self.set_state(StateEnumerator.fault, self.fault_state)  # Set the state to fault
+            # If the state is off or faulted
+            if self.current_state == StateEnumerator.inactive or self.current_state == StateEnumerator.fault:
                 if self.occupancy_detector.was_activity_recent():  # If there was activity in the room recently
                     if self.door_motion_state is not None:
-                        self.set_state(2, self.door_motion_state)
-            if not self.occupancy_detector.bluetooth_fault():  # If the bluetooth detector has faulted
+                        self.set_state(StateEnumerator.motion, self.door_motion_state)
+            if not self.occupancy_detector.bluetooth_offline():  # If the bluetooth detector has faulted
                 if self._check_occupancy():
-                    self.set_state(1, self.active_state)
+                    self.set_state(StateEnumerator.active, self.active_state)
                 elif not self.occupancy_detector.was_activity_recent():
-                    self.set_state(0, self.inactive_state)
+                    self.set_state(StateEnumerator.inactive, self.inactive_state)
+        elif self.changing_state:
+            logging.info(f"LightController: {self.controller_name} is changing state")
 
     @background
     def set_state(self, state_val, state=None):
@@ -170,56 +192,57 @@ class LightController:
                 self.changing_state = True
                 self.current_state = state_val
                 logging.info(f"LightController: {self.controller_name} is changing state to {state_val}")
+                # Use the API action_handler method to process the state change
                 for device in self.light_control_devices.values():
-                    if hasattr(state, "on"):
-                        device.set_on(state.on)
-                    if hasattr(state, "brightness"):
-                        device.set_brightness(state.brightness)
-                    if hasattr(state, "color"):
-                        device.set_color(state.color)
-                    if hasattr(state, "white"):
-                        device.set_white(state.white)
+                    if device is None:
+                        raise ValueError(f"Device ({device}) not found")
+                    else:  # Device found
+                        for key, value in state.__dict__.items():  # Loop through all attributes in the message
+                            if hasattr(device, key):  # Check the device has an attribute with the same name
+                                setattr(device, key, value)
+                            else:
+                                logging.error(f"LightController: {self.controller_name} failed to change {device} "
+                                              f"state to {state_val}")
                 time.sleep(5)
-                self.changing_state = False
-                # Verify the light properly changed state to the desired state
+                logging.info(f"Validating state change for {self.controller_name}")
+                # Validate the state change
                 for device in self.light_control_devices.values():
-                    if hasattr(state, "on"):
-                        if device.get_on() != state.on:
-                            logging.error(f"LightController: {self.controller_name}"
-                                          f" failed to change state to [{state_val}]"
-                                          f" [{device.get_on()} != {state.on}]")
-                            self.current_state = prev_state
-                            return
-                    if hasattr(state, "brightness"):
-                        if device.get_brightness() != state.brightness:
-                            logging.error(f"LightController: {self.controller_name}"
-                                          f" failed to change state to [{state_val}] "
-                                          f"[{device.get_brightness()} != {state.brightness}]")
-                            self.current_state = prev_state
-                            return
-                    if hasattr(state, "color"):
-                        if list(device.get_color()) != state.color:
-                            logging.error(f"LightController: {self.controller_name}"
-                                          f" failed to change state to [{state_val}]"
-                                          f" [{device.get_color()} != {state.color}]")
-                            self.current_state = prev_state
-                            return
-                    if hasattr(state, "white"):
-                        if device.get_brightness() != state.white:
-                            logging.error(f"LightController: {self.controller_name}"
-                                          f" failed to change state to [{state_val}] "
-                                          f"[{device.get_brightness()} != {state.white}]")
-                            self.current_state = prev_state
-                            return
-                logging.info(f"LightController: {self.controller_name} successfully changed state to {state_val}")
+                    if device is None:
+                        raise ValueError(f"Device ({device}) not found")
+                    else:
+                        for key, value in state.__dict__.items():
+                            if hasattr(device, key):
+                                if isinstance(getattr(device, key), tuple):
+                                    # If the attribute is a tuple then cast it to a list for comparison
+                                    if list(getattr(device, key)) != list(value):
+                                        logging.error(f"LightController: {self.controller_name} failed to change "
+                                                      f"state to {state_val}")
+                                        logging.error(f"LightController: {self.controller_name} failed to change {key}"
+                                                      f" to {value} current value is "
+                                                      f"{getattr(device, key)}")
+                                        self.current_state = prev_state
+                                elif getattr(device, key) != value:
+                                    logging.error(f"LightController: {self.controller_name} failed to change state"
+                                                  f" to {state_val}")
+                                    logging.error(f"LightController: {self.controller_name} failed to change {key} "
+                                                  f"to {value} current value is "
+                                                  f"{getattr(device, key)}")
+                                    self.current_state = prev_state
         except Exception as e:
             logging.error(f"LightController: {self.controller_name} failed to change state to {state_val} due to {e}")
             self.current_state = prev_state
+        finally:
             self.changing_state = False
+            try:
+                # Update current state in the database
+                self.controller.set(current_state=self.current_state)
+            except Exception as e:
+                logging.error(f"LightController: {self.controller_name} failed to update database due to {e}")
 
     def get_state(self):
         return {
             "on": self.enabled,
+            "dnd_active": self.dnd_active,
             "current_state": self.current_state
         }
 
@@ -228,6 +251,7 @@ class LightController:
             "name": self.controller_name,
             "active_state": self.active_state.__str__(),
             "inactive_state": self.inactive_state.__str__(),
+            "dnd_state": self.dnd_state.__str__(),
             "targets": self.get_targets_info()
         }
 
@@ -241,8 +265,8 @@ class LightController:
     def get_health(self):
         return {
             "online": True,
-            "fault": self.occupancy_detector.bluetooth_fault(),
-            "reason": "Bluetooth Offline" if self.occupancy_detector.bluetooth_fault() else "Unknown"
+            "fault": self.occupancy_detector.bluetooth_offline(),
+            "reason": "Bluetooth Offline" if self.occupancy_detector.bluetooth_offline() else "Unknown"
         }
 
     def get_type(self):
@@ -262,18 +286,25 @@ class LightController:
     def on(self, value):
         self.enabled = value
         self.changing_state = False
-        cursor = self.database.cursor()
-        self.database.lock.acquire()
-        cursor.execute("UPDATE light_controllers SET enabled=? WHERE name=?", (value, self.controller_name))
-        cursor.close()
-        self.database.lock.release()
-        self.database.commit()
+        self.current_state = StateEnumerator.inactive
+        table = self.database.get_table("light_controllers")
+        row = table.get_row(name=self.controller_name)
+        row.set(enabled=value)
         # Set all the assigned devices .is_auto to value
         for device in self.light_control_devices.values():
             if hasattr(device, "is_auto"):
                 device.is_auto = value
             else:
                 logging.warning(f"Device {device} does not have is_auto attribute")
+
+    @property
+    def enable_dnd(self):
+        return self.dnd_state is not None
+
+    @enable_dnd.setter
+    def enable_dnd(self, value):
+        self.dnd_active = value
+        self.update()
 
     def set_on(self, value):
         self.on = value

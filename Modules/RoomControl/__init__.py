@@ -1,13 +1,19 @@
 import json
-import logging
+import socket
+import subprocess
+import sys
+
+import netifaces as netifaces
+from loguru import logger as logging
 import sqlite3
 import threading
 import os
 import time
 
+from ConcurrentDatabase.Database import Database
 from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
 from Modules.RoomControl.API.net_api import NetAPI
-from Modules.RoomControl.AbstractSmartDevices import background
+from Modules.RoomControl.Decorators import background
 from Modules.RoomControl.CommandController import CommandController
 from Modules.RoomControl.DataLogger import DataLoggingHost
 from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
@@ -16,59 +22,41 @@ from Modules.RoomControl.OccupancyDetection import OccupancyDetector
 from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
 from Modules.RoomControl.SceneController import SceneController
 from Modules.RoomControl.SensorHost import SensorHost
-
-logging.getLogger(__name__)
-
-
-class CustomLock:
-
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.lock_count = 0
-        self.queued_lock_count = 0
-
-    def acquire(self, blocking=True, timeout=-1):
-        self.lock_count += 1
-        logging.debug(f"Acquiring lock #{self.lock_count} (Queued: {self.queued_lock_count})")
-        self.queued_lock_count += 1
-        acquired = self.lock.acquire(blocking, timeout)
-        if acquired:
-            logging.debug(f"Acquired lock #{self.lock_count}")
-            return True
-        else:
-            logging.debug(f"Failed to acquire lock #{self.lock_count}")
-            self.queued_lock_count -= 1
-            return False
-
-    def release(self):
-        logging.debug(f"Releasing lock #{self.lock_count} (Queued: {self.queued_lock_count})")
-        self.queued_lock_count -= 1
-        self.lock.release()
+from Modules.RoomControl.WeatherRelay import WeatherRelay
 
 
-class ConcurrentDatabase(sqlite3.Connection):
+def get_host_names():
+    """
+    Gets all the ip addresses that can be bound to
+    """
+    interfaces = []
+    for interface in netifaces.interfaces():
+        try:
+            if netifaces.AF_INET in netifaces.ifaddresses(interface):
+                for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+                    if link["addr"] != "":
+                        interfaces.append(link["addr"])
+        except Exception as e:
+            logging.debug(f"Error getting interface {interface}: {e}")
+            pass
+    return interfaces
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.lock = CustomLock()
 
-    def run(self, sql, *args, **kwargs):
-        self.lock.acquire()
-        cursor = super().cursor()
-        cursor.execute(sql, *args)
-        if kwargs.get("commit", True):
-            try:
-                super().commit()
-            except sqlite3.OperationalError as e:
-                logging.info(f"Database Error: Commit failed {e}")
-        self.lock.release()
-        return cursor
-
-    def get(self, sql, *args):
-        cursor = self.run(sql, *args)
-        result = cursor.fetchall()
-        cursor.close()
-        return result
+def check_interface_usage(port):
+    """
+    Returns a list of interfaces that are currently not being used
+    :return:
+    """
+    interfaces = get_host_names()
+    for interface in interfaces:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind((interface, port))
+            s.close()
+        except OSError as e:
+            logging.warning(f"Interface {interface}:{port} was already in use: {e}")
+            interfaces.remove(interface)
+    return interfaces
 
 
 def get_local_ip():
@@ -77,10 +65,22 @@ def get_local_ip():
     raise NotImplementedError
 
 
+def database_backup(status, remaining, total):
+    if remaining == 0:
+        logging.info(f"Database backup complete, {total} pages backed up")
+    else:
+        logging.info(f"Database backup {status}, {remaining} pages remaining")
+
+
 class RoomController:
 
     def __init__(self, db_path: str = "room_data.db"):
-        self.database = ConcurrentDatabase(db_path, check_same_thread=False)
+        self.database = Database(db_path)
+        try:
+            self.backup_database = sqlite3.connect(f"{db_path}.bak")
+            self.database.backup(target=self.backup_database, progress=database_backup)
+        except sqlite3.OperationalError:
+            logging.warning("Backup database is already in use, skipping backup")
         self.init_database()
 
         self.magic_home = MagicHueAPI.MagicHome(database=self.database)
@@ -103,6 +103,8 @@ class RoomController:
 
         self.sensor_host = SensorHost()
 
+        self.weather_relay = WeatherRelay(self.database)
+
         self.environment_host = EnvironmentControllerHost(
             self.database,
             sensor_host=self.sensor_host,
@@ -123,12 +125,15 @@ class RoomController:
         self.command_controller = CommandController(self.controllers)
 
         # Check what the operating system is to determine if we should run in dev mode
-        if os.name == "nt":  # Windows
-            address = "localhost"
-            logging.info("Running in dev mode, using localhost")
-        else:  # Anything else
-            address = "wopr.eggs.loafclan.org"
-            logging.info("Running in prod mode, using wopr.eggs.loafclan.org")
+        self.webserver_port = 47670
+        if os.name == "posix":
+            logging.info(f"Terminating all processes bound to port {self.webserver_port}")
+            # Kill any processes that are using the port
+            subprocess.run(["fuser", "-k", f"{self.webserver_port}/tcp"])
+
+        time.sleep(2.5)
+
+        self.webserver_address = check_interface_usage(self.webserver_port)
 
         self.data_logging = DataLoggingHost(self.database,
                                             room_sensor_host=self.sensor_host, room_controllers=self.controllers)
@@ -139,17 +144,16 @@ class RoomController:
                                  occupancy_detector=self.occupancy_detector,
                                  scene_controller=self.scene_controller,
                                  command_controller=self.command_controller,
-                                 webserver_address=address,
-                                 datalogger=self.data_logging)
+                                 webserver_address=self.webserver_address,
+                                 datalogger=self.data_logging, weather_relay=self.weather_relay)
 
     def init_database(self):
-        cursor = self.database.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS auto_lights (device_id TEXT, is_auto BOOLEAN, current_mode TEXT)''')
-        cursor.execute('''CREATE TABLE IF NOT EXISTS auto_plugs (device_id TEXT, is_auto BOOLEAN, policy_name TEXT)''')
-        # cursor.execute('''CREATE TABLE IF NOT EXISTS scenes (scene_name TEXT, scene_data TEXT)''')
-
-        cursor.execute('''CREATE TABLE IF NOT EXISTS secrets (secret_name TEXT, secret_value TEXT)''')
-        self.database.commit()
+        # cursor = self.database.cursor()
+        # cursor.execute('''CREATE TABLE IF NOT EXISTS auto_lights (device_id TEXT, is_auto BOOLEAN, current_mode TEXT)''')
+        self.database.create_table("auto_lights", {"device_id": "TEXT", "is_auto": "BOOLEAN", "current_mode": "TEXT"})
+        # cursor.execute('''CREATE TABLE IF NOT EXISTS secrets (secret_name TEXT, secret_value TEXT)''')
+        self.database.create_table("secrets", {"secret_name": "TEXT", "secret_value": "TEXT"})
+        # self.database.commit()
 
     def refresh(self):
         # logging.info("Refreshing devices")
@@ -161,6 +165,4 @@ class RoomController:
     @background
     def background(self):
         while True:
-            for device in self.monkey.get_all_devices():
-                device.main_power_state(self.vesync.get_device("plug_1").on)
             time.sleep(15)

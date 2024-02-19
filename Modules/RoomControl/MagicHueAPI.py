@@ -1,13 +1,13 @@
-import logging
+from loguru import logger as logging
 import typing
 
 import magichue
 import asyncio
 from threading import Thread
 
-from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, background
-
-logging = logging.getLogger(__name__)
+import ConcurrentDatabase
+from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
+from Modules.RoomControl.Decorators import background
 
 
 def bulb_type_to_string(bulb_type: magichue.light.bulb_types):
@@ -27,18 +27,19 @@ class bulb_types:
 
 class MagicHome:
 
-    def __init__(self, database):
+    def __init__(self, database: ConcurrentDatabase.Database):
         self.database = database
 
-        cursor = self.database.cursor()
-        username = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'MagicHueUsername'").fetchone()[1]
-        password = cursor.execute("SELECT * FROM secrets WHERE secret_name = 'MagicHuePassword'").fetchone()[1]
-        cursor.close()
+        secrets = self.database.get_table("secrets")
+        username = secrets.get_row(secret_name='MagicHueUsername')['secret_value']
+        password = secrets.get_row(secret_name='MagicHuePassword')['secret_value']
+
         try:
             self.api = magichue.RemoteAPI.login_with_user_password(user=username, password=password)
         except Exception as e:
             logging.error(f"MagicHueAPI: Failed to login to MagicHue API: {e}")
             self.devices = []
+            self.ready = False
         else:
             self.devices = []
             self.ready = False
@@ -58,7 +59,7 @@ class MagicHome:
         devices = []
         for device in hw_devices:
             try:
-                logging.info(f"MagicHome: Found device {device.macaddr}, creating device object")
+                logging.debug(f"MagicHome: Found device {device.macaddr}, creating device object")
                 devices.append(MagicDevice(self.api, device.macaddr, database=self.database))
             except magichue.exceptions.MagicHueAPIError as e:
                 logging.error(f"MagicHome: Error creating device object for {device.macaddr}: {e}")
@@ -166,16 +167,10 @@ class MagicDevice(AbstractRGB):
     def set_color(self, color: tuple):
         if self.online:
             try:
-                # if self.bulb_type == bulb_types.RGBW and False:
-                #     r, g, b = color
-                #     if r == g == b and False:
-                #         self.light.is_white = True
-                #         self.light.w = r
-                #     else:
-                #         self.light.is_white = False
-                #         self.light.rgb = color
-                # else:
                 self.light.is_white = False
+                # Validate the color tuple
+                if len(color) != 3:
+                    raise ValueError(f"Color tuple must be 3 values, got {len(color)} ({color})")
                 self.light.rgb = color
             except magichue.exceptions.MagicHueAPIError as e:
                 print(f"{self.macaddr} set color error: {e}")
@@ -211,6 +206,15 @@ class MagicDevice(AbstractRGB):
                 self.offline_reason = str(e)
         else:
             print(f"{self.macaddr} is offline")
+
+    def get_white(self):
+        if self.online:
+            if self.light.is_white:
+                return self.light.w
+            else:
+                return 0
+        else:
+            return 0
 
     @background
     def set_white(self, white: int):

@@ -3,13 +3,11 @@ import os
 import sqlite3
 import time
 
-from Modules.RoomControl.AbstractSmartDevices import background
-import logging
+from Modules.RoomControl.Decorators import background
 import subprocess
 import pyparsing as pp
 
-logging = logging.getLogger(__name__)
-
+from loguru import logger as logging
 
 def ping(ip_address, count=4, timeout=1) -> (float, float):
     if os.name == "nt":
