@@ -92,16 +92,14 @@ class LightController:
         self.table = self.database.get_table("light_controllers")
         self.controller = self.table.get_row(name=name)
 
-        print(self.controller)
-
         self.current_state = self.controller['current_state']
 
         self.active_state = APIMessageRX(self.controller['active_state']) if self.controller['active_state'] \
                                                                              is not None else None
         self.inactive_state = APIMessageRX(self.controller['inactive_state']) if self.controller[
-                                                                                'inactive_state'] is not None else None
+                                                                                     'inactive_state'] is not None else None
         self.door_motion_state = APIMessageRX(self.controller['door_motion_state']) if self.controller[
-                                                                                      'door_motion_state'] \
+                                                                                           'door_motion_state'] \
                                                                                        is not None else None
         self.fault_state = APIMessageRX(self.controller['fault_state']) if self.controller['fault_state'] \
                                                                            is not None else None
@@ -134,10 +132,26 @@ class LightController:
         logging.info(f"LightController: {name} has been initialised,"
                      f" {len(self.light_control_devices)} devices and {len(self.light_control_targets)} targets")
 
+    def _check_device_support(self, device):
+        # Check if the device supports the required attributes to achieve the desired states
+        logging.debug(f"LightController: {self.controller_name} checking {device} for support")
+        for key, value in self.active_state.__dict__.items():
+            if not hasattr(device, key):
+                logging.error(f"LightController: {self.controller_name} failed to change {key} to {value}"
+                              f" as the device does not support the attribute {key}")
+                return False
+        for key, value in self.inactive_state.__dict__.items():
+            if not hasattr(device, key):
+                logging.error(f"LightController: {self.controller_name} failed to change {key} to {value}"
+                              f" as the device does not support the attribute {key}")
+                return False
+        return True
+
     def _get_device(self, device_name):
         for room_controller in self.room_controllers:
             if device := room_controller.get_device(device_name):
-                return device
+                if self._check_device_support(device):
+                    return device
         return None
 
     def _check_occupancy(self):
@@ -186,6 +200,9 @@ class LightController:
                         for key, value in state.__dict__.items():  # Loop through all attributes in the message
                             if hasattr(device, key):  # Check the device has an attribute with the same name
                                 setattr(device, key, value)
+                            else:
+                                logging.error(f"LightController: {self.controller_name} failed to change {device} "
+                                              f"state to {state_val}")
                 time.sleep(5)
                 logging.info(f"Validating state change for {self.controller_name}")
                 # Validate the state change

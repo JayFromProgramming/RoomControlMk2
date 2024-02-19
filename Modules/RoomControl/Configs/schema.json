@@ -38,49 +38,68 @@
     {
       "slot": 0,
       "type": "rgb_light",
-      "name": "Room Lights",
+      "name": "Living Room",
       "device": "B4E842D7A9F8"
     },
     {
       "slot": 1,
       "type": "rgb_light",
-      "name": "Loft Lights",
+      "name": "Bedroom",
       "device": "18B905D086A5"
     },
     {
       "slot": 2,
       "type": "rgb_light",
-      "name": "Door Lights",
+      "name": "Kitchen",
       "device": "B4E842136DA6"
     },
     {
       "slot": 3,
+      "type": "rgb_light",
+      "name": "Loft",
+      "device": "B4E842136DA6"
+    },
+    {
+      "slot": 4,
       "type": "combo_plug",
-      "name": "Other Fans",
+      "name": "Bedroom",
       "device": [
         "bed_fan",
         "rad_fan"
       ],
       "device_names": [
         "Bed Fan",
-        "Radiator"
+        "???"
       ]
     },
     {
-      "slot": 4,
+      "slot": 5,
       "type": "combo_plug",
-      "name": "Big Wimd",
+      "name": "Living Room",
       "device": [
         "intake",
         "exhaust"
       ],
       "device_names": [
-        "Intake",
-        "Exhaust"
+        "Lamp",
+        "???"
       ]
     },
     {
-      "slot": 5,
+      "slot": 6,
+      "type": "combo_plug",
+      "name": "Unassigned",
+      "device": [
+        "rad_fan",
+        "rad_fan"
+      ],
+      "device_names": [
+        "???",
+        "???"
+      ]
+    },
+    {
+      "slot": 7,
       "type": "combo_plug",
       "name": "Humidifiers",
       "device": [
@@ -93,19 +112,19 @@
       ]
     },
     {
-      "slot": 6,
+      "slot": 8,
       "type": "environment_controller",
       "name": "Temperature",
       "device": "temperature_control"
     },
     {
-      "slot": 7,
+      "slot": 9,
       "type": "environment_controller",
       "name": "Humidity",
       "device": "humidity_control"
     },
     {
-      "slot": 8,
+      "slot": 10,
       "type": "light_controller",
       "name": "Automatic Lights",
       "device": [
@@ -118,7 +137,7 @@
       ]
     },
     {
-      "slot": 9,
+      "slot": 11,
       "type": "action_center",
       "name": "Actions",
       "device": "Action Center"
