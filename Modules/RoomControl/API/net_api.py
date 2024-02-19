@@ -179,10 +179,6 @@ class NetAPI:
             raise web.HTTPBadRequest()
         endpoint = request.remote
 
-        # Sanitize the input to prevent SQL injection
-        username = username.replace("'", "").replace('"', "").replace(";", "")
-        password = password.replace("'", "").replace('"', "").replace(";", "")
-
         if endpoint in self.login_lockouts and self.login_lockouts[endpoint]["locked_out"]:
             logging.info(f"User {username} attempted to login from {device_id} but is locked out")
             return web.Response(text="Locked out", status=403)
