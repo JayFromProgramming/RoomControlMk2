@@ -47,6 +47,7 @@ class NetAPI(RoomModule):
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
     def __init__(self, room_controller):
+        super().__init__(room_controller)
         self.room_controller = room_controller
         self.database = room_controller.database
         self.occupancy_detector = room_controller.get_module("OccupancyDetector")
