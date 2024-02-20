@@ -8,6 +8,8 @@ from threading import Thread
 import ConcurrentDatabase
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
 from Modules.RoomControl.Decorators import background
+from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
 
 
 def bulb_type_to_string(bulb_type: magichue.light.bulb_types):
@@ -25,10 +27,12 @@ class bulb_types:
     RGBW = 6
 
 
-class MagicHome:
+class MagicHome(RoomModule):
 
-    def __init__(self, database: ConcurrentDatabase.Database):
-        self.database = database
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
+        self.room_controller = room_controller
+        self.database = room_controller.database
 
         secrets = self.database.get_table("secrets")
         username = secrets.get_row(secret_name='MagicHueUsername')['secret_value']
@@ -60,7 +64,7 @@ class MagicHome:
         for device in hw_devices:
             try:
                 logging.debug(f"MagicHome: Found device {device.macaddr}, creating device object")
-                devices.append(MagicDevice(self.api, device.macaddr, database=self.database))
+                devices.append(MagicDevice(self.api, device.macaddr, self.room_controller))
             except magichue.exceptions.MagicHueAPIError as e:
                 logging.error(f"MagicHome: Error creating device object for {device.macaddr}: {e}")
         self.devices = devices
@@ -122,10 +126,12 @@ class MagicHome:
             device.fetch_status()
 
 
-class MagicDevice(AbstractRGB):
+class MagicDevice(RoomObject, AbstractRGB):
 
-    def __init__(self, api, macaddr, database=None):
-        super().__init__(macaddr, database=database)
+    def __init__(self, api, macaddr, room_controller):
+        super().__init__(macaddr, "MagicDevice")
+        self.room_controller = room_controller
+        database = room_controller.database
         self.online = False
         self.api = api
         self.light = None  # type: magichue.RemoteLight or None
@@ -150,6 +156,7 @@ class MagicDevice(AbstractRGB):
             self.online = True
         self.macaddr = macaddr
         self._background_thread = None  # type: None or Thread
+        self.room_controller.attach_object(self)
 
     def __str__(self):
         if self.online:

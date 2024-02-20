@@ -7,19 +7,18 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+from Modules.RoomModule import RoomModule
 
-class SceneController:
 
-    def __init__(self, database: ConcurrentDatabase.Database, room_controllers):
+class SceneController(RoomModule):
+
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
         logging.info("Initializing SceneController instance")
-        self.database = database
+        self.database = room_controller.database
         self._init_database()
 
-        self.room_controllers = room_controllers
-        self.devices = []  # Get all devices from the room controllers
-
-        for controller in self.room_controllers:
-            self.devices.extend(controller.get_all_devices())
+        self.room_controller = room_controller
 
         self.scenes = {}  # type: dict[str, dict, bool]
         self.triggers = {}  # type: dict[str, SceneTrigger]
@@ -88,7 +87,7 @@ class SceneController:
         command = APIMessageRX(scene_data)
         logging.info("Executing scene {}".format(scene_id))
 
-        for device in self.devices:
+        for device in self.room_controller.room_objects:
 
             if hasattr(command, device.name()):
                 logging.info(f"Executing scene command for device {device.name()}")
@@ -118,8 +117,8 @@ class SceneController:
             return f"Scene {scene_id} does not exist"
         scene_data = self.scenes[scene_id]["data"]
         command = APIMessageRX(scene_data)
-        for device in self.devices:
-            if hasattr(command, device.name()):
+        for device in self.room_controller.room_objects:
+            if hasattr(command, device.object_name):
                 device_command = getattr(command, device.name())
                 for action, value in device_command.items():
                     if action == "on":

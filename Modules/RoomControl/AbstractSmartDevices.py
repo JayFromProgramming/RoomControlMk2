@@ -4,31 +4,20 @@ import threading
 
 class AbstractRGB:
 
-    def __init__(self, device_id, database=None):
+    def __init__(self):
         self.online = None
-        self.device_id = device_id
         self.is_auto = False
         self.auto_mode = "Unknown"
-        self.database = database
         self.offline_reason = "Unknown"
-
-        if database is not None:
-            cursor = database.cursor()
-            # Check if device is in database
-            if cursor.execute("SELECT * FROM auto_lights WHERE device_id = ?", (device_id,)).fetchone() is None:
-                cursor.execute("INSERT INTO auto_lights VALUES (?, ?, ?)", (device_id, False, "Unknown"))
-                database.lock.acquire()
-                database.commit()
-                database.lock.release()
 
     def set_auto(self, auto: bool, mode: str):
         self.is_auto = auto
         self.auto_mode = mode
-        cursor = self.database.cursor()
-        cursor.execute(
-            "UPDATE auto_lights SET device_id = ?, is_auto = ? WHERE current_mode = ?",
-            (auto, mode, self.device_id))
-        self.database.commit()
+        # cursor = self.database.cursor()
+        # cursor.execute(
+        #     "UPDATE auto_lights SET device_id = ?, is_auto = ? WHERE current_mode = ?",
+        #     (auto, mode, self.device_id))
+        # self.database.commit()
 
     def get_type(self):
         return "abstract_rgb"

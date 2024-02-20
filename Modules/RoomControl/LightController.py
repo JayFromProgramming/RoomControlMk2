@@ -8,6 +8,7 @@ from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothD
 
 from loguru import logger as logging
 from Modules.RoomControl.OccupancyDetection.OccupancyDetector import OccupancyDetector
+from Modules.RoomModule import RoomModule
 
 
 class StateEnumerator:
@@ -18,30 +19,22 @@ class StateEnumerator:
     dnd = 4
 
 
-class LightControllerHost:
+class LightControllerHost(RoomModule):
 
-    def __init__(self, database: ConcurrentDatabase.Database,
-                 occupancy_detector: OccupancyDetector, room_controllers=None):
-
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
+        self.database = room_controller.database
         logging.info("Initializing Light Controller Host")
 
-        if room_controllers is None:
-            room_controllers = []
-
-        self.database = database
         self.database_init()
-        self.room_controllers = room_controllers
         self.light_controllers = {}
-        self.occupancy_detector = occupancy_detector
 
         table = self.database.get_table("light_controllers")
         controllers = table.get_all()
 
         for controller in controllers:
             self.light_controllers[controller['name']] = \
-                LightController(controller['name'], self.database, self.occupancy_detector,
-                                room_controllers=self.room_controllers)
-
+                LightController(controller['name'], self.room_controller)
         logging.info("Light Controller Host Initialized")
         self.periodic_update()
 
@@ -75,16 +68,12 @@ class LightControllerHost:
 
 class LightController:
 
-    def __init__(self, name, database: ConcurrentDatabase.Database,
-                 occupancy_detector: OccupancyDetector, room_controllers=None):
+    def __init__(self, name, room_controller):
         logging.info(f"LightController: {name} is being initialised")
 
-        if room_controllers is None:
-            room_controllers = []
-
         self.controller_name = name
-        self.database = database
-        self.room_controllers = room_controllers
+        self.room_controller = room_controller
+        self.database = room_controller.database
 
         self.database.update_table("light_controllers", 1,
                                    ["""alter table light_controllers add dnd_state TEXT default null"""])
@@ -111,7 +100,7 @@ class LightController:
         self.changing_state = False
         self.dnd_active = True if self.current_state == StateEnumerator.dnd else False
 
-        self.occupancy_detector = occupancy_detector
+        self.occupancy_detector = self.room_controller.get_object("bluetooth_occupancy")
 
         self.light_control_devices = {}
         self.light_control_targets = []
@@ -148,10 +137,9 @@ class LightController:
         return True
 
     def _get_device(self, device_name):
-        for room_controller in self.room_controllers:
-            if device := room_controller.get_device(device_name):
-                if self._check_device_support(device):
-                    return device
+        if device := self.room_controller.get_object(device_name):
+            if self._check_device_support(device):
+                return device
         return None
 
     def _check_occupancy(self):
