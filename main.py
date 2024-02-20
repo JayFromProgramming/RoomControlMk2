@@ -41,6 +41,7 @@ other_main()
 
 
 async def webserver_runner():
+    await asyncio.sleep(5)
     logging.info("Starting web servers")
     sites = []
     for module in room_controller.get_modules():

@@ -105,6 +105,10 @@ class RoomController:
         logging.info(f"Creating promise object {device_name} of type {device_type}")
         return RoomObject(device_name, device_type)
 
+    def _create_promise_module(self, module_name):
+        logging.info(f"Creating promise module {module_name}")
+        return RoomModule(self, module_name)
+
     def attach_module(self, room_module):
         self.controllers.append(room_module)
 

@@ -6,11 +6,14 @@ from threading import Thread
 
 from loguru import logger as logging
 
+from Modules.RoomModule import RoomModule
 
-class WeatherRelay:
 
-    def __init__(self, db):
-        self.database = db
+class WeatherRelay(RoomModule):
+
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
+        self.database = room_controller.database
         self.init_database()
         api_key = self.database.get_table("secrets").get_row(secret_name="openweathermap")["secret_value"]
         self.owm = OWM(api_key)

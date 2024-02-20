@@ -57,7 +57,6 @@ class NetAPI(RoomModule):
         self.scene_controller = room_controller.get_module("SceneController")
         self.command_controller = room_controller.get_module("CommandController")
         # self.data_logger = datalogger  # type: # DataLoggerHost
-        # self.weather_relay = weather_relay  # type: # WeatherRelay
 
         self.init_database()
 
@@ -497,10 +496,10 @@ class NetAPI(RoomModule):
             raise web.HTTPUnauthorized()
         logging.debug("Received GET_SCENES request")
 
-        if self.scene_controller is None:
+        if self.room_controller.get_module("SceneController") is None:
             msg = APIMessageTX(error="Scene controller not found")
         else:
-            msg = APIMessageTX(scenes=self.scene_controller.get_scenes())
+            msg = APIMessageTX(scenes=self.room_controller.get_module("SceneController").get_scenes())
 
         return web.Response(text=msg.__str__())
 
@@ -509,11 +508,11 @@ class NetAPI(RoomModule):
             raise web.HTTPUnauthorized()
         logging.info("Received SET_SCENE request")
 
-        if self.scene_controller is None:
+        if self.room_controller.get_module("SceneController") is None:
             msg = APIMessageTX(error="Scene controller not found")
         else:
             scene_name = request.match_info['name']
-            result = self.scene_controller.execute_trigger(scene_name)
+            result = self.room_controller.get_module("SceneController").execute_trigger(scene_name)
             msg = APIMessageTX(result=result)
 
         return web.Response(text=msg.__str__())
@@ -582,13 +581,13 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_NOW request")
-        return web.json_response(self.weather_relay.current_weather.to_dict())
+        return web.json_response(self.room_controller.get_module("WeatherRelay").current_weather.to_dict())
 
     async def handle_weather_forecast(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_FORECAST request")
-        data = self.weather_relay.get_forecast()
+        data = self.room_controller.get_module("WeatherRelay").get_forecast()
         msg = APIMessageTX(weather_forecast=data)
         return web.Response(text=msg.__str__())
 
@@ -596,7 +595,7 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_PAST request")
-        data = self.weather_relay.get_past()
+        data = self.room_controller.get_module("WeatherRelay").get_past()
         msg = APIMessageTX(weather_past=data)
         return web.Response(text=msg.__str__())
 

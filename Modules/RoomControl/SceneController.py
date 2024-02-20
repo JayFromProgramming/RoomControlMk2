@@ -89,7 +89,7 @@ class SceneController(RoomModule):
 
         for device in self.room_controller.room_objects:
 
-            if hasattr(command, device.name()):
+            if hasattr(command, device.object_name):
                 logging.info(f"Executing scene command for device {device.name()}")
                 device_command = getattr(command, device.name())
                 for action, value in device_command.items():
