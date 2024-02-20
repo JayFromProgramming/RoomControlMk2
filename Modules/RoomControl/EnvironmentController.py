@@ -4,21 +4,20 @@ from loguru import logger as logging
 import ConcurrentDatabase
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
 from Modules.RoomControl.Decorators import background, api_action
+from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
 
 
-class EnvironmentControllerHost:
+class EnvironmentControllerHost(RoomModule):
+    search_name = "EnvironmentController"
+    search_type = "environment_controller"
 
-    def __init__(self, database: ConcurrentDatabase.Database,
-                 sensor_host=None, room_controllers=None):
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
+        self.database = room_controller.database
 
-        if room_controllers is None:
-            room_controllers = []
-
-        self.sensor_host = sensor_host
-
-        self.database = database
         self.database_init()
-        self.room_controllers = room_controllers
+        self.room_controllers = room_controller
         self.enviv_controllers = {}
 
         table = self.database.get_table("enviv_controllers")
@@ -26,9 +25,8 @@ class EnvironmentControllerHost:
 
         for controller in controllers:
             self.enviv_controllers[controller['name']] = \
-                EnvironmentController(controller['name'], self.database,
-                                      room_controllers=self.room_controllers,
-                                      sensor_host=self.sensor_host)
+                EnvironmentController(controller['name'], self.room_controller)
+            self.room_controller.attach_object(self.enviv_controllers[controller['name']])
 
     def database_init(self):
         # cursor = self.database.cursor()
@@ -69,18 +67,14 @@ class EnvironmentControllerHost:
         return self.enviv_controllers.values()
 
 
-class EnvironmentController:
+class EnvironmentController(RoomObject):
 
-    def __init__(self, name, database: ConcurrentDatabase.Database,
-                 room_controllers=None, sensor_host=None):
-
-        if room_controllers is None:
-            room_controllers = []
+    def __init__(self, name, room_controller):
+        super().__init__(name, "environment_controller")
 
         self.controller_name = name
-        self.database = database
-        self.room_controllers = room_controllers
-        self.sensor_host = sensor_host
+        self.room_controller = room_controller
+        self.database = room_controller.database
 
         self.online = True
         self._reason = "Unknown"
@@ -88,7 +82,7 @@ class EnvironmentController:
         table = self.database.get_table("enviv_controllers")
         self.controller_entry = table.get_row(name=self.controller_name)
         self.current_setpoint = self.controller_entry['current_set_point']
-        self.source = self.sensor_host.get_sensor(self.controller_entry['source_name'])
+        self.source = self.room_controller.get_object(self.controller_entry['source_name'])
         self.enabled = (False if self.controller_entry['enabled'] == 0 else True)
 
         self.devices = []
@@ -97,21 +91,15 @@ class EnvironmentController:
         self._fault = False
 
         for device in devices:
-            self.devices.append(ControlledDevice(device['device_id'], self.get_device(device['device_id']), self.database))
+            self.devices.append(
+                ControlledDevice(device['device_id'], self.room_controller.get_object(device['device_id']),
+                                 self.database))
 
-        for device in self.devices:
-            device.device.auto = self.enabled
+        # for device in self.devices:
+        #
+        #     device.device.auto = self.enabled
 
         self.periodic_check()
-
-    def get_all_devices(self):
-        return self.devices
-
-    def get_device(self, device_name):
-        for room_controller in self.room_controllers:
-            if device := room_controller.get_device(device_name):
-                return device
-        return None
 
     @background
     def periodic_check(self):
@@ -139,6 +127,9 @@ class EnvironmentController:
         else:
             logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
             self._reason = "Source is not a sensor"
+
+    def __str__(self):
+        return f"EnvironmentController ({self.controller_name})"
 
     def get_value(self):
         return self.setpoint

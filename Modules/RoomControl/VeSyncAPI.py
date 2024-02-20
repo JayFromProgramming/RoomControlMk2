@@ -11,12 +11,16 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
 
-class VeSyncAPI:
 
-    def __init__(self, database: ConcurrentDatabase.Database):
+class VeSyncAPI(RoomModule):
 
-        self.database = database
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
+
+        self.database = room_controller.database
         secretes_table = self.database.get_table("secrets")
         email = secretes_table.get_row(secret_name='VesyncUsername')
         password = secretes_table.get_row(secret_name='VesyncPassword')
@@ -27,7 +31,7 @@ class VeSyncAPI:
 
         self.devices = []
         for device in self.manager.outlets:
-            self.devices.append(VeSyncPlug(device, self.database))
+            self.devices.append(VeSyncPlug(device, self.room_controller))
 
     def wait_for_ready(self):
         while not len(self.devices) > 0:
@@ -58,21 +62,23 @@ class VeSyncAPI:
             device.refresh_info()
 
 
-class VeSyncPlug(AbstractToggleDevice):
+class VeSyncPlug(RoomObject, AbstractToggleDevice):
 
-    def __init__(self, device, database: ConcurrentDatabase.Database):
-        super().__init__()
+    def __init__(self, device, room_controller):
+        super(VeSyncPlug, self).__init__(device.device_name, "VeSyncPlug")
+
         self.device = device
         self.device_name = device.device_name
         self.cached_details = {}
         self.online = True
         self.fault = False
         self.last_update = datetime.datetime.now()
-        self.database = database
-
+        self.database = room_controller.database
         self.upper_bounds = None
         self.lower_bounds = None
         self.get_bounds()
+        self.room_controller = room_controller
+        self.room_controller.attach_object(self)
 
     def get_bounds(self):
         """Gets expected power draw bounds from the DB"""

@@ -11,18 +11,37 @@ import os
 import time
 
 from ConcurrentDatabase.Database import Database
-from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
-from Modules.RoomControl.API.net_api import NetAPI
+# from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
+# from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.Decorators import background
-from Modules.RoomControl.CommandController import CommandController
-from Modules.RoomControl.DataLogger import DataLoggingHost
-from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
-from Modules.RoomControl.LightController import LightControllerHost
-from Modules.RoomControl.OccupancyDetection import OccupancyDetector
-from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
-from Modules.RoomControl.SceneController import SceneController
-from Modules.RoomControl.SensorHost import SensorHost
-from Modules.RoomControl.WeatherRelay import WeatherRelay
+
+# from Modules.RoomControl.CommandController import CommandController
+# from Modules.RoomControl.DataLogger import DataLoggingHost
+# from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
+# from Modules.RoomControl.LightController import LightControllerHost
+# from Modules.RoomControl.OccupancyDetection import OccupancyDetector
+# from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
+# from Modules.RoomControl.SceneController import SceneController
+# from Modules.RoomControl.SensorHost import SensorHost
+# from Modules.RoomControl.WeatherRelay import WeatherRelay
+
+# Auto import modules that are in Modules/RoomControl that have a class that inherits RoomModule
+# This is done to make sure that all modules are dynamically loaded
+from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
+
+for module in os.listdir("Modules/RoomControl"):
+    if module.endswith(".py") and module != "__init__.py":
+        module_name = module.replace(".py", "")
+        logging.info(f"Importing {module_name}")
+        __import__(f"Modules.RoomControl.{module_name}", fromlist=[module_name])
+    if os.path.isdir(f"Modules/RoomControl/{module}"):
+        logging.info(f"Importing {module}")
+        for module_file in os.listdir(f"Modules/RoomControl/{module}"):
+            if module_file.endswith(".py") and module_file != "__init__.py":
+                module_name = module_file.replace(".py", "")
+                logging.info(f"Importing {module_name} from {module}")
+                __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
 
 
 def get_host_names():
@@ -83,69 +102,20 @@ class RoomController:
             logging.warning("Backup database is already in use, skipping backup")
         self.init_database()
 
-        self.magic_home = MagicHueAPI.MagicHome(database=self.database)
-        self.vesync = VeSyncAPI.VeSyncAPI(database=self.database)
-        self.monkey = VoiceMonkeyAPI.VoiceMonkeyAPI(database=self.database)
-        self.occupancy_detector = OccupancyDetector.OccupancyDetector(self.database)
+        # Find all subclasses of RoomModule and create an instance of them
+        self.controllers = []
+        self.room_objects = []
+        for room_module in RoomModule.__subclasses__():
+            logging.info(f"Creating instance of {room_module.__name__}")
+            try:
+                room_module(self)
+            except Exception as e:
+                logging.error(f"Error creating instance of {room_module.__name__}: {e}")
+                logging.exception(e)
 
-        self.controllers = [self.magic_home, self.vesync, self.monkey]
-
-        # with open("Modules/RoomControl/Configs/bluetooth_targets.json", "r") as f:
-        #     bluetooth_targets = json.load(f)
-        #     for mac, target in bluetooth_targets.items():
-        #         self.blue_stalker.add_target(mac, target["name"], target["role"])
-        #
-        #     self.database.commit()
-
-        # Wait for the other room controllers to be ready
-        for controller in self.controllers:
-            controller.wait_for_ready()
-
-        self.sensor_host = SensorHost()
-
-        self.weather_relay = WeatherRelay(self.database)
-
-        self.environment_host = EnvironmentControllerHost(
-            self.database,
-            sensor_host=self.sensor_host,
-            room_controllers=self.controllers
-        )
-
-        self.light_controller_host = LightControllerHost(
-            self.database,
-            self.occupancy_detector,
-            room_controllers=self.controllers
-        )
-
-        self.controllers.append(self.environment_host)
-        self.controllers.append(self.light_controller_host)
-        self.controllers.append(self.occupancy_detector)
-
-        self.scene_controller = SceneController(self.database, self.controllers)
-        self.command_controller = CommandController(self.controllers)
-
-        # Check what the operating system is to determine if we should run in dev mode
-        self.webserver_port = 47670
-        if os.name == "posix":
-            logging.info(f"Terminating all processes bound to port {self.webserver_port}")
-            # Kill any processes that are using the port
-            subprocess.run(["fuser", "-k", f"{self.webserver_port}/tcp"])
+        print("Room objects:", self.room_objects)
 
         time.sleep(2.5)
-
-        self.webserver_address = check_interface_usage(self.webserver_port)
-
-        self.data_logging = DataLoggingHost(self.database,
-                                            room_sensor_host=self.sensor_host, room_controllers=self.controllers)
-
-        self.background()
-        self.web_server = NetAPI(self.database,
-                                 device_controllers=self.controllers,
-                                 occupancy_detector=self.occupancy_detector,
-                                 scene_controller=self.scene_controller,
-                                 command_controller=self.command_controller,
-                                 webserver_address=self.webserver_address,
-                                 datalogger=self.data_logging, weather_relay=self.weather_relay)
 
     def init_database(self):
         # cursor = self.database.cursor()
@@ -161,6 +131,44 @@ class RoomController:
         for controller in self.controllers:
             if hasattr(controller, "refresh_all"):
                 controller.refresh_all()
+
+    def _create_promise_object(self, device_name, device_type="promise"):
+        # If a room object was looking for another object that hasn't been created yet, it will get a empty RoomObject
+        # That will be replaced with the real object when it is created later this allows for circular dependencies
+        logging.info(f"Creating promise object {device_name} of type {device_type}")
+        return RoomObject(device_name, device_type)
+
+    def attach_module(self, room_module):
+        self.controllers.append(room_module)
+
+    def attach_object(self, device: RoomObject):
+        if not issubclass(type(device), RoomObject):
+            raise TypeError(f"Device {device} is not a subclass of RoomObject")
+        # Check if the device exists as a promise object and replace it with the real object without changing the
+        # reference So that any references to the promise object are updated to the real object
+        for i, room_object in enumerate(self.room_objects):
+            if room_object.object_name == device.object_name:
+                logging.info(f"Replacing promise object {room_object.object_name} with real object")
+                self.room_objects[i] = device
+                return
+        logging.info(f"Attaching object {device.object_name} to room controller")
+        self.room_objects.append(device)
+
+    def get_all_devices(self):
+        return self.room_objects
+
+    def get_object(self, device_name):
+        for device in self.room_objects:
+            if device.object_name == device_name:
+                return device
+        self.room_objects.append(self._create_promise_object(device_name))
+
+    def get_type(self, device_type):
+        devices = []
+        for device in self.room_objects:
+            if device.device_type == device_type:
+                devices.append(device)
+        return devices
 
     @background
     def background(self):

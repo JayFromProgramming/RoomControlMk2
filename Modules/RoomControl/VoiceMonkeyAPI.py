@@ -13,13 +13,18 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
+
 template = "https://api.voicemonkey.io/trigger?access_token={token}&secret_token={secret}&monkey={monkey}"
 
 
-class VoiceMonkeyAPI:
+class VoiceMonkeyAPI(RoomModule):
 
-    def __init__(self, database: ConcurrentDatabase.Database):
-        self.database = database
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
+        self.room_controller = room_controller
+        self.database = room_controller.database
         self.init_database()
 
         secrets = self.database.get_table("secrets")
@@ -30,7 +35,7 @@ class VoiceMonkeyAPI:
         cursor = self.database.cursor()
         for device in cursor.execute("SELECT * FROM voicemonkey_devices").fetchall():
             self.devices.append(
-                VoiceMonkeyDevice(device[0], self.database, self.api_key, self.api_secret))
+                VoiceMonkeyDevice(device[0], self.room_controller, self.api_key, self.api_secret))
 
         self.periodic_refresh()
 
@@ -70,13 +75,14 @@ class VoiceMonkeyAPI:
                     time.sleep(5)
 
 
-class VoiceMonkeyDevice(AbstractToggleDevice):
+class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
     """All voice monkey devices store their state in the database, so we don't need to query the device for its state"""
 
-    def __init__(self, device_id, database: ConcurrentDatabase.Database, monkey_token, monkey_secret):
-        super().__init__()
+    def __init__(self, device_id, room_controller, monkey_token, monkey_secret):
+        super().__init__(device_id, "VoiceMonkeyDevice")
         self.device_id = device_id
-        self.database = database
+        self.room_controller = room_controller
+        self.database = room_controller.database
         self.monkey_token = monkey_token
         self.monkey_secret = monkey_secret
         self.enable_monkey = None
@@ -88,6 +94,7 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
         self.voice_monkey_table = self.database.get_table("voicemonkey_devices")
         self.row = self.voice_monkey_table.get_row(device_name=self.device_id)
         self.load_state()
+        self.room_controller.attach_object(self)
 
     def load_state(self):
         if self.row:
@@ -175,3 +182,6 @@ class VoiceMonkeyDevice(AbstractToggleDevice):
 
     def refresh_state(self):
         self.run_monkey(self.enable_monkey if self.current_state else self.disable_monkey)
+
+    def __str__(self):
+        return f"VoiceMonkeyDevice: {self.device_id} - {self.current_state}"
