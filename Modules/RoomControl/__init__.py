@@ -78,11 +78,11 @@ class RoomController:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)
 
-        time.sleep(5)
-        print("Room objects:", self.room_objects)
-        while True:
-            time.sleep(5)
-            self.refresh()
+        # time.sleep(5)
+        # print("Room objects:", self.room_objects)
+        # while True:
+        #     time.sleep(5)
+        #     self.refresh()
 
     def init_database(self):
         # cursor = self.database.cursor()
@@ -129,6 +129,9 @@ class RoomController:
             if module.__class__.__name__ == module_name:
                 return module
         return None
+
+    def get_modules(self):
+        return self.controllers
 
     def get_object(self, device_name, create_if_not_found=True):
         for device in self.room_objects:

@@ -46,6 +46,8 @@ def get_host_names():
 class NetAPI(RoomModule):
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
+    is_webserver = True
+
     def __init__(self, room_controller):
         super().__init__(room_controller)
         self.room_controller = room_controller
@@ -116,15 +118,14 @@ class NetAPI(RoomModule):
         with open("Modules/RoomControl/Configs/schema.json") as f:
             self.schema = json.load(f)
         logging.info("Loaded schema")
-        self.runner = web.AppRunner(self.app)
+        # self.app.logger = None
+        self.runner = web.AppRunner(self.app, access_log=None)
         logging.info("Created runner")
-        threading.Thread(target=self.run, daemon=True).start()
 
-    def run(self):
-        logging.info("Starting webserver")
-        web.run_app(self.app, host=self.webserver_address, port=self.webserver_port,
-                    access_log=None)
-        logging.error("Webserver stopped")
+    async def get_site(self):
+        await self.runner.setup()
+        site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
+        return site
 
     def init_database(self):
         self.database.run("CREATE TABLE IF NOT EXISTS "

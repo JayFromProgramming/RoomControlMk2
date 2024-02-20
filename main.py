@@ -38,4 +38,26 @@ def other_main():
 
 
 other_main()
+
+
+async def webserver_runner():
+    logging.info("Starting web servers")
+    sites = []
+    for module in room_controller.get_modules():
+        if hasattr(module, "wait_for_ready"):
+            module.wait_for_ready()
+        # Collect any aiohttp servers and run use asyncio.gather to run them all at once
+
+        if hasattr(module, "is_webserver"):
+            logging.info(f"Found web server {module}")
+            sites.append(await module.get_site())
+    if len(sites) > 0:
+        await asyncio.gather(*(site.start() for site in sites))
+
+    logging.info("Web servers started")
+    while True:
+        await asyncio.sleep(9999)
+
+
 # room_controller.web_server.run()
+asyncio.run(webserver_runner())
