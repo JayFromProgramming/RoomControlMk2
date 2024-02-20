@@ -59,7 +59,6 @@ function toggleDeviceState(device_json) {
 
 function getState(device_json) {
     var state_string = "";
-
     switch (device_json["type"]) {
         case "abstract_rgb":
             if (device_json["state"]["on"] === true) {
@@ -82,6 +81,10 @@ function getState(device_json) {
             state_string += toggleDeviceState(device_json);
             break;
         case "environment_controller":
+            if (device_json["state"]["current_value"] === null) {
+                state_string += "No Data";
+                break;
+            }
             state_string += "Current Value: " + device_json["state"]["current_value"].toFixed(2)
                 + device_json["info"]["units"];
             state_string += ", Target Value: " + device_json["state"]["target_value"].toFixed(2)
@@ -148,14 +151,20 @@ function getState(device_json) {
             } else {
                 state_string += "State: Disarmed";
             }
+            break;
+        default:
+            state_string += "UNKNOWN";
     }
-
     return state_string;
 }
 
 function getHealth(device_json) {
     var health_string;
     var health_json = device_json["health"];
+    if (health_json === null) {
+        health_string = "<span style='color:orange'>NO HEALTH DATA</span>";
+        return health_string;
+    }
     if (health_json["online"] === false) {
         health_string = "<span style='color:red'>OFFLINE: " + health_json["reason"] + "</span>";
     } else if (health_json["fault"] === true) {
@@ -195,6 +204,8 @@ class DeviceObject {
         this.button = document.createElement("td");
         this.row.id = this.id;
         this.row.className = "device_row";
+        if (device_json["state"] === null) device_json["state"] = {"on": false};
+        if (device_json["health"] === null) device_json["health"] = {"online": false, "fault": false};
         this.on = device_json["state"]["on"];
         this.request_success = true;
 
@@ -257,6 +268,7 @@ class DeviceObject {
         if (this.button.disabled === true && this.request_success === true && this.locked === false) {
             this.button.disabled = false;
         }
+        if (new_json["state"] === null) new_json["state"] = {"on": false};
         this.on = new_json["state"]["on"];
         this.button.innerHTML = getButtonText(new_json["state"]);
         this.state_row.innerHTML = getState(new_json);

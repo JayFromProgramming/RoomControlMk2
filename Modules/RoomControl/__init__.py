@@ -43,41 +43,6 @@ for module in os.listdir("Modules/RoomControl"):
                 logging.info(f"Importing {module_name} from {module}")
                 __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
 
-
-def get_host_names():
-    """
-    Gets all the ip addresses that can be bound to
-    """
-    interfaces = []
-    for interface in netifaces.interfaces():
-        try:
-            if netifaces.AF_INET in netifaces.ifaddresses(interface):
-                for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
-                    if link["addr"] != "":
-                        interfaces.append(link["addr"])
-        except Exception as e:
-            logging.debug(f"Error getting interface {interface}: {e}")
-            pass
-    return interfaces
-
-
-def check_interface_usage(port):
-    """
-    Returns a list of interfaces that are currently not being used
-    :return:
-    """
-    interfaces = get_host_names()
-    for interface in interfaces:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind((interface, port))
-            s.close()
-        except OSError as e:
-            logging.warning(f"Interface {interface}:{port} was already in use: {e}")
-            interfaces.remove(interface)
-    return interfaces
-
-
 def get_local_ip():
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -113,9 +78,11 @@ class RoomController:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)
 
+        time.sleep(5)
         print("Room objects:", self.room_objects)
-
-        time.sleep(2.5)
+        while True:
+            time.sleep(5)
+            self.refresh()
 
     def init_database(self):
         # cursor = self.database.cursor()
@@ -157,11 +124,23 @@ class RoomController:
     def get_all_devices(self):
         return self.room_objects
 
-    def get_object(self, device_name):
+    def get_module(self, module_name):
+        for module in self.controllers:
+            if module.__class__.__name__ == module_name:
+                return module
+        return None
+
+    def get_object(self, device_name, create_if_not_found=True):
         for device in self.room_objects:
             if device.object_name == device_name:
                 return device
-        self.room_objects.append(self._create_promise_object(device_name))
+        if create_if_not_found:
+            self.room_objects.append(self._create_promise_object(device_name))
+            return self.room_objects[-1]
+        return None
+
+    def get_all_objects(self):
+        return self.room_objects
 
     def get_type(self, device_type):
         devices = []

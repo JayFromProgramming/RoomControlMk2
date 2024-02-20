@@ -95,9 +95,7 @@ class EnvironmentController(RoomObject):
                 ControlledDevice(device['device_id'], self.room_controller.get_object(device['device_id']),
                                  self.database))
 
-        # for device in self.devices:
-        #
-        #     device.device.auto = self.enabled
+        self.on = self.enabled
 
         self.periodic_check()
 

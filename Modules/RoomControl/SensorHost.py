@@ -4,15 +4,23 @@ import time
 from Modules.RoomControl.Decorators import background
 from loguru import logger as logging
 
+from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
 
-class SensorHost:
 
-    def __init__(self):
+class SensorHost(RoomModule):
+
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
         self.sensors = []
 
         self.sensors.append(EnvironmentSensor("enviv_sensor"))
 
         self.start_sensor_reads()
+
+        for sensor in self.sensors:
+            for sensor_value in sensor.get_values():
+                self.room_controller.attach_object(sensor_value)
 
     def start_sensor_reads(self):
         for sensor in self.sensors:
@@ -29,9 +37,10 @@ class SensorHost:
                     return sensor_value
 
 
-class SensorValue:
+class SensorValue(RoomObject):
 
     def __init__(self, name=None, value=None, unit=None, rolling_average=False, rolling_average_length=None):
+        super().__init__(name, "SensorValue")
         self.name = name  # Name of the value
         self.value = value  # type: float or int or str or bool
         self.unit = unit  # type: str

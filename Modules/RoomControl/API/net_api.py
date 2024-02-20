@@ -5,8 +5,10 @@ import functools
 import os
 import random
 import sys
+import threading
 import time
 
+import netifaces
 from aiohttp import web
 import hashlib
 
@@ -18,25 +20,41 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+from Modules.RoomModule import RoomModule
+
 
 def login_redirect():
     return web.HTTPFound("/login")
 
+def get_host_names():
+    """
+    Gets all the ip addresses that can be bound to
+    """
+    interfaces = []
+    for interface in netifaces.interfaces():
+        try:
+            if netifaces.AF_INET in netifaces.ifaddresses(interface):
+                for link in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+                    if link["addr"] != "":
+                        interfaces.append(link["addr"])
+        except Exception as e:
+            logging.debug(f"Error getting interface {interface}: {e}")
+            pass
+    return interfaces
 
-class NetAPI:
+
+class NetAPI(RoomModule):
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
-    def __init__(self, database, device_controllers=None, occupancy_detector=None,
-                 scene_controller=None, command_controller=None, webserver_address="localhost",
-                 datalogger=None, weather_relay=None):
-        self.database = database  # type: ConcurrentDatabase
-        self.other_apis = device_controllers
-        self.occupancy_detector = occupancy_detector  # type: BluetoothDetector
+    def __init__(self, room_controller):
+        self.room_controller = room_controller
+        self.database = room_controller.database
+        self.occupancy_detector = room_controller.get_module("OccupancyDetector")
 
-        self.scene_controller = scene_controller  # type: SceneController
-        self.command_controller = command_controller  # type: CommandController
-        self.data_logger = datalogger  # type: DataLoggerHost
-        self.weather_relay = weather_relay  # type: WeatherRelay
+        self.scene_controller = room_controller.get_module("SceneController")
+        self.command_controller = room_controller.get_module("CommandController")
+        # self.data_logger = datalogger  # type: # DataLoggerHost
+        # self.weather_relay = weather_relay  # type: # WeatherRelay
 
         self.init_database()
 
@@ -79,7 +97,7 @@ class NetAPI:
         )
 
         # Set webserver address and port
-        self.webserver_address = webserver_address
+        self.webserver_address = get_host_names()
         self.webserver_port = 47670
 
         # List of cookies that are authorized to access the API
@@ -99,6 +117,7 @@ class NetAPI:
         logging.info("Loaded schema")
         self.runner = web.AppRunner(self.app)
         logging.info("Created runner")
+        threading.Thread(target=self.run, daemon=True).start()
 
     def run(self):
         logging.info("Starting webserver")
@@ -121,16 +140,10 @@ class NetAPI:
         (endpoint TEXT, last_attempt INTEGER, attempts INTEGER, locked_out BOOLEAN)""")
 
     def get_device(self, device_name):
-        for api in self.other_apis:
-            if api.get_device(device_name):
-                return api.get_device(device_name)
-        return None
+        return self.room_controller.get_object(device_name, create_if_not_found=False)
 
     def get_all_devices(self):
-        devices = []
-        for api in self.other_apis:
-            devices += api.get_all_devices()
-        return devices
+        return self.room_controller.get_all_objects()
 
     def get_device_display_name(self, device_name):
         """Get the display name for a device from the schema"""
@@ -310,15 +323,21 @@ class NetAPI:
         devices_raw = self.get_all_devices()
         devices = {}
         for device in devices_raw:
-            if isinstance(device, str):
-                devices[device] = device
-            else:
-                devices[device.name()] = {
-                    "state": device.get_state(),
-                    "info": device.get_info(),
-                    "health": device.get_health(),
-                    "type": device.get_type(),
-                    "auto_state": device.auto_state()}
+            try:
+                if isinstance(device, str):
+                    devices[device] = device
+                else:
+                    name = device.object_name
+                    devices[name] = {
+                        "state": device.get_state(),
+                        "info": device.get_info(),
+                        "health": device.get_health(),
+                        "type": device.get_type(),
+                        "auto_state": device.auto_state()}
+            except Exception as e:
+                logging.error(f"Error getting data for {device}: {e}")
+                logging.exception(e)
+
         msg = APIMessageTX(
             devices=devices
         )
@@ -440,7 +459,7 @@ class NetAPI:
         if not os.path.isfile(file_path) or True:
             return web.FileResponse(file_path)
         else:
-            logging.error(f"CSS file {file_path} not found")
+            # logging.error(f"CSS file {file_path} not found")
             return web.HTTPNotFound()
 
     async def handle_js(self, request):
@@ -449,7 +468,7 @@ class NetAPI:
         logging.info("Received JS request")
 
         file = request.match_info['file']
-        logging.info(f"Received JS request for {file}")
+        # logging.info(f"Received JS request for {file}")
         # Check if the file exists
         if os.path.isfile(rf"{sys.path[0]}/Modules/RoomControl/API/pages/js/{file}"):
             return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/js/{file}")
@@ -462,7 +481,7 @@ class NetAPI:
         logging.info("Received IMG request")
 
         file = request.match_info['file']
-        logging.info(f"Received IMG request for {file}")
+        # logging.info(f"Received IMG request for {file}")
         # Check if the file exists
         if os.path.isfile(rf"{sys.path[0]}/Modules/RoomControl/API/pages/img/{file}"):
             return web.FileResponse(rf"{sys.path[0]}/Modules/RoomControl/API/pages/img/{file}")

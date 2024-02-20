@@ -13,8 +13,22 @@ class APIMessageTX:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
+    def _clean(self, value):
+        if isinstance(value, dict):
+            return {k: self._clean(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [self._clean(v) for v in value]
+        else:
+            try:
+                json.dumps(value)
+                return value
+            except (TypeError, OverflowError):
+                return str(type(value))
+
     def __str__(self):
         """Dump the api content to json"""
+        # Remove all values that aren't JSON serializable
+        self.kwargs = self._clean(self.kwargs)
         return json.dumps(self.kwargs, indent=4)
 
     def encode(self, encoding):

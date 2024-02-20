@@ -173,10 +173,12 @@ class AbstractToggleDevice:
 
     @auto.setter
     def auto(self, auto: bool):
+        if not isinstance(auto, bool):
+            raise ValueError("Auto must be a boolean")
         self._auto = auto
 
     def auto_state(self):
         return {
-            "is_auto": self._auto,
+            "is_auto": True if self._auto else False,
             "auto_mode": None,
         }
