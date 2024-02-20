@@ -3,6 +3,7 @@ class RoomObject:
 
     object_type = "RoomObject"
     is_promise = True
+    is_sensor_only = False  # Indicates that this object is only a sensor and does not have any control capabilities
 
     def __init__(self, device_name, device_type):
         self.object_name = device_name

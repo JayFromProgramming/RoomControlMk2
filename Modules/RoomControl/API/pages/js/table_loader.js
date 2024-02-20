@@ -82,7 +82,7 @@ function getState(device_json) {
             break;
         case "environment_controller":
             if (device_json["state"]["current_value"] === null) {
-                state_string += "No Data";
+                state_string += "Source Offline";
                 break;
             }
             state_string += "Current Value: " + device_json["state"]["current_value"].toFixed(2)
@@ -152,6 +152,9 @@ function getState(device_json) {
                 state_string += "State: Disarmed";
             }
             break;
+        case null:
+            state_string += "Unknown Device Type";
+            break;
         default:
             state_string += "UNKNOWN";
     }
@@ -208,8 +211,6 @@ class DeviceObject {
         if (device_json["health"] === null) device_json["health"] = {"online": false, "fault": false};
         this.on = device_json["state"]["on"];
         this.request_success = true;
-
-
 
         this.button = document.createElement("button");
         this.button.className = "btn btn-primary";
@@ -276,37 +277,39 @@ class DeviceObject {
     }
 }
 
-
 function update_table(data) {
     let toggle_button;
-    const devices = data.devices; // A dictionary of devices and their data
-    var device_table = $("#device_list_body");
-
-
+    let devices = data.devices; // A dictionary of devices and their data
+    const device_table = $("#device_list_body");
+    // Sort the devices by device type
     // For each device check if its object exists if not create it
     for (let device in devices) {
-        let device_object = device_table.find("#" + device);
-        if (device_object.length === 0) {
-            // Create a new device object
-            let device_object = new DeviceObject(device, devices[device]);
-            // Add the device to the table
-            device_table.append(device_object.getRow());
-            device_table_objects[device] = device_object;
-        } else {
-            // Update the device object
-            device_object = device_table_objects[device];
-            device_object.updateRow(devices[device]);
-            // Update the device in the table
-//             device_table.find("#" + device).updateRow(devices[device].get_row());
+        try {
+            let device_object = device_table.find("#" + device);
+            if (device_object.length === 0) {
+                // Create a new device object
+                let device_object = new DeviceObject(device, devices[device]);
+                // Add the device to the table
+                device_table.append(device_object.getRow());
+                device_table_objects[device] = device_object;
+            } else {
+                // Update the device object
+                device_object = device_table_objects[device];
+                device_object.updateRow(devices[device]);
+                // Update the device in the table
+                //             device_table.find("#" + device).updateRow(devices[device].get_row());
+            }
+        } catch (e) {
+            console.log(e);
         }
     }
 
     // Update the footer
-    var footer_text = device_table.find("#footer_text");
+    let footer_text = device_table.find("#footer_text");
     if (footer_text.length === 0) {
 //         console.log("Adding footer");
-        var footer = document.createElement("tr");
-        var footer_text = document.createElement("td");
+        const footer = document.createElement("tr");
+        footer_text = document.createElement("td");
         footer_text.colSpan = 4;
         device_table.append(footer);
         footer.appendChild(footer_text);

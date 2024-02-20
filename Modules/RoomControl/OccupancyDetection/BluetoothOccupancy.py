@@ -9,6 +9,7 @@ import psutil
 from loguru import logger as logging
 
 from Modules.RoomControl.Decorators import background
+from Modules.RoomObject import RoomObject
 
 try:
     import bluetooth
@@ -23,10 +24,11 @@ except ImportError:
     bluetoothLE = None
 
 
-class BluetoothDetector:
+class BluetoothDetector(RoomObject):
 
     def __init__(self, database: sqlite3.Connection, high_frequency_scan_enabled: bool = False):
         # Target file is a json file that contains bluetooth addresses, name, and role
+        super().__init__("bluetooth_occupancy", "BlueStalker")
         self.database = database
         self.init_database()
 

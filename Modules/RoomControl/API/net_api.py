@@ -321,6 +321,8 @@ class NetAPI(RoomModule):
 
         logging.debug("Received GET_ALL request")
         devices_raw = self.get_all_devices()
+        # Sort the devices by type
+        devices_raw.sort(key=lambda x: x.object_type, reverse=True)
         devices = {}
         for device in devices_raw:
             try:

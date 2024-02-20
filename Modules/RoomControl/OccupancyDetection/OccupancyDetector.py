@@ -6,6 +6,9 @@ from Modules.RoomControl.OccupancyDetection.MTUNetOccupancy import NetworkOccupa
 
 from loguru import logger as logging
 
+from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
+
 try:
     import RPi.GPIO as GPIO
 except ImportError:
@@ -13,10 +16,12 @@ except ImportError:
     logging.warning("RPi.GPIO not found, GPIO will not be available")
 
 
-class OccupancyDetector:
+class OccupancyDetector(RoomModule):
 
-    def __init__(self, database):
-        self.database = database
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
+        self.room_controller = room_controller
+        self.database = room_controller.database
         self.database_init()
         self.sources = {}
 
@@ -46,6 +51,9 @@ class OccupancyDetector:
             "motion": self.motion_pin,
             "door": self.door_pin
         }
+        for source in self.sources.values():
+            if source is not None:
+                self.room_controller.attach_object(source)
         self.periodic_update()
 
     def database_init(self):
@@ -113,10 +121,14 @@ class OccupancyDetector:
                 return device
 
 
-class PinWatcher:
+class PinWatcher(RoomObject):
+
+    is_promise = False
+    is_sensor_only = True
 
     def __init__(self, name, pin, callback: callable, edge=None, bouncetime=200, normally_open=True,
                  enabled=True, database=None):
+        super().__init__(name, "PinWatcher")
         self.online = True
         self.fault = False
         self.fault_message = ""
