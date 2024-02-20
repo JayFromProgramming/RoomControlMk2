@@ -78,6 +78,8 @@ class VoiceMonkeyAPI(RoomModule):
 class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
     """All voice monkey devices store their state in the database, so we don't need to query the device for its state"""
 
+    is_promise = False  # Indicates to whatever references this object that it is now ready to be used
+
     def __init__(self, device_id, room_controller, monkey_token, monkey_secret):
         super().__init__(device_id, "VoiceMonkeyDevice")
         self.device_id = device_id

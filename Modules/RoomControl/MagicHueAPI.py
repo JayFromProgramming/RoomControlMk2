@@ -128,6 +128,8 @@ class MagicHome(RoomModule):
 
 class MagicDevice(RoomObject, AbstractRGB):
 
+    is_promise = False
+
     def __init__(self, api, macaddr, room_controller):
         super().__init__(macaddr, "MagicDevice")
         self.room_controller = room_controller

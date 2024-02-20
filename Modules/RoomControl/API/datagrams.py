@@ -28,8 +28,11 @@ class APIMessageTX:
     def __str__(self):
         """Dump the api content to json"""
         # Remove all values that aren't JSON serializable
-        self.kwargs = self._clean(self.kwargs)
-        return json.dumps(self.kwargs, indent=4)
+        try:
+            return json.dumps(self.kwargs, indent=4)
+        except TypeError:
+            self.kwargs = self._clean(self.kwargs)
+            return json.dumps(self.kwargs, indent=4)
 
     def encode(self, encoding):
         """Encode the api content to bytes"""

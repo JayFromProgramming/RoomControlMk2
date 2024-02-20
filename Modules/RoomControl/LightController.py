@@ -9,6 +9,7 @@ from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothD
 from loguru import logger as logging
 from Modules.RoomControl.OccupancyDetection.OccupancyDetector import OccupancyDetector
 from Modules.RoomModule import RoomModule
+from Modules.RoomObject import RoomObject
 
 
 class StateEnumerator:
@@ -37,6 +38,8 @@ class LightControllerHost(RoomModule):
                 LightController(controller['name'], self.room_controller)
         logging.info("Light Controller Host Initialized")
         self.periodic_update()
+        for controller in self.light_controllers.values():
+            self.room_controller.attach_object(controller)
 
     def database_init(self):
         self.database.create_table("light_controllers",
@@ -66,9 +69,12 @@ class LightControllerHost(RoomModule):
         pass
 
 
-class LightController:
+class LightController(RoomObject):
+
+    is_promise = False
 
     def __init__(self, name, room_controller):
+        super().__init__(name, "LightController")
         logging.info(f"LightController: {name} is being initialised")
 
         self.controller_name = name

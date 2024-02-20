@@ -2,11 +2,11 @@
 class RoomObject:
 
     object_type = "RoomObject"
+    is_promise = True
 
     def __init__(self, device_name, device_type):
         self.object_name = device_name
         self.object_type = device_type
-        self.is_a_promise = True
 
     def name(self):
         return self.object_name or self.object_type
