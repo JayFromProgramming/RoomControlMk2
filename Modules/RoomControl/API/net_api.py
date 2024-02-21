@@ -70,8 +70,6 @@ class NetAPI(RoomModule):
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
-            # + [web.get('/web_control/{name}', self.handle_web_control)]
-            # + [web.post('/web_control/{name}', self.handle_web_control)]
             + [web.get('/get_all', self.handle_get_all)]
             + [web.get('/occupancy', self.handle_occupancy)]
             + [web.get('/set_auto/{mode}', self.handle_auto)]
@@ -88,9 +86,6 @@ class NetAPI(RoomModule):
             + [web.get('/page/js/{file}', self.handle_js)]
             + [web.get('/page/img/{file}', self.handle_img)]
             + [web.get('/name/{device_id}', self.handle_name)]
-            # + [web.get('/get_status_string/{device_id}', self.handle_status_string)]
-            # + [web.get('/get_health_string/{device_id}', self.handle_health_string)]
-            # + [web.get('/get_action_string/{device_id}', self.handle_action_string)]
             + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
             + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
             + [web.get('/weather/now', self.handle_weather_now)]
@@ -562,7 +557,7 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         # logging.info("Received DATA_LOG_SOURCES request")
-        presets = self.data_logger.get_presets()
+        presets = self.room_controller.get_module("DataLogger").get_presets()
         msg = APIMessageTX(presets=presets)
         return web.Response(text=msg.__str__())
 
@@ -573,7 +568,7 @@ class NetAPI(RoomModule):
         source = request.match_info['log_name']
         start = request.match_info['start']
         end = request.match_info['end']
-        data = self.data_logger.get_data(source, start, end)
+        data = self.room_controller.get_module("DataLogger").get_data(source, start, end)
         msg = APIMessageTX(data_log=data, source=source)
         return web.Response(text=msg.__str__())
 

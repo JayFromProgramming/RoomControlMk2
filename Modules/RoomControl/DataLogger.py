@@ -4,33 +4,19 @@ from loguru import logger as logging
 
 import ConcurrentDatabase
 from Modules.RoomControl import background
+from Modules.RoomModule import RoomModule
 
 
-class DataLoggingHost:
+class DataLoggingHost(RoomModule):
 
-    def __init__(self, database: ConcurrentDatabase.Database,
-                 room_controllers=None, room_sensor_host=None):
+    def __init__(self, room_controller):
+        super().__init__(room_controller)
         logging.info("DataLoggingHost: Initializing")
-        if room_controllers is None:
-            room_controllers = []
 
-        self.database = database
+        self.room_controller = room_controller
+        self.database = room_controller.database
         self.database_init()
-        self.room_controllers = room_controllers
-        self.room_sensor_host = room_sensor_host
-        self.all_data_sources = {}
 
-        logging.info("DataLoggingHost: Combining all data sources")
-        # Combine all room control devices and sensors into a single list
-        for controller in self.room_controllers:
-            for device in controller.get_all_devices():
-                self.all_data_sources[f"device_{device.name()}"] = device
-
-        for sensor in self.room_sensor_host.get_sensors():
-            for sensor_value in sensor.get_sensor_values():
-                self.all_data_sources[f"sensor_{sensor_value.get_name()}"] = sensor_value
-        logging.info("DataLoggingHost: All data sources combined")
-        print(self.all_data_sources)
         self.loggers = {}
         self.init_all_loggers()
 
@@ -39,9 +25,10 @@ class DataLoggingHost:
         # cursor.execute("""CREATE TABLE IF NOT EXISTS
         #                 data_sources (name text, source_name text, logging_interval integer, enabled boolean, unit text,
         #                 attribute TEXT DEFAULT NULL, uuid INTEGER PRIMARY KEY AUTOINCREMENT)""")
-        self.database.create_table("data_sources", {"name": "TEXT", "source_name": "TEXT", "logging_interval": "INTEGER",
-                                                    "enabled": "BOOLEAN", "unit": "TEXT", "attribute": "TEXT DEFAULT NULL",
-                                                    "uuid": "INTEGER PRIMARY KEY AUTOINCREMENT"})
+        self.database.create_table("data_sources",
+                                   {"name": "TEXT", "source_name": "TEXT", "logging_interval": "INTEGER",
+                                    "enabled": "BOOLEAN", "unit": "TEXT", "attribute": "TEXT DEFAULT NULL",
+                                    "uuid": "INTEGER PRIMARY KEY AUTOINCREMENT"})
         # cursor.execute("""CREATE TABLE IF NOT EXISTS
         #                 data_logging (id INTEGER REFERENCES data_sources(uuid),
         #                  timestamp TIMESTAMP, value TEXT, compression_level integer)""")
@@ -70,7 +57,7 @@ class DataLoggingHost:
         logging.info("DataLoggingHost: All loggers initialized")
 
     def get_source(self, source_name):
-        return self.all_data_sources[source_name]
+        return self.room_controller.get_object(source_name)
 
     def get_sources(self):
         return self.loggers.values()
