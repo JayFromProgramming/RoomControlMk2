@@ -20,6 +20,7 @@ class SensorHost(RoomModule):
 
         for sensor in self.sensors:
             for sensor_value in sensor.get_values():
+                logging.info(f"SensorHost: Attaching sensor value {sensor_value.get_name()}")
                 self.room_controller.attach_object(sensor_value)
 
     def start_sensor_reads(self):
@@ -38,6 +39,8 @@ class SensorHost(RoomModule):
 
 
 class SensorValue(RoomObject):
+
+    object_type = "SensorValue"
 
     def __init__(self, name=None, value=None, unit=None, rolling_average=False, rolling_average_length=None):
         super().__init__(name, "SensorValue")
@@ -84,6 +87,30 @@ class SensorValue(RoomObject):
 
     def get_reason(self):
         return self._reason
+
+    def get_state(self):
+        return {
+            "value": self.value
+        }
+
+    def get_info(self):
+        return {
+            "unit": self.unit,
+            "rolling_average": self.roll_avg,
+            "rolling_average_length": self.roll_avg_len,
+        }
+
+    def get_health(self):
+        return {
+            "fault": self._fault,
+            "reason": self._reason
+        }
+
+    def auto_state(self):
+        return None
+
+    def get_type(self):
+        return self.object_type
 
 
 class Sensor:

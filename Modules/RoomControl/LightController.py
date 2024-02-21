@@ -106,7 +106,7 @@ class LightController(RoomObject):
         self.changing_state = False
         self.dnd_active = True if self.current_state == StateEnumerator.dnd else False
 
-        self.occupancy_detector = self.room_controller.get_object("bluetooth_occupancy")
+        self.occupancy_detector = self.room_controller.get_module("OccupancyDetector")  # type: OccupancyDetector
 
         self.light_control_devices = {}
         self.light_control_targets = []

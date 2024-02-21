@@ -330,8 +330,9 @@ class NetAPI(RoomModule):
                         "state": device.get_state(),
                         "info": device.get_info(),
                         "health": device.get_health(),
-                        "type": device.get_type(),
-                        "auto_state": device.auto_state()}
+                        "type": "Promise" if device.object_type == "RoomObject" else device.get_type(),
+                        "auto_state": device.auto_state()
+                    }
             except Exception as e:
                 logging.error(f"Error getting data for {device}: {e}")
                 logging.exception(e)

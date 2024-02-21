@@ -281,12 +281,22 @@ function update_table(data) {
     let toggle_button;
     let devices = data.devices; // A dictionary of devices and their data
     const device_table = $("#device_list_body");
-    // Sort the devices by device type
-    // For each device check if its object exists if not create it
+    // Every time that the device type changes add a full width row with the device type name
+    let last_type = "";
     for (let device in devices) {
         try {
             let device_object = device_table.find("#" + device);
             if (device_object.length === 0) {
+                if (devices[device]["type"] !== last_type) {
+                last_type = devices[device]["type"];
+                let type_row = document.createElement("tr");
+                let type_cell = document.createElement("td");
+                type_cell.colSpan = 4;
+                type_cell.innerHTML = last_type;
+                type_cell.style.textAlign = "center";
+                type_row.appendChild(type_cell);
+                device_table.append(type_row);
+            }
                 // Create a new device object
                 let device_object = new DeviceObject(device, devices[device]);
                 // Add the device to the table
