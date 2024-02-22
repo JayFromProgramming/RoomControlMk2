@@ -294,6 +294,8 @@ function update_table(data) {
                 type_cell.colSpan = 4;
                 type_cell.innerHTML = last_type;
                 type_cell.style.textAlign = "center";
+                // Set the font size to 0.5em
+                type_cell.style.fontSize = "0.5em";
                 type_row.appendChild(type_cell);
                 device_table.append(type_row);
             }
