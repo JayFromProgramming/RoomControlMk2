@@ -118,6 +118,9 @@ class EnvironmentController(RoomObject):
                     elif self.all_controlled_devices_down():
                         self._fault = True
                         self._reason = "No working devices"
+                    elif len(self.devices) == 0:
+                        self._fault = True
+                        self._reason = "No devices"
                     else:
                         logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
                         for device in self.devices:
