@@ -40,6 +40,7 @@ class OccupancyDetector(RoomModule):
 
         self.blue_stalker = self.room_controller.get_object("BlueStalker")
         self.motion_detector = self.room_controller.get_object("MotionDetector")
+        self.motion_detector.add_callback(self.motion_detected)
 
         self.periodic_update()
 
@@ -79,8 +80,8 @@ class OccupancyDetector(RoomModule):
                 self.blue_stalker.high_frequency_scan_enabled = True
             time.sleep(5)
 
-    def motion_detected(self, pin):
-        logging.info("Activity Detected on pin {}".format(pin))
+    def motion_detected(self):
+        logging.info("Motion event received")
         self.last_activity = time.time()
         self.blue_stalker.should_scan()
 
