@@ -7,6 +7,10 @@ function device_table() {
         dataType: "json",
         success: function (data) {
             sys_temp = data["sys_temp"];
+            // Check if the temperature data has more dict data
+            if (typeof sys_temp === 'object') {
+                sys_temp = sys_temp["coretemp"][0][1]
+            }
             sys_cpu = data["sys_load"];
             sys_mem = data["sys_mem"];
             sys_uptime = data["sys_uptime"];
