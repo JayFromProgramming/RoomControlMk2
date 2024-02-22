@@ -27,8 +27,8 @@ class OccupancyDetector(RoomModule):
 
         self.last_activity = 0  # type: int # Last time a user was detected either by door or motion sensor
 
-        if GPIO:
-            GPIO.setmode(GPIO.BOARD)
+        # if GPIO:
+        #     GPIO.setmode(GPIO.BOARD)
 
         results = self.database.get("""
             SELECT * FROM occupancy_sources
@@ -39,6 +39,7 @@ class OccupancyDetector(RoomModule):
             enabled_sources[name] = True if enabled == 1 else False
 
         self.blue_stalker = self.room_controller.get_object("BlueStalker")
+        self.motion_detector = self.room_controller.get_object("MotionDetector")
 
         self.periodic_update()
 

@@ -95,7 +95,7 @@ class NetAPI(RoomModule):
 
         # Set webserver address and port
         self.webserver_address = get_host_names()
-        self.webserver_port = 47670
+        self.webserver_port = 80
 
         # List of cookies that are authorized to access the API
         results = self.database.get("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))

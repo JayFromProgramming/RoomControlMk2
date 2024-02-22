@@ -120,6 +120,8 @@ class RoomController:
         for i, room_object in enumerate(self.room_objects):
             if room_object.object_name == device.object_name:
                 logging.info(f"Replacing promise object {room_object.object_name} with real object")
+                # Make sure that we copy the callbacks from the promise object to the real object
+                device._callbacks = room_object._callbacks
                 self.room_objects[i] = device
                 return
         logging.info(f"Attaching object {device.object_name} to room controller")
