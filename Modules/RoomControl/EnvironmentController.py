@@ -104,28 +104,29 @@ class EnvironmentController(RoomObject):
         if hasattr(self.source, "get_value") and hasattr(self.source, "get_health"):
             while True:
                 if self.enabled:
+                    source_healthy = True
                     if self.source.object_type == "promise":
                         self._fault = True
                         self._reason = "Source Is Promise"
-                    elif len(self.devices) == 0:
-                        self._fault = True
-                        self._reason = "No devices"
-                    elif self.all_controlled_devices_down():
-                        self._fault = True
-                        self._reason = "No working devices"
-                    elif self.source.get_health()['online']:
-                        for device in self.devices:
-                            device.fault = False
-                            device.check(self.source.get_value("current_value"), self.current_setpoint)
-                        self._fault = False
-                        self._reason = "Unknown"
-                    else:
-                        logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
+                        source_healthy = False
+                    elif not self.source.get_health()["online"]:
                         for device in self.devices:
                             if not device.fault:
                                 device.fault = True
                                 device.fault_encountered()
                         self._reason = "Source is offline"
+                    elif len(self.devices) == 0:
+                        self._fault = True
+                        self._reason = "No devices assigned"
+                    elif self.all_controlled_devices_down():
+                        self._fault = True
+                        self._reason = "No working devices"
+                    else:
+                        for device in self.devices:
+                            device.fault = False
+                            device.check(self.source.get_value("current_value"), self.current_setpoint)
+                        self._fault = False
+                        self._reason = "Unknown"
                 time.sleep(30)
         else:
             logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is not a sensor")
