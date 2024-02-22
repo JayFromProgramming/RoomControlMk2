@@ -11,10 +11,11 @@ class RoomObject:
         self.object_name = device_name
         self.object_type = device_type
 
+        # The following are only implemented on objects that implement this new system of RoomObject
         self._callbacks = []
         self._values = {}
+        self._health = {}
 
-        # The following are only implemented on objects that implement this new system of RoomObject
 
     def name(self):
         return self.object_name or self.object_type
@@ -35,9 +36,17 @@ class RoomObject:
         """
         Update the object with new data
         """
+        self._health = data["health"]
         for key, value in data["data"].items():
+            if self._values.get(key, None) != value:
+                self.emit_event(f"on_{key}_update", value)
             self._values[key] = value
-            self.emit_event(f"on_{key}_update", value)
+
+    def get_values(self):
+        return self._values
+
+    def get_value(self, key):
+        return self._values.get(key, None)
 
     def attach_event_callback(self, callback, event_name):
         """

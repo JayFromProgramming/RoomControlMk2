@@ -27,6 +27,31 @@ def get_host_names():
     return interfaces
 
 
+class SatelliteObject(RoomObject):
+
+    def __init__(self, object_name, object_type, satellite):
+        super().__init__(object_name, object_type)
+        self.satellite = satellite
+
+    def get_state(self):
+        return {
+            "objects": self.get_values()
+        }
+
+    def get_type(self):
+        return self.object_type
+
+    def get_health(self):
+        online = self.satellite.online and self._health.get("online", False)
+        fault = self._health.get("fault", False)
+        reason = self._health.get("reason", "") if self.satellite.online else "Satellite Host Offline"
+        return {
+            "online": online,
+            "fault": fault,
+            "reason": reason
+        }
+
+
 class Satellite:
 
     def __init__(self, name, ip, auth, room_controller):
@@ -48,15 +73,19 @@ class Satellite:
         """
         obj = self.room_controller.get_object(object_name, False)
         if obj is not None:
-            if obj.object_type == "RoomObject":
-                new_obj = RoomObject(object_name, f"satellite_{object_type}")
+            if obj.object_type == "RoomObject" or obj.object_type == "promise":
+                new_obj = SatelliteObject(object_name, f"satellite_{object_type}", self)
                 self.room_controller.attach_object(new_obj)
                 self.objects.append(new_obj)
                 return new_obj
             else:
+                if obj.object_type != f"satellite_{object_type}":
+                    logging.warning(f"Object {object_name} already exists but is not of type {object_type} but"
+                                    f" it is type {obj.object_type}")
+                self.objects.append(obj)
                 return obj
         else:
-            new_obj = RoomObject(object_name, f"satellite_{object_type}")
+            new_obj = SatelliteObject(object_name, f"satellite_{object_type}", self)
             self.room_controller.attach_object(new_obj)
             self.objects.append(new_obj)
             return new_obj
@@ -86,7 +115,8 @@ class Satellite:
             print(object_data)
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
-        self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?", (self.last_seen, self.name))
+        self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
+                                          (self.last_seen, self.name))
 
     async def auto_poll(self):
         """
@@ -165,6 +195,11 @@ class SatelliteInterface(RoomModule):
                     "type": "Type of object",
                     "data": {
                         "key": "value"
+                    },
+                    "health": {
+                        "online": "Boolean",
+                        "fault": "Boolean",
+                        "reason": "Reason for fault"
                     }
                 }
             },

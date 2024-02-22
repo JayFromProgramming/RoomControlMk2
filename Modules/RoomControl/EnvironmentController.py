@@ -136,7 +136,7 @@ class EnvironmentController(RoomObject):
         value = {
             "on": self.enabled,
             "target_value": self.current_setpoint,
-            "current_value": self.source.get_value(),
+            "current_value": self.source.get_value("current_value"),
         }
         # logging.info(f"EnvironmentController ({self.controller_name}): State requested ({value})")
         return value
@@ -144,8 +144,8 @@ class EnvironmentController(RoomObject):
     def get_info(self):
         value = {
             "name": self.controller_name,
-            "sensor": self.source.get_name(),
-            "units": self.source.get_unit()
+            "sensor": self.source.get_value("name"),
+            "units": self.source.get_value("unit")
         }
         # logging.info(f"EnvironmentController ({self.controller_name}): Info requested ({value})")
         return value
