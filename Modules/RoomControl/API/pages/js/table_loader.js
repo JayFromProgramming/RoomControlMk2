@@ -155,7 +155,7 @@ function getState(device_json) {
             state_string += "Unknown Device Type";
             break;
         default:
-            state_string += "UNKNOWN";
+            state_string += "UNKNOWN DATA TYPE" + device_json["type"];
     }
     return state_string;
 }
