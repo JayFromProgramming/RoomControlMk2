@@ -573,7 +573,7 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         # logging.info("Received DATA_LOG_SOURCES request")
-        presets = self.room_controller.get_module("DataLogger").get_presets()
+        presets = self.room_controller.get_module("DataLoggingHost").get_presets()
         msg = APIMessageTX(presets=presets)
         return web.Response(text=msg.__str__())
 
@@ -584,7 +584,7 @@ class NetAPI(RoomModule):
         source = request.match_info['log_name']
         start = request.match_info['start']
         end = request.match_info['end']
-        data = self.room_controller.get_module("DataLogger").get_data(source, start, end)
+        data = self.room_controller.get_module("DataLoggingHost").get_data(source, start, end)
         msg = APIMessageTX(data_log=data, source=source)
         return web.Response(text=msg.__str__())
 
