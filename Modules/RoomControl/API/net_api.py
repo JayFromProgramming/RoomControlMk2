@@ -26,6 +26,7 @@ from Modules.RoomModule import RoomModule
 def login_redirect():
     return web.HTTPFound("/login")
 
+
 def get_host_names():
     """
     Gets all the ip addresses that can be bound to
@@ -41,6 +42,20 @@ def get_host_names():
             logging.debug(f"Error getting interface {interface}: {e}")
             pass
     return interfaces
+
+
+IP_BLACKLIST = ["83.97"]
+
+
+async def blacklist_middleware(app, handler):
+    async def middleware_handler(request):
+        for ip in IP_BLACKLIST:
+            if request.remote.startswith(ip):
+                logging.debug(f"Blacklisted IP {request.remote} attempted to access the API")
+                return web.Response(status=403)  # Forbidden
+        return await handler(request)
+
+    return middleware_handler
 
 
 class NetAPI(RoomModule):
@@ -60,7 +75,7 @@ class NetAPI(RoomModule):
 
         self.init_database()
 
-        self.app = web.Application()
+        self.app = web.Application(middlewares=[blacklist_middleware])
         self.app.add_routes(  # Yes this could be done with a loop, but this is easier for me to keep track of
             [web.get('', self.handle_web)]
             + [web.get("/page/{page}", self.handle_page)]

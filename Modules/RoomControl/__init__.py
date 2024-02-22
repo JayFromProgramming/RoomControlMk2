@@ -97,12 +97,6 @@ class RoomController:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)
 
-        # time.sleep(5)
-        # print("Room objects:", self.room_objects)
-        # while True:
-        #     time.sleep(5)
-        #     self.refresh()
-
     def init_database(self):
         # cursor = self.database.cursor()
         # cursor.execute('''CREATE TABLE IF NOT EXISTS auto_lights (device_id TEXT, is_auto BOOLEAN, current_mode TEXT)''')
@@ -142,7 +136,7 @@ class RoomController:
                 logging.info(f"Replacing promise object {room_object.object_name} with real object")
                 # Make sure that we copy the callbacks from the promise object to the real object
                 device._callbacks = room_object._callbacks
-                self.room_objects[i].reference = device # Replace the promise object with the real object
+                self.room_objects[i].reference = device  # Replace the promise object with the real object
                 return
         logging.info(f"Attaching object {device.object_name} to room controller")
         self.room_objects.append(device)
