@@ -106,21 +106,21 @@ class EnvironmentController(RoomObject):
                 if self.enabled:
                     if self.source.object_type == "promise":
                         self._fault = True
-                        self._reason = "Source Not Initialized"
+                        self._reason = "Source Is Promise"
                         time.sleep(30)
                         continue
-                    if not self.source.get_health()['online']:
+                    if self.source.get_health()['online']:
                         for device in self.devices:
                             device.fault = False
                             device.check(self.source.get_value(), self.current_setpoint)
                         self._fault = False
                         self._reason = "Unknown"
-                    elif self.all_controlled_devices_down():
-                        self._fault = True
-                        self._reason = "No working devices"
                     elif len(self.devices) == 0:
                         self._fault = True
                         self._reason = "No devices"
+                    elif self.all_controlled_devices_down():
+                        self._fault = True
+                        self._reason = "No working devices"
                     else:
                         logging.warning(f"EnvironmentController ({self.controller_name}): Source sensor is offline")
                         for device in self.devices:
