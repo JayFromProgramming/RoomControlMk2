@@ -21,7 +21,7 @@ var footer;
 
 function getName(id) {
     // Use localStorage to cache device names
-    var name = id;
+    let name = id;
     if (device_name_cache[id] !== undefined) {
         name = device_name_cache[id];
     } else { // Queue the name to be fetched, but don't wait for it
@@ -141,7 +141,7 @@ function getState(device_json) {
                 state_string += "State: DOWN";
             } else if (device_json["health"]["fault"] === true) {
                 state_string += "State: FAULT";
-            } else if (device_json["state"]["on"] === true) {
+            } else {
                 if (device_json["state"]["triggered"] === 1) {
                     state_string += "State: Triggered" + " " + device_json["state"]["active_for"].toFixed(2) + "S";
                 } else {
@@ -149,8 +149,6 @@ function getState(device_json) {
                     const last_active = new Date(device_json["state"]["last_active"] * 1000);
                     state_string += "Last Active: " + last_active.toLocaleString();
                 }
-            } else {
-                state_string += "State: Disarmed";
             }
             break;
         case null:
@@ -183,7 +181,7 @@ function getHealth(device_json) {
 
 function getAction(id, is_on) {
     // Endpoint "/set/{name}?on=!{state}" to toggle the state of a device
-    var action_string = "";
+    let action_string = "";
     if (is_on === true) {
         action_string += "/set/" + id + "?on=false";
     } else {
@@ -193,7 +191,9 @@ function getAction(id, is_on) {
 }
 
 function getButtonText(state){
-    if (state["on"] === true) {
+    if (state["on"] === null) {
+        return "N/A";
+    } else if (state["on"] === true) {
         return "Turn Off";
     } else {
         return "Turn On";
@@ -208,7 +208,7 @@ class DeviceObject {
         this.button = document.createElement("td");
         this.row.id = this.id;
         this.row.className = "device_row";
-        if (device_json["state"] === null) device_json["state"] = {"on": false};
+        if (device_json["state"] === null) device_json["state"] = {"on": null};
         if (device_json["health"] === null) device_json["health"] = {"online": false, "fault": false};
         this.on = device_json["state"]["on"];
         this.request_success = true;
@@ -270,7 +270,7 @@ class DeviceObject {
         if (this.button.disabled === true && this.request_success === true && this.locked === false) {
             this.button.disabled = false;
         }
-        if (new_json["state"] === null) new_json["state"] = {"on": false};
+        if (new_json["state"] === null) new_json["state"] = {"on": null};
         this.on = new_json["state"]["on"];
         this.button.innerHTML = getButtonText(new_json["state"]);
         this.state_row.innerHTML = getState(new_json);
