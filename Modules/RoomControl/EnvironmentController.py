@@ -104,17 +104,19 @@ class EnvironmentController(RoomObject):
         if hasattr(self.source, "get_value") and hasattr(self.source, "get_health"):
             while True:
                 if self.enabled:
-                    source_healthy = True
                     if self.source.object_type == "promise":
                         self._fault = True
                         self._reason = "Source Is Promise"
-                        source_healthy = False
                     elif not self.source.get_health()["online"]:
                         for device in self.devices:
                             if not device.fault:
                                 device.fault = True
                                 device.fault_encountered()
-                        self._reason = "Source is offline"
+                        self._fault = True
+                        self._reason = "Source offline"
+                    elif not self.source.get_health()["fault"]:
+                        self._fault = True
+                        self._reason = "Source faulted"
                     elif len(self.devices) == 0:
                         self._fault = True
                         self._reason = "No devices assigned"
