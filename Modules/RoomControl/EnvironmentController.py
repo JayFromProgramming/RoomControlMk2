@@ -170,7 +170,8 @@ class EnvironmentController(RoomObject):
 
     def all_controlled_devices_down(self):
         for device in self.devices:
-            if not device.device.online or not device.device.fault:
+            if not device.device.online or not device.device.fault\
+                    and device.device.offline_reason != "SRC CTLR SENSOR FAULT":
                 return False
         return True
 
