@@ -115,6 +115,21 @@ class Satellite:
         self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
                                           (self.last_seen, self.name))
 
+    def parse_event(self, data):
+        """
+        Parses the event data from the satellite
+        """
+        if data["name"] != self.name:
+            logging.warning(f"Received event data from {data['name']} but expected {self.name}")
+            return
+        self.last_seen = time.time()
+        for obj in self.objects:
+            if obj.object_name == data["object"]:
+                logging.info(f"Received event {data['event']} from {data['object']}")
+                obj.emit_event(data["event"], *data["args"], **data["kwargs"])
+                return
+        logging.warning(f"Received event data for object {data['object']} but it does not exist")
+
     async def auto_poll(self):
         """
         If last seen is more than 45 seconds ago, make a poll request to the satellite, if no response is received
@@ -219,14 +234,14 @@ class SatelliteInterface(RoomModule):
             "current_ip": "Current IP address of the satellite",
             "object": "Name of the object that emitted the event",
             "event": "Name of the event",
-            "data": {
-                "key": "value"
-            },
+            "args": "List of arguments",
+            "kwargs": "Dictionary of keyword arguments",
             "auth": "Authentication token"
         }
         """
+        payload = await request.json()
         for satellite in self.satellites.values():
-            if satellite.auth == request["auth"]:
-                satellite.parse_uplink(request)
+            if satellite.auth == payload["auth"]:
+                satellite.parse_event(payload)
                 return web.Response(status=200)
         return web.Response(status=401)
