@@ -114,7 +114,7 @@ class EnvironmentController(RoomObject):
                                 device.fault_encountered()
                         self._fault = True
                         self._reason = "Source offline"
-                    elif not self.source.get_health()["fault"]:
+                    elif self.source.get_health()["fault"]:
                         self._fault = True
                         self._reason = "Source faulted"
                     elif len(self.devices) == 0:
