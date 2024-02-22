@@ -116,7 +116,7 @@ class EnvironmentController(RoomObject):
                     elif self.source.get_health()['online']:
                         for device in self.devices:
                             device.fault = False
-                            device.check(self.source.get_value(), self.current_setpoint)
+                            device.check(self.source.get_value("current_value"), self.current_setpoint)
                         self._fault = False
                         self._reason = "Unknown"
                     else:
