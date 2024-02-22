@@ -104,7 +104,7 @@ class BlueStalker(RoomObject):
                     logging.warning("BlueStalker: Rebooting")
                     # Run the reboot command with a 1 minute delay to allow the log to be written
                     self.reboot_locked_out = True
-                    os.system("sudo shutdown -r +1")
+                    # os.system("sudo shutdown -r +1")
                     return
 
     def init_database(self):
