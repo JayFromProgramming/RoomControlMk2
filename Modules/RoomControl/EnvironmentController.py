@@ -104,6 +104,11 @@ class EnvironmentController(RoomObject):
         if hasattr(self.source, "get_value") and hasattr(self.source, "get_health"):
             while True:
                 if self.enabled:
+                    if self.source.object_type == "promise":
+                        self._fault = True
+                        self._reason = "Source Not Initialized"
+                        time.sleep(30)
+                        continue
                     if not self.source.get_health()['online']:
                         for device in self.devices:
                             device.fault = False
@@ -152,7 +157,7 @@ class EnvironmentController(RoomObject):
     def get_health(self):
         return {
             "online": self.online,
-            "fault": bool(self.source.get_fault()),
+            "fault": self._fault,
             "reason": self.source.get_reason() if self.source.get_fault() else self._reason
         }
 

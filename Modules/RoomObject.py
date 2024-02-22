@@ -47,7 +47,7 @@ class RoomObject:
 
     def get_value(self, key):
         if key not in self._values:
-            logging.warning(f"Key {key} not found in {self.object_name} of type {self.object_type}")
+            # logging.warning(f"Key {key} not found in {self.object_name} of type {self.object_type}")
             return None
         return self._values[key]
 
