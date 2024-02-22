@@ -101,11 +101,10 @@ class EnvironmentController(RoomObject):
 
     @background
     def periodic_check(self):
-
-        if hasattr(self.source, "get_value"):
+        if hasattr(self.source, "get_value") and hasattr(self.source, "get_health"):
             while True:
                 if self.enabled:
-                    if not self.source.get_fault():
+                    if not self.source.get_health()['online']:
                         for device in self.devices:
                             device.fault = False
                             device.check(self.source.get_value(), self.current_setpoint)
@@ -129,7 +128,7 @@ class EnvironmentController(RoomObject):
     def __str__(self):
         return f"EnvironmentController ({self.controller_name})"
 
-    def get_value(self):
+    def get_value(self, value_name):
         return self.setpoint
 
     def get_state(self):

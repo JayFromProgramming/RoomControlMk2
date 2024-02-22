@@ -46,7 +46,10 @@ class RoomObject:
         return self._values
 
     def get_value(self, key):
-        return self._values.get(key, None)
+        if key not in self._values:
+            logging.warning(f"Key {key} not found in {self.object_name} of type {self.object_type}")
+            return None
+        return self._values[key]
 
     def attach_event_callback(self, callback, event_name):
         """

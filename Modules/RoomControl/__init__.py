@@ -43,6 +43,7 @@ for module in os.listdir("Modules/RoomControl"):
                 logging.info(f"Importing {module_name} from {module}")
                 __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
 
+
 def get_local_ip():
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -54,6 +55,24 @@ def database_backup(status, remaining, total):
         logging.info(f"Database backup complete, {total} pages backed up")
     else:
         logging.info(f"Database backup {status}, {remaining} pages remaining")
+
+
+class ObjectPointer:
+
+    def __init__(self, initial_ref):
+        self.reference = initial_ref
+
+    def __getattr__(self, item):
+        # Pass the attribute request to the reference object unless we are trying to update the reference
+        if item == "reference":
+            return self.reference
+        return getattr(self.reference, item)
+
+    def __setattr__(self, key, value):
+        if key == "reference":
+            super(ObjectPointer, self).__setattr__(key, value)
+        else:
+            setattr(self.reference, key, value)
 
 
 class RoomController:
@@ -103,7 +122,8 @@ class RoomController:
         # If a room object was looking for another object that hasn't been created yet, it will get a empty RoomObject
         # That will be replaced with the real object when it is created later this allows for circular dependencies
         logging.info(f"Creating promise object {device_name} of type {device_type}")
-        return RoomObject(device_name, device_type)
+        pointer = ObjectPointer(RoomObject(device_name, device_type))
+        return pointer
 
     def _create_promise_module(self, module_name):
         logging.info(f"Creating promise module {module_name}")
@@ -122,7 +142,7 @@ class RoomController:
                 logging.info(f"Replacing promise object {room_object.object_name} with real object")
                 # Make sure that we copy the callbacks from the promise object to the real object
                 device._callbacks = room_object._callbacks
-                self.room_objects[i] = device
+                self.room_objects[i].reference = device # Replace the promise object with the real object
                 return
         logging.info(f"Attaching object {device.object_name} to room controller")
         self.room_objects.append(device)
@@ -142,7 +162,7 @@ class RoomController:
     def get_object(self, device_name, create_if_not_found=True):
         for device in self.room_objects:
             if device.object_name == device_name:
-                return device
+                return self.room_objects[self.room_objects.index(device)]  # Return the reference to the object
         if create_if_not_found:
             self.room_objects.append(self._create_promise_object(device_name))
             return self.room_objects[-1]

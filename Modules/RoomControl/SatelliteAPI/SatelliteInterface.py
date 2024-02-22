@@ -34,9 +34,7 @@ class SatelliteObject(RoomObject):
         self.satellite = satellite
 
     def get_state(self):
-        return {
-            "objects": self.get_values()
-        }
+        return self.get_values()
 
     def get_type(self):
         return self.object_type
@@ -112,7 +110,6 @@ class Satellite:
             return
         self.last_seen = time.time()
         for object_name, object_data in data["objects"].items():
-            print(object_data)
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
         self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
