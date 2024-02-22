@@ -136,6 +136,7 @@ function getState(device_json) {
             }
             break;
         case "pin_watcher":
+        case "satellite_PinWatcher":
             if (device_json["health"]["online"] === false) {
                 state_string += "State: DOWN";
             } else if (device_json["health"]["fault"] === true) {
