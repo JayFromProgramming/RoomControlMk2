@@ -123,6 +123,8 @@ class EnvironmentController(RoomObject):
                     elif self.all_controlled_devices_down():
                         self._fault = True
                         self._reason = "No working devices"
+                        for device in self.devices:
+                            device.fault = False
                     else:
                         for device in self.devices:
                             device.fault = False
