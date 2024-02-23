@@ -282,6 +282,7 @@ class BlueStalker(RoomObject):
         else:
             logging.debug(f"BlueStalker: Connected to {address}")
             self.sockets[address] = sock
+            self.route_lost = False
             self.update_occupancy(address, True)
 
     @background
