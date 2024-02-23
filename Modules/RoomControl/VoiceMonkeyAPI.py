@@ -96,6 +96,7 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
         self.voice_monkey_table = self.database.get_table("voicemonkey_devices")
         self.row = self.voice_monkey_table.get_row(device_name=self.device_id)
         self.load_state()
+        self.auto = False
         self.room_controller.attach_object(self)
 
     def load_state(self):

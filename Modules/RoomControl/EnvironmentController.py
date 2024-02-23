@@ -99,10 +99,16 @@ class EnvironmentController(RoomObject):
 
         self.periodic_check()
 
+    def _update_devices_auto_state(self):
+        for device in self.devices:
+            if hasattr(device.device, "auto"):
+                device.device.auto = self.enabled
+
     @background
     def periodic_check(self):
         if hasattr(self.source, "get_value") and hasattr(self.source, "get_health"):
             while True:
+                self._update_devices_auto_state()
                 if self.enabled:
                     if self.source.object_type == "promise":
                         self._fault = True
@@ -194,9 +200,6 @@ class EnvironmentController(RoomObject):
     @on.setter
     def on(self, value):
         self.enabled = value
-
-        for device in self.devices:
-            device.device.auto = value
 
         # cursor = self.database.cursor()
         # cursor.execute("UPDATE enviv_controllers SET enabled=? WHERE name=?", (int(value), self.controller_name))

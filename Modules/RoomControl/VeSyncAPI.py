@@ -80,6 +80,7 @@ class VeSyncPlug(RoomObject, AbstractToggleDevice):
         self.lower_bounds = None
         self.get_bounds()
         self.room_controller = room_controller
+        self.auto = False
         self.room_controller.attach_object(self)
 
     def get_bounds(self):

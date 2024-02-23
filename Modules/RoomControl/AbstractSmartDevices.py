@@ -1,6 +1,6 @@
 import functools
 import threading
-
+from loguru import logger as logging
 
 class AbstractRGB:
 
@@ -179,6 +179,6 @@ class AbstractToggleDevice:
 
     def auto_state(self):
         return {
-            "is_auto": True if self._auto else False,
+            "is_auto": self._auto,
             "auto_mode": None,
         }
