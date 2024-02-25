@@ -1,4 +1,5 @@
 import math
+import os
 import time
 
 from pyowm.owm import OWM
@@ -7,6 +8,7 @@ from threading import Thread
 from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
+import pickle
 
 
 class WeatherRelay(RoomModule):
@@ -23,6 +25,30 @@ class WeatherRelay(RoomModule):
         self.forecast = None
         self.thread = Thread(target=self.update, daemon=True)
         self.thread.start()
+        if os.path.exists("Cache/forecast.pkl"):
+            with open("Cache/forecast.pkl", "rb") as file:
+                self.forecast = pickle.load(file)
+                logging.info(f"Loaded forecast from cache {len(self.forecast.forecast_hourly)}")
+        if self.forecast is None:
+            self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+            logging.info(f"Loaded forecast for {len(self.forecast.forecast_hourly)} hourly forecasts"
+                         f" from the API")
+            os.makedirs("Cache", exist_ok=True)
+            pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
+        # self.forecast_thread = Thread(target=self.update_forecast, daemon=True)
+        # self.forecast_thread.start()
+
+    def update_forecast(self):
+        while True:
+            try:
+                # Load the forecast object from cache
+                self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+                # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
+                logging.info(f"Loaded {len(self.forecast.forecast_hourly)} hourly forecasts")
+            except Exception as e:
+                logging.exception(e)
+            finally:
+                time.sleep(1800)
 
     def update(self):
         while True:
@@ -30,7 +56,6 @@ class WeatherRelay(RoomModule):
                 logging.debug("Checking for new weather data")
                 observation = self.mgr.weather_at_place("Houghton, Michigan, US")
                 self.current_weather = observation.weather
-                # self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
                 # Check if the there is a newer weather report
                 self.save_current_weather()
                 logging.debug(f"Updated weather for {self.current_weather.reference_time(timeformat='iso')}")
@@ -92,3 +117,24 @@ class WeatherRelay(RoomModule):
         except Exception as e:
             logging.error(f"Error saving current weather: {e}")
             logging.exception(e)
+
+    def get_available_forecast(self):
+        """
+        Returns the available forecast data
+        :return:
+        """
+        forecasts = []
+        for forecast in self.forecast.forecast_hourly:
+            forecasts.append(forecast.reference_time())
+        return forecasts
+
+    def get_forecast(self, time):
+        """
+        Returns the forecast for the given time
+        :param time: The time to get the forecast for
+        :return: The forecast for the given time
+        """
+        forecast = self.forecast.forecast_hourly
+        for f in forecast:
+            if f.reference_time() == time:
+                return f

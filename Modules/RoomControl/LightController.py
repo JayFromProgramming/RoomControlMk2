@@ -62,7 +62,7 @@ class LightControllerHost(RoomModule):
         logging.info("Starting Light Controller Host Periodic Update")
         while True:
             for controller in self.light_controllers.values():
-                controller.update()
+                controller.update_state()
             time.sleep(5)
 
     def refresh_all(self):
@@ -70,7 +70,6 @@ class LightControllerHost(RoomModule):
 
 
 class LightController(RoomObject):
-
     is_promise = False
 
     def __init__(self, name, room_controller):
@@ -154,7 +153,7 @@ class LightController(RoomObject):
                 return True
         return False
 
-    def update(self):
+    def update_state(self):
         if self.enabled and not self.changing_state:
             if self.dnd_active:
                 if self.dnd_state is not None:
