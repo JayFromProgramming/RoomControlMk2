@@ -35,20 +35,25 @@ class WeatherRelay(RoomModule):
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
-        # self.forecast_thread = Thread(target=self.update_forecast, daemon=True)
-        # self.forecast_thread.start()
+        self.forecast_thread = Thread(target=self.update_forecast, daemon=True)
+        self.forecast_thread.start()
 
     def update_forecast(self):
         while True:
             try:
-                # Load the forecast object from cache
-                self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
-                # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
-                logging.info(f"Loaded {len(self.forecast.forecast_hourly)} hourly forecasts")
+                if time.time() - getattr(self.forecast, "last_update", 0) > 720:
+                    logging.info("Updating forecast")
+                    self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+                    self.forecast.last_update = time.time()
+                    pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
+                    # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
+                    logging.info(f"Loaded {len(self.forecast.forecast_hourly)} hourly forecasts")
+                else:
+                    logging.info("Forecast is up to date")
             except Exception as e:
                 logging.exception(e)
             finally:
-                time.sleep(1800)
+                time.sleep(300)
 
     def update(self):
         while True:
