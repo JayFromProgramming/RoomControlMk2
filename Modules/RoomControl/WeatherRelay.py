@@ -128,13 +128,13 @@ class WeatherRelay(RoomModule):
             forecasts.append(forecast.reference_time())
         return forecasts
 
-    def get_forecast(self, time):
+    def get_forecast(self, forecast_time):
         """
         Returns the forecast for the given time
-        :param time: The time to get the forecast for
+        :param forecast_time: The time to get the forecast for
         :return: The forecast for the given time
         """
-        forecast = self.forecast.forecast_hourly
-        for f in forecast:
-            if f.reference_time() == time:
-                return f
+
+        for forecast in self.forecast.forecast_hourly:
+            if forecast.ref_time == int(forecast_time):
+                return forecast
