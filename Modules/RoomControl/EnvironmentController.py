@@ -170,11 +170,20 @@ class EnvironmentController(RoomObject):
         return {
             "online": self.online,
             "fault": self._fault,
-            "reason": self.source.get_reason() if self.source.get_fault() else self._reason
+            "reason": self.source.get_reason() if self.source.get_fault() else self._reason,
+            "down_devices": self.total_down_devices(),
         }
 
     def all_controlled_devices(self):
         return self.devices
+
+    def total_down_devices(self):
+        down = 0
+        for device in self.devices:
+            if not device.device.online or not device.device.fault \
+                    and device.device.offline_reason != "SRC CTLR SENSOR FAULT":
+                down += 1
+        return down
 
     def all_controlled_devices_down(self):
         for device in self.devices:
