@@ -49,7 +49,7 @@ IP_BLACKLIST = ["83.97"]
 
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
-        # await asyncio.sleep(random.random() * 1)  # TODO: Remove soon, just for testing
+        await asyncio.sleep(random.random() * 0.5)  # TODO: Remove soon, just for testing
         for ip in IP_BLACKLIST:
             if request.remote.startswith(ip):
                 logging.debug(f"Blacklisted IP {request.remote} attempted to access the API")
