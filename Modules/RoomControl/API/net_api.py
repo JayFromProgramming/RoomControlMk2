@@ -85,6 +85,7 @@ class NetAPI(RoomModule):
             + [web.get('/auth/{api_key}', self.handle_auth)]
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
+            + [web.get('/get_type/{name}', self.handle_get_type)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
             + [web.get('/get_all', self.handle_get_all)]
             + [web.get('/occupancy', self.handle_occupancy)]
@@ -294,6 +295,18 @@ class NetAPI(RoomModule):
         else:
             return web.Response(text="Device not found")
 
+    async def handle_get_type(self, request):
+        if not self.check_auth(request):
+            return login_redirect()
+
+        device_name = request.match_info['name']
+        logging.debug(f"Received GET_TYPE request for {device_name}")
+        device = self.get_device(device_name)
+        if device:
+            return web.Response(text=device.get_type())
+        else:
+            return web.Response(text="Device not found")
+
     async def handle_set(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
@@ -431,8 +444,9 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         logging.debug("Received SCHEMA request")
-
-        return web.Response(text=json.dumps(self.schema))
+        with open("Modules/RoomControl/Configs/new_schema.json") as f:
+            schema = json.load(f)
+        return web.Response(text=schema.__str__())
 
     async def monkey_adder(self, request):
         logging.debug("Received MONKEY_ADDER request")
