@@ -445,8 +445,7 @@ class NetAPI(RoomModule):
             raise web.HTTPUnauthorized()
         logging.debug("Received SCHEMA request")
         with open("Modules/RoomControl/Configs/new_schema.json") as f:
-            schema = json.load(f)
-        return web.Response(text=schema.__str__())
+            return web.Response(text=f.read(), content_type="application/json")
 
     async def monkey_adder(self, request):
         logging.debug("Received MONKEY_ADDER request")
