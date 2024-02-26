@@ -115,7 +115,7 @@
     {
       "slot": 8,
       "type": "environment_controller",
-      "name": "Temperature",
+      "name": "Temperature Control",
       "device": "temperature_control"
     },
     {

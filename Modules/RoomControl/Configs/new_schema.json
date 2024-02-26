@@ -25,7 +25,7 @@
   },
   "intake": {
     "group": "Living Room",
-    "starred": false
+    "starred": true
   },
   "exhaust": {
     "group": null,
@@ -33,7 +33,7 @@
   },
   "plug_2": {
     "group": null,
-    "starred": false
+    "starred": true
   },
   "temperature_control": {
     "group": null,
