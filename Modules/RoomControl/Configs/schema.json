@@ -121,7 +121,7 @@
     {
       "slot": 9,
       "type": "environment_controller",
-      "name": "Humidity",
+      "name": "Humidity Control",
       "device": "humidity_control"
     },
     {
