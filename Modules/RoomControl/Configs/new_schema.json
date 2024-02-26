@@ -19,6 +19,10 @@
     "group": "Bedroom",
     "starred": false
   },
+  "big_humid": {
+    "group": "Bedroom",
+    "starred": false
+  },
   "rad_fan": {
     "group": null,
     "starred": false
