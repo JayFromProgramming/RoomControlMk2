@@ -46,5 +46,13 @@
   "humidity_control": {
     "group": null,
     "starred": true
+  },
+  "room_light_controller": {
+    "group": "Auto Lights",
+    "starred": false
+  },
+  "loft_light_controller": {
+    "group": "Auto Lights",
+    "starred": false
   }
 }
