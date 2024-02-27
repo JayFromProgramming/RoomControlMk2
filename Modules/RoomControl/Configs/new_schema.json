@@ -40,19 +40,19 @@
     "starred": true
   },
   "temperature_control": {
-    "group": null,
+    "group": "Automatic Controllers",
     "starred": true
   },
   "humidity_control": {
-    "group": null,
+    "group": "Automatic Controllers",
     "starred": true
   },
   "room_light_controller": {
-    "group": "Auto Lights",
+    "group": "Automatic Controllers",
     "starred": false
   },
   "loft_light_controller": {
-    "group": "Auto Lights",
+    "group": "Automatic Controllers",
     "starred": false
   }
 }
