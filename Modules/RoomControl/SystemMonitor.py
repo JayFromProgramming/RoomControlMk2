@@ -64,8 +64,13 @@ class SystemMonitorLocal(RoomObject):
         while True:
             # Check if the current version is the latest (use git to check if the current commit is the latest)
             try:
-                subprocess.run(["git", "fetch", "origin", "master"])
-                result = subprocess.run(["git", "rev-list", "--count", "HEAD..origin/master"], capture_output=True)
+                # Get the branch we are on
+                result = subprocess.run(["git", "branch", "--show-current"], capture_output=True)
+                branch = str(result.stdout).strip().strip("b'").strip("\\n")
+                # Fetch the latest commits
+                subprocess.run(["git", "fetch", "origin", branch])
+                # Check if we are behind the latest commit
+                result = subprocess.run(["git", "rev-list", "--count", f"HEAD..origin/{branch}"], capture_output=True)
                 if str(result.stdout) == b'0\n':
                     self.latest = False
                 self.latest = True
