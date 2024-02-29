@@ -36,6 +36,7 @@ class SystemMonitorLocal(RoomObject):
         self.set_value("memory_usage", 0)
         self.set_value("disk_usage", 0)
         self.set_value("network_usage", 0)
+        self.set_value("address", None)
         self.last_network_usage = 0
         self.set_value("temperature", 0)
         self.set_value("update_available", None)
@@ -58,6 +59,19 @@ class SystemMonitorLocal(RoomObject):
 
     def get_type(self):
         return self.object_type
+
+    def get_address(self):
+        if hasattr(psutil, "net_if_addrs"):
+            netif = psutil.net_if_addrs()
+            if "wlan0" in netif:
+                return psutil.net_if_addrs()["wlan0"][1].address
+            elif "eth0" in netif:
+                return psutil.net_if_addrs()["eth0"][1].address
+            elif "Wi-Fi" in netif:
+                return psutil.net_if_addrs()["Wi-Fi"][1].address
+            else:
+                return "Unknown"
+        return "Unknown"
 
     @background
     def check_version(self):
@@ -108,6 +122,7 @@ class SystemMonitorLocal(RoomObject):
             self.set_value("temperature", cpu_temp)
             self.set_value("uptime_system", round(time.time() - psutil.boot_time()))
             self.set_value("uptime_controller", round(time.time() - os.path.getmtime("main.py")))
+            self.set_value("address", self.get_address())
 
             time.sleep(5)
 
