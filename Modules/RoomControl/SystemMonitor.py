@@ -38,7 +38,7 @@ class SystemMonitorLocal(RoomObject):
         self.set_value("network_usage", 0)
         self.last_network_usage = 0
         self.set_value("temperature", 0)
-        self.set_value("update_available", False)
+        self.set_value("update_available", None)
         self.set_value("uptime_system", round(time.time() - psutil.boot_time()))
         self.set_value("uptime_controller", round(time.time() - os.path.getmtime("main.py")))
         self.latest = None
@@ -89,7 +89,7 @@ class SystemMonitorLocal(RoomObject):
             disk_usage = psutil.disk_usage('/').percent
             if hasattr(psutil, "sensors_temperatures"):
                 sys_temp = psutil.sensors_temperatures()
-                logging.info(sys_temp)
+                # logging.info(sys_temp)
                 if "cpu_thermal" in sys_temp:
                     cpu_temp = round(sys_temp["cpu_thermal"][0].current)
                 elif "coretemp" in sys_temp:
