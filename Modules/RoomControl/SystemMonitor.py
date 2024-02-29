@@ -92,6 +92,8 @@ class SystemMonitorLocal(RoomObject):
                 logging.info(sys_temp)
                 if "cpu_thermal" in sys_temp:
                     cpu_temp = round(sys_temp["cpu_thermal"][0].current)
+                elif "coretemp" in sys_temp:
+                    cpu_temp = round(sys_temp["coretemp"][0].current)
                 else:
                     cpu_temp = None
             else:
