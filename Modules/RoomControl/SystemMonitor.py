@@ -84,6 +84,7 @@ class SystemMonitorLocal(RoomObject):
             disk_usage = psutil.disk_usage('/').percent
             if hasattr(psutil, "sensors_temperatures"):
                 sys_temp = psutil.sensors_temperatures()
+                logging.info(sys_temp)
                 if "cpu_thermal" in sys_temp:
                     cpu_temp = round(sys_temp["cpu_thermal"][0].current)
                 else:
