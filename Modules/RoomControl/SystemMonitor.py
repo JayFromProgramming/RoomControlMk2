@@ -111,3 +111,16 @@ class SystemMonitorRemote(RoomObject):
         self.set_value("memory_usage", self.satellite_monitor.get_value("memory_usage"))
         self.set_value("disk_usage", self.satellite_monitor.get_value("disk_usage"))
         self.set_value("network_usage", self.satellite_monitor.get_value("network_usage"))
+
+    def get_state(self):
+        return self.get_values()
+
+    def get_health(self):
+        return {
+            "online": True,
+            "fault": False,
+            "reason": ""
+        }
+
+    def get_type(self):
+        return self.object_type

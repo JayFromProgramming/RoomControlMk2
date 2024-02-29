@@ -284,14 +284,14 @@ class NetAPI(RoomModule):
         device_name = request.match_info['name']
         logging.debug(f"Received GET request for {device_name}")
         device = self.get_device(device_name)
-        msg = APIMessageTX(
-            state=device.get_state(),
-            info=device.get_info(),
-            health=device.get_health(),
-            type=device.get_type(),
-            auto_state=device.auto_state()
-        )
         if device:
+            msg = APIMessageTX(
+                state=device.get_state(),
+                info=device.get_info(),
+                health=device.get_health(),
+                type=device.get_type(),
+                auto_state=device.auto_state()
+            )
             return web.Response(text=msg.__str__(), headers={"Refresh": "5"})
         else:
             return web.Response(text="Device not found")
