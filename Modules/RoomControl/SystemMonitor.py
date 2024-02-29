@@ -67,6 +67,8 @@ class SystemMonitorLocal(RoomObject):
                 return psutil.net_if_addrs()["wlan0"][1].address
             elif "eth0" in netif:
                 return psutil.net_if_addrs()["eth0"][1].address
+            elif "eno1" in netif:
+                return psutil.net_if_addrs()["eno1"][1].address
             elif "Wi-Fi" in netif:
                 return psutil.net_if_addrs()["Wi-Fi"][1].address
             else:
