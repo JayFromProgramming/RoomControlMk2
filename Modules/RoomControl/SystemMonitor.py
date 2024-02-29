@@ -60,20 +60,19 @@ class SystemMonitorLocal(RoomObject):
     def get_type(self):
         return self.object_type
 
-    def get_address(self):
-        if hasattr(psutil, "net_if_addrs"):
-            netif = psutil.net_if_addrs()
-            if "wlan0" in netif:
-                return psutil.net_if_addrs()["wlan0"][1].address
-            elif "eth0" in netif:
-                return psutil.net_if_addrs()["eth0"][1].address
-            elif "eno1" in netif:
-                return psutil.net_if_addrs()["eno1"][1].address
-            elif "Wi-Fi" in netif:
-                return psutil.net_if_addrs()["Wi-Fi"][1].address
-            else:
-                return "Unknown"
-        return "Unknown"
+    @staticmethod
+    def get_ip():
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.254.254.254', 1))
+            IP = s.getsockname()[0]
+        except Exception:
+            IP = '127.0.0.1'
+        finally:
+            s.close()
+        return IP
 
     @background
     def check_version(self):
@@ -124,7 +123,7 @@ class SystemMonitorLocal(RoomObject):
             self.set_value("temperature", cpu_temp)
             self.set_value("uptime_system", round(time.time() - psutil.boot_time()))
             self.set_value("uptime_controller", round(time.time() - os.path.getmtime("main.py")))
-            self.set_value("address", self.get_address())
+            self.set_value("address", self.get_ip())
 
             time.sleep(5)
 
