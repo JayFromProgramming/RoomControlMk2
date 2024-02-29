@@ -99,33 +99,38 @@ class SystemMonitorLocal(RoomObject):
     @background
     def start_monitoring(self):
         while True:
-            cpu_usage = psutil.cpu_percent()
-            memory_usage = psutil.virtual_memory().percent
-            disk_usage = psutil.disk_usage('/').percent
-            if hasattr(psutil, "sensors_temperatures"):
-                sys_temp = psutil.sensors_temperatures()
-                # logging.info(sys_temp)
-                if "cpu_thermal" in sys_temp:
-                    cpu_temp = round(sys_temp["cpu_thermal"][0].current)
-                elif "coretemp" in sys_temp:
-                    cpu_temp = round(sys_temp["coretemp"][0].current)
+            try:
+                cpu_usage = psutil.cpu_percent()
+                memory_usage = psutil.virtual_memory().percent
+                disk_usage = psutil.disk_usage('/').percent
+                if hasattr(psutil, "sensors_temperatures"):
+                    sys_temp = psutil.sensors_temperatures()
+                    # logging.info(sys_temp)
+                    if "cpu_thermal" in sys_temp:
+                        cpu_temp = round(sys_temp["cpu_thermal"][0].current)
+                    elif "coretemp" in sys_temp:
+                        cpu_temp = round(sys_temp["coretemp"][0].current)
+                    else:
+                        cpu_temp = None
                 else:
                     cpu_temp = None
-            else:
-                cpu_temp = None
-            network_usage = psutil.net_io_counters().bytes_sent - self.last_network_usage
-            self.last_network_usage = psutil.net_io_counters().bytes_sent
+                network_usage = psutil.net_io_counters().bytes_sent - self.last_network_usage
+                self.last_network_usage = psutil.net_io_counters().bytes_sent
 
-            self.set_value("cpu_usage", cpu_usage)
-            self.set_value("memory_usage", memory_usage)
-            self.set_value("disk_usage", disk_usage)
-            self.set_value("network_usage", network_usage)
-            self.set_value("temperature", cpu_temp)
-            self.set_value("uptime_system", round(time.time() - psutil.boot_time()))
-            self.set_value("uptime_controller", round(time.time() - os.path.getmtime("main.py")))
-            self.set_value("address", self.get_ip())
+                self.set_value("cpu_usage", cpu_usage)
+                self.set_value("memory_usage", memory_usage)
+                self.set_value("disk_usage", disk_usage)
+                self.set_value("network_usage", network_usage)
+                self.set_value("temperature", cpu_temp)
+                self.set_value("uptime_system", round(time.time() - psutil.boot_time()))
+                self.set_value("uptime_controller", round(time.time() - os.path.getmtime("main.py")))
+                self.set_value("address", self.get_ip())
 
-            time.sleep(5)
+            except Exception as e:
+                logging.error(f"Error: {e}")
+                logging.exception(e)
+            finally:
+                time.sleep(5)
 
 
 class SystemMonitorRemote(RoomObject):
