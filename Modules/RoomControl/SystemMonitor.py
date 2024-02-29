@@ -1,3 +1,4 @@
+import socket
 import time
 
 from Modules.RoomControl import background
