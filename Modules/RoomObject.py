@@ -16,7 +16,6 @@ class RoomObject:
         self._values = {}
         self._health = {}
 
-
     def name(self):
         return self.object_name or self.object_type
 
@@ -41,6 +40,11 @@ class RoomObject:
             if self._values.get(key, None) != value:
                 self.emit_event(f"on_{key}_update", value)
             self._values[key] = value
+
+    def set_value(self, key, value):
+        if self._values.get(key, None) != value:
+            self.emit_event(f"on_{key}_update", value)
+        self._values[key] = value
 
     def get_values(self):
         return self._values

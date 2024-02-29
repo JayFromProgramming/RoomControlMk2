@@ -97,6 +97,7 @@ class NetAPI(RoomModule):
             + [web.get('/get_commands', self.handle_get_commands)]
             + [web.get('/run_command/{name}', self.handle_run_command)]
             + [web.get('/sys_info', self.handle_sys_info)]
+            + [web.get('/get_system_monitors', self.handle_system_monitors)]
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
             + [web.post('/set/{name}', self.handle_set_post)]
             + [web.get('/page/css/{file}', self.handle_css)]
@@ -641,3 +642,15 @@ class NetAPI(RoomModule):
         device = self.get_device(device_id)
         device.ping()
         return web.Response(text="OK")
+
+    async def handle_system_monitors(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received SYSTEM_MONITORS request")
+        # Get all room objects of type "SystemMonitor" or "satellite_SystemMonitor"
+        monitors = self.room_controller.get_type("SystemMonitor")
+        print(monitors)
+        # List all the monitor names and nothing more
+        data = [monitor.object_name for monitor in monitors]
+        msg = APIMessageTX(system_monitors=data)
+        return web.Response(text=msg.__str__())

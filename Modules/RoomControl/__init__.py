@@ -15,16 +15,6 @@ from ConcurrentDatabase.Database import Database
 # from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.Decorators import background
 
-# from Modules.RoomControl.CommandController import CommandController
-# from Modules.RoomControl.DataLogger import DataLoggingHost
-# from Modules.RoomControl.EnvironmentController import EnvironmentControllerHost
-# from Modules.RoomControl.LightController import LightControllerHost
-# from Modules.RoomControl.OccupancyDetection import OccupancyDetector
-# from Modules.RoomControl.OccupancyDetection.BluetoothOccupancy import BluetoothDetector
-# from Modules.RoomControl.SceneController import SceneController
-# from Modules.RoomControl.SensorHost import SensorHost
-# from Modules.RoomControl.WeatherRelay import WeatherRelay
-
 # Auto import modules that are in Modules/RoomControl that have a class that inherits RoomModule
 # This is done to make sure that all modules are dynamically loaded
 from Modules.RoomModule import RoomModule
@@ -42,7 +32,6 @@ for module in os.listdir("Modules/RoomControl"):
                 module_name = module_file.replace(".py", "")
                 logging.info(f"Importing {module_name} from {module}")
                 __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
-
 
 def get_local_ip():
     import socket
@@ -168,7 +157,7 @@ class RoomController:
     def get_type(self, device_type):
         devices = []
         for device in self.room_objects:
-            if device.device_type == device_type:
+            if device.object_type == device_type:
                 devices.append(device)
         return devices
 
