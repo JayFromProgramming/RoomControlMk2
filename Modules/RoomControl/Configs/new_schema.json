@@ -54,5 +54,13 @@
   "loft_light_controller": {
     "group": "Automatic Controllers",
     "starred": false
+  },
+  "BlueStalker": {
+    "group": "Sensors",
+    "starred": false
+  },
+  "MotionDetector": {
+    "group": "Sensors",
+    "starred": false
   }
 }
