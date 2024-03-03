@@ -62,6 +62,38 @@ class SystemMonitorLocal(RoomObject):
     def get_type(self):
         return self.object_type
 
+    @property
+    def action(self):
+        return None
+
+    @action.setter
+    def action(self, value):
+        if value == "reboot":
+            self.reboot()
+        if value == "shutdown":
+            self.shutdown()
+        if value == "update":
+            self.update_system()
+        if value == "restart":
+            self.restart()
+
+    def reboot(self):
+        subprocess.run(["sudo", "reboot"])
+
+    def shutdown(self):
+        subprocess.run(["sudo", "shutdown", "now"])
+
+    def update_system(self):
+        subprocess.run(["sudo", "apt", "update"])
+        subprocess.run(["sudo", "apt", "upgrade", "-y"])
+        subprocess.run(["sudo", "apt", "autoremove", "-y"])
+        subprocess.run(["sudo", "apt", "clean"])
+        subprocess.run(["git", "pull", "origin", "mk3"])
+        exit(-1)
+
+    def restart(self):
+        exit(-1)
+
     @staticmethod
     def get_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -167,6 +199,21 @@ class SystemMonitorRemote(RoomObject):
             "fault": False,
             "reason": ""
         }
+
+    @property
+    def action(self):
+        return None
+
+    @action.setter
+    def action(self, value):
+        if value == "reboot":
+            self.satellite_monitor.emit_event("reboot")
+        if value == "shutdown":
+            self.satellite_monitor.emit_event("shutdown")
+        if value == "update":
+            self.satellite_monitor.emit_event("update")
+        if value == "restart":
+            self.satellite_monitor.emit_event("restart")
 
     @background
     def update(self):
