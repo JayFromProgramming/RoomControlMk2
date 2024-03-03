@@ -123,6 +123,7 @@ class Satellite:
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
         self.ip = data["current_ip"]
+        self.ip = str(self.ip).strip("'")
         self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
                                           (self.last_seen, self.name))
 
@@ -176,7 +177,7 @@ class Satellite:
             "kwargs": kwargs,
             "auth": self.auth
         }
-        logging.info(f"Sending event {event_name} to {self.name}")
+        logging.info(f"Sending event {event_name} to {self.name} @ {self.ip}:47670")
         if self.ip is None:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
