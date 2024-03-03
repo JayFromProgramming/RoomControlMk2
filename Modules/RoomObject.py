@@ -38,8 +38,8 @@ class RoomObject:
         """
         self._health = data["health"]
         for key, value in data["data"].items():
-            if self._values.get(key, None) != value:
-                self.emit_event(f"on_{key}_update", value)
+            # if self._values.get(key, None) != value:
+            #     self.emit_event(f"on_{key}_update", value)
             self._values[key] = value
 
     def set_value(self, key, value):
