@@ -156,6 +156,7 @@ class SystemMonitorRemote(RoomObject):
 
         # Check if the object is not a promise object
         self.online = not self.satellite_monitor.is_promise
+        self.update()
 
     def get_state(self):
         return self.get_values()
