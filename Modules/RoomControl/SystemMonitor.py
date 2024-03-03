@@ -78,12 +78,15 @@ class SystemMonitorLocal(RoomObject):
             self.restart()
 
     def reboot(self):
+        logging.info("Rebooting system on SystemMonitor request")
         subprocess.run(["sudo", "reboot"])
 
     def shutdown(self):
+        logging.info("Shutting down system on SystemMonitor request")
         subprocess.run(["sudo", "shutdown", "now"])
 
     def update_system(self):
+        logging.info("Updating system on SystemMonitor request")
         subprocess.run(["sudo", "apt", "update"])
         subprocess.run(["sudo", "apt", "upgrade", "-y"])
         subprocess.run(["sudo", "apt", "autoremove", "-y"])
@@ -92,6 +95,7 @@ class SystemMonitorLocal(RoomObject):
         exit(-1)
 
     def restart(self):
+        logging.info("Restarting system on SystemMonitor request")
         exit(-1)
 
     @staticmethod
