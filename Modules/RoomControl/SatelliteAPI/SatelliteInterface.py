@@ -28,7 +28,6 @@ def get_host_names():
 
 
 class SatelliteObject(RoomObject):
-
     is_promise = False
 
     def __init__(self, object_name, object_type, satellite):
@@ -40,6 +39,15 @@ class SatelliteObject(RoomObject):
 
     def get_type(self):
         return self.object_type
+
+    def emit_event(self, event_name, *args, **kwargs):
+        """
+        Emit an event to all attached callbacks
+        :param event_name: The name of the event to emit
+        :param args: Any arguments to pass to the callback
+        :param kwargs: Any keyword arguments to pass to the callback
+        """
+        asyncio.create_task(self.satellite.downlink_event(self, event_name, *args, **kwargs))
 
     def get_health(self):
         online = self.satellite.online and self._health.get("online", False)
@@ -150,6 +158,27 @@ class Satellite:
                     else:
                         self.parse_uplink(await response.json())
             await asyncio.sleep(60)
+
+    async def downlink_event(self, object_ref, event_name, *args, **kwargs):
+        """
+        Send an event to the satellite
+        """
+        if not self.online:
+            logging.warning(f"Cannot send event to {self.name} because it is offline")
+            return
+        data = {
+            "name": self.name,
+            "current_ip": self.ip,
+            "object": object_ref.name(),
+            "event": event_name,
+            "args": args,
+            "kwargs": kwargs,
+            "auth": self.auth
+        }
+        logging.info(f"Sending event {event_name} to {self.name}")
+        async with request("POST", f"http://{self.ip}:47670/event", json=data) as response:
+            if response.status != 200:
+                logging.warning(f"Failed to send event to {self.name} with status {response.status}")
 
 
 class SatelliteInterface(RoomModule):
