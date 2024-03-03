@@ -210,6 +210,7 @@ class SystemMonitorRemote(RoomObject):
 
     @action.setter
     def action(self, value):
+        logging.info(f"Received action: {value}")
         if value == "reboot":
             self.satellite_monitor.emit_event("reboot")
         if value == "shutdown":
