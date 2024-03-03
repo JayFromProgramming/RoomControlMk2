@@ -29,6 +29,8 @@ def get_host_names():
 
 class SatelliteObject(RoomObject):
 
+    is_promise = False
+
     def __init__(self, object_name, object_type, satellite):
         super().__init__(object_name, object_type)
         self.satellite = satellite
