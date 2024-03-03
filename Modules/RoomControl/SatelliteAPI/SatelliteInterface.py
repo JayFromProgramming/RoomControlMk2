@@ -122,7 +122,7 @@ class Satellite:
         for object_name, object_data in data["objects"].items():
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
-        self.ip = data["current_ip"]
+        self.ip = data["current_ip"][0]
         self.ip = str(self.ip).strip("'")
         self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
                                           (self.last_seen, self.name))
