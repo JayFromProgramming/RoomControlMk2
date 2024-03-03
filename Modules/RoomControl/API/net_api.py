@@ -335,6 +335,7 @@ class NetAPI(RoomModule):
         # Sort the devices by type
         devices_raw.sort(key=lambda x: x.object_type, reverse=True)
         devices = {}
+
         for device in devices_raw:
             try:
                 if isinstance(device, str):
@@ -344,6 +345,7 @@ class NetAPI(RoomModule):
                     devices[name] = {
                         "state": device.get_state(),
                         "info": device.get_info(),
+                        "actions": device.supported_actions,
                         "health": device.get_health(),
                         "type": "Promise" if device.object_type == "RoomObject" else device.get_type(),
                         "auto_state": device.auto_state()

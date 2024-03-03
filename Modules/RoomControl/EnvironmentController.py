@@ -3,7 +3,7 @@ from loguru import logger as logging
 
 import ConcurrentDatabase
 from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
-from Modules.RoomControl.Decorators import background, api_action
+from Modules.RoomControl.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 
@@ -235,7 +235,7 @@ class EnvironmentController(RoomObject):
 
     @property
     def current_value(self):
-        return round(self.source.get_value(), 2)
+        return round(self.source.get_value('current_value'), 2)
 
     @property
     def fault(self):

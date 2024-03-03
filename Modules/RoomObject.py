@@ -3,6 +3,7 @@ from loguru import logger as logging
 
 class RoomObject:
     object_type = "RoomObject"
+    supported_actions = []
     is_promise = True
     is_sensor_only = False  # Indicates that this object is only a sensor and does not have any control capabilities
     is_satellite = False  # Indicates that this object comes from a different controller
