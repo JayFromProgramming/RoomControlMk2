@@ -49,6 +49,7 @@ IP_BLACKLIST = ["83.97"]
 
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
+        await asyncio.sleep(random.random() * 0.5)  # TODO: Remove soon, just for testing
         for ip in IP_BLACKLIST:
             if request.remote.startswith(ip):
                 logging.debug(f"Blacklisted IP {request.remote} attempted to access the API")
@@ -84,17 +85,19 @@ class NetAPI(RoomModule):
             + [web.get('/auth/{api_key}', self.handle_auth)]
             + [web.get('/set/{name}', self.handle_set)]
             + [web.get('/get/{name}', self.handle_get)]
+            + [web.get('/get_type/{name}', self.handle_get_type)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
             + [web.get('/get_all', self.handle_get_all)]
-            + [web.get('/occupancy', self.handle_occupancy)]
-            + [web.get('/set_auto/{mode}', self.handle_auto)]
+            # + [web.get('/occupancy', self.handle_occupancy)]
+            # + [web.get('/set_auto/{mode}', self.handle_auto)]
             + [web.get('/get_schema', self.handle_schema)]
-            + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
+            # + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
             + [web.get('/get_scenes', self.handle_get_scenes)]
             + [web.get('/set_scene/{name}', self.handle_set_scene)]
             + [web.get('/get_commands', self.handle_get_commands)]
             + [web.get('/run_command/{name}', self.handle_run_command)]
             + [web.get('/sys_info', self.handle_sys_info)]
+            + [web.get('/get_system_monitors', self.handle_system_monitors)]
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
             + [web.post('/set/{name}', self.handle_set_post)]
             + [web.get('/page/css/{file}', self.handle_css)]
@@ -104,7 +107,8 @@ class NetAPI(RoomModule):
             + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
             + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
             + [web.get('/weather/now', self.handle_weather_now)]
-            + [web.get('/weather/forecast/{from_time}/{to_time}', self.handle_weather_forecast)]
+            + [web.get('/weather/available_forecast', self.handle_weather_forecast_list)]
+            + [web.get('/weather/forecast/{time}', self.handle_weather_forecast)]
             + [web.get('/weather/past/{from_time}/{to_time}', self.handle_weather_past)]
         )
 
@@ -280,15 +284,27 @@ class NetAPI(RoomModule):
         device_name = request.match_info['name']
         logging.debug(f"Received GET request for {device_name}")
         device = self.get_device(device_name)
-        msg = APIMessageTX(
-            state=device.get_state(),
-            info=device.get_info(),
-            health=device.get_health(),
-            type=device.get_type(),
-            auto_state=device.auto_state()
-        )
         if device:
+            msg = APIMessageTX(
+                state=device.get_state(),
+                info=device.get_info(),
+                health=device.get_health(),
+                type=device.get_type(),
+                auto_state=device.auto_state()
+            )
             return web.Response(text=msg.__str__(), headers={"Refresh": "5"})
+        else:
+            return web.Response(text="Device not found")
+
+    async def handle_get_type(self, request):
+        if not self.check_auth(request):
+            return login_redirect()
+
+        device_name = request.match_info['name']
+        logging.debug(f"Received GET_TYPE request for {device_name}")
+        device = self.get_device(device_name)
+        if device:
+            return web.Response(text=device.get_type())
         else:
             return web.Response(text="Device not found")
 
@@ -431,8 +447,8 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         logging.debug("Received SCHEMA request")
-
-        return web.Response(text=json.dumps(self.schema))
+        with open("Modules/RoomControl/Configs/new_schema.json") as f:
+            return web.Response(text=f.read(), content_type="application/json")
 
     async def monkey_adder(self, request):
         logging.debug("Received MONKEY_ADDER request")
@@ -591,22 +607,30 @@ class NetAPI(RoomModule):
         return web.Response(text=msg.__str__())
 
     async def handle_weather_now(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_NOW request")
         return web.json_response(self.room_controller.get_module("WeatherRelay").current_weather.to_dict())
 
+    async def handle_weather_forecast_list(self, request):
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_FORECAST_LIST request")
+        data = self.room_controller.get_module("WeatherRelay").get_available_forecast()
+        msg = APIMessageTX(weather_forecast_list=data)
+        return web.Response(text=msg.__str__())
+
     async def handle_weather_forecast(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_FORECAST request")
-        data = self.room_controller.get_module("WeatherRelay").get_forecast()
-        msg = APIMessageTX(weather_forecast=data)
+        data = self.room_controller.get_module("WeatherRelay").get_forecast(request.match_info['time'])
+        msg = APIMessageTX(weather_forecast=data.to_dict())
         return web.Response(text=msg.__str__())
 
     async def handle_weather_past(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_PAST request")
         data = self.room_controller.get_module("WeatherRelay").get_past()
         msg = APIMessageTX(weather_past=data)
@@ -620,3 +644,15 @@ class NetAPI(RoomModule):
         device = self.get_device(device_id)
         device.ping()
         return web.Response(text="OK")
+
+    async def handle_system_monitors(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received SYSTEM_MONITORS request")
+        # Get all room objects of type "SystemMonitor" or "satellite_SystemMonitor"
+        monitors = self.room_controller.get_type("SystemMonitor")
+        print(monitors)
+        # List all the monitor names and nothing more
+        data = [monitor.object_name for monitor in monitors]
+        msg = APIMessageTX(system_monitors=data)
+        return web.Response(text=msg.__str__())

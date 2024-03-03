@@ -1,0 +1,66 @@
+{
+  "plug_1": {
+    "group": null,
+    "starred": false
+  },
+  "B4E842D7A9F8": {
+    "group": "Living Room",
+    "starred": true
+  },
+  "18B905D086A5": {
+    "group": "Bedroom",
+    "starred": true
+  },
+  "B4E842136DA6": {
+    "group": "Kitchen",
+    "starred": true
+  },
+  "bed_fan": {
+    "group": "Bedroom",
+    "starred": false
+  },
+  "big_humid": {
+    "group": "Bedroom",
+    "starred": false
+  },
+  "rad_fan": {
+    "group": null,
+    "starred": false
+  },
+  "intake": {
+    "group": "Living Room",
+    "starred": true
+  },
+  "exhaust": {
+    "group": "Living Room",
+    "starred": false
+  },
+  "plug_2": {
+    "group": "Kitchen",
+    "starred": true
+  },
+  "temperature_control": {
+    "group": "Automatic Controllers",
+    "starred": true
+  },
+  "humidity_control": {
+    "group": "Automatic Controllers",
+    "starred": true
+  },
+  "room_light_controller": {
+    "group": "Automatic Controllers",
+    "starred": false
+  },
+  "loft_light_controller": {
+    "group": "Automatic Controllers",
+    "starred": false
+  },
+  "BlueStalker": {
+    "group": "Sensors",
+    "starred": false
+  },
+  "MotionDetector": {
+    "group": "Sensors",
+    "starred": false
+  }
+}

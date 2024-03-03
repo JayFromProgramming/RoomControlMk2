@@ -19,6 +19,10 @@ typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message:
             print(message.__dict__)
             for key, value in message.__dict__.items():  # Loop through all attributes in the message
                 if hasattr(device, key):  # Check the device has an attribute with the same name
+                    if value == "True":
+                        value = True
+                    elif value == "False":
+                        value = False
                     setattr(device, key, value)
                     preformed_actions.append(f"set_{key} to {value}")
                 else:  # If the device doesn't have an attribute with the same name

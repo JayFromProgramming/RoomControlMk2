@@ -2,7 +2,7 @@
   "schema": [
     {
       "slot": -1,
-      "name": "???",
+      "name": "Controller Power",
       "room": "",
       "device": "plug_1"
     },
@@ -70,7 +70,7 @@
       ],
       "device_names": [
         "Bed Fan",
-        "???"
+        "Plug 3"
       ]
     },
     {
@@ -83,7 +83,7 @@
       ],
       "device_names": [
         "Lamp",
-        "???"
+        "Plug 4"
       ]
     },
     {
@@ -95,8 +95,8 @@
         "rad_fan"
       ],
       "device_names": [
-        "???",
-        "???"
+        "Plug 5",
+        "Plug 6"
       ]
     },
     {
@@ -115,13 +115,13 @@
     {
       "slot": 8,
       "type": "environment_controller",
-      "name": "Temperature",
+      "name": "Temperature Control",
       "device": "temperature_control"
     },
     {
       "slot": 9,
       "type": "environment_controller",
-      "name": "Humidity",
+      "name": "Humidity Control",
       "device": "humidity_control"
     },
     {

@@ -122,22 +122,22 @@ class SceneController(RoomModule):
                 device_command = getattr(command, device.name())
                 for action, value in device_command.items():
                     if action == "on":
-                        actions.append("Turns {name} {value}".format(name=f"[{device.name()}]",
-                                                                     value='on' if value else 'off'))
+                        actions.append("{name} {value}".format(name=f"[{device.name()}]",
+                                                               value='on' if value else 'off'))
                     elif action == "brightness":
-                        actions.append("Sets {name} brightness to {value}".format(name=f"[{device.name()}]",
-                                                                                  value=value))
+                        actions.append("{name} brightness {value}".format(name=f"[{device.name()}]",
+                                                                          value=value))
                     elif action == "color":
                         r, g, b = value
                         color = f"({r}, {g}, {b})"
-                        actions.append("Sets {name} color to {value}".format(name=f"[{device.name()}]", value=color))
+                        actions.append("{name} color to {value}".format(name=f"[{device.name()}]", value=color))
                     elif action == "white":
-                        actions.append("Sets {name} white to {value}".format(name=f"[{device.name()}]", value=value))
+                        actions.append("{name} white to {value}".format(name=f"[{device.name()}]", value=value))
                     elif action == "target_value":
-                        actions.append("Sets {name} setpoint to {value}".format(name=f"[{device.name()}]", value=value))
+                        actions.append("{name} setpoint to {value}".format(name=f"[{device.name()}]", value=value))
                     elif action == "enable_dnd":
-                        actions.append("Turns {name} DND {value}".format(name=f"[{device.name()}]",
-                                                                         value='on' if value else 'off'))
+                        actions.append("{name} DND {value}".format(name=f"[{device.name()}]",
+                                                                   value='on' if value else 'off'))
                     else:
                         actions.append("Preforms unknown action {action} on {name}".format(action=action,
                                                                                            name=f"[{device.name()}]"))
@@ -274,7 +274,7 @@ class SceneTrigger:
         logging.info(f"SceneTrigger ({self.trigger_name}): Toggled active to {self.active}")
 
         self.database.run("UPDATE scene_triggers SET active=? WHERE trigger_id=?",
-                              (0 if self.active is False else 1, self.trigger_id))
+                          (0 if self.active is False else 1, self.trigger_id))
 
         # table = self.database.get_table("scene_triggers")
         # row = table.get_row(trigger_id=self.trigger_id)
