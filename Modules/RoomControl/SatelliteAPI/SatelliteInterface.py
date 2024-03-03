@@ -176,6 +176,9 @@ class Satellite:
             "auth": self.auth
         }
         logging.info(f"Sending event {event_name} to {self.name}")
+        if self.ip is None:
+            logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
+            return
         async with request("POST", f"http://{self.ip}:47670/event", json=data) as response:
             if response.status != 200:
                 logging.warning(f"Failed to send event to {self.name} with status {response.status}")
