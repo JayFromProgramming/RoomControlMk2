@@ -28,6 +28,7 @@ def get_host_names():
 
 
 class SatelliteObject(RoomObject):
+    is_promise = False
 
     def __init__(self, object_name, object_type, satellite):
         super().__init__(object_name, object_type)
@@ -38,6 +39,15 @@ class SatelliteObject(RoomObject):
 
     def get_type(self):
         return self.object_type
+
+    def emit_event(self, event_name, *args, **kwargs):
+        """
+        Emit an event to all attached callbacks
+        :param event_name: The name of the event to emit
+        :param args: Any arguments to pass to the callback
+        :param kwargs: Any keyword arguments to pass to the callback
+        """
+        asyncio.create_task(self.satellite.downlink_event(self, event_name, *args, **kwargs))
 
     def get_health(self):
         online = self.satellite.online and self._health.get("online", False)
@@ -112,6 +122,8 @@ class Satellite:
         for object_name, object_data in data["objects"].items():
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
+        self.ip = data["current_ip"][0]
+        self.ip = str(self.ip).strip("'")
         self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
                                           (self.last_seen, self.name))
 
@@ -148,6 +160,30 @@ class Satellite:
                     else:
                         self.parse_uplink(await response.json())
             await asyncio.sleep(60)
+
+    async def downlink_event(self, object_ref, event_name, *args, **kwargs):
+        """
+        Send an event to the satellite
+        """
+        if not self.online:
+            logging.warning(f"Cannot send event to {self.name} because it is offline")
+            return
+        data = {
+            "name": self.name,
+            "current_ip": self.ip,
+            "object": object_ref.name(),
+            "event": event_name,
+            "args": args,
+            "kwargs": kwargs,
+            "auth": self.auth
+        }
+        logging.info(f"Sending event {event_name} to {self.name} @ {self.ip}:47670")
+        if self.ip is None:
+            logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
+            return
+        async with request("POST", f"http://{self.ip}:47670/event", json=data) as response:
+            if response.status != 200:
+                logging.warning(f"Failed to send event to {self.name} with status {response.status}")
 
 
 class SatelliteInterface(RoomModule):

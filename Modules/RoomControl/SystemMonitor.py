@@ -22,6 +22,7 @@ class SystemMonitor(RoomModule):
         self.system_status = None
         self.monitors = []
         self.monitors.append(SystemMonitorLocal(room_controller))
+        self.monitors.append(SystemMonitorRemote(room_controller, "WOPR"))
 
         for monitor in self.monitors:
             self.room_controller.attach_object(monitor)
@@ -60,6 +61,42 @@ class SystemMonitorLocal(RoomObject):
 
     def get_type(self):
         return self.object_type
+
+    @property
+    def action(self):
+        return None
+
+    @action.setter
+    def action(self, value):
+        if value == "reboot":
+            self.reboot()
+        if value == "shutdown":
+            self.shutdown()
+        if value == "update":
+            self.update_system()
+        if value == "restart":
+            self.restart()
+
+    def reboot(self):
+        logging.info("Rebooting system on SystemMonitor request")
+        subprocess.run(["sudo", "reboot"])
+
+    def shutdown(self):
+        logging.info("Shutting down system on SystemMonitor request")
+        subprocess.run(["sudo", "shutdown", "now"])
+
+    def update_system(self):
+        logging.info("Updating system on SystemMonitor request")
+        subprocess.run(["sudo", "apt", "update"])
+        subprocess.run(["sudo", "apt", "upgrade", "-y"])
+        subprocess.run(["sudo", "apt", "autoremove", "-y"])
+        subprocess.run(["sudo", "apt", "clean"])
+        subprocess.run(["git", "pull", "origin", "mk3"])
+        exit(-1)
+
+    def restart(self):
+        logging.info("Restarting system on SystemMonitor request")
+        exit(-1)
 
     @staticmethod
     def get_ip():
@@ -137,8 +174,9 @@ class SystemMonitorLocal(RoomObject):
 class SystemMonitorRemote(RoomObject):
 
     def __init__(self, room_controller, satellite_name):
-        super().__init__("SystemMonitor", "SystemMonitor")
-        self.satellite_monitor = room_controller.get_object(f"SystemMonitor-{satellite_name}")
+        super().__init__(f"SystemMonitor-{satellite_name}",
+                         "SystemMonitor")
+        self.satellite_monitor = room_controller.get_object(f"RemoteMonitor-{satellite_name}")
         # This object is almost a copy of the object from the satellite but with some extra methods
         self.set_value("name", satellite_name)
         # Set all the values from the satellite monitor
@@ -146,16 +184,59 @@ class SystemMonitorRemote(RoomObject):
         self.set_value("memory_usage", self.satellite_monitor.get_value("memory_usage"))
         self.set_value("disk_usage", self.satellite_monitor.get_value("disk_usage"))
         self.set_value("network_usage", self.satellite_monitor.get_value("network_usage"))
+        self.set_value("address", self.satellite_monitor.get_value("address"))
+        self.set_value("temperature", self.satellite_monitor.get_value("temperature"))
+        self.set_value("uptime_system", self.satellite_monitor.get_value("uptime_system"))
+        self.set_value("uptime_controller", self.satellite_monitor.get_value("uptime_controller"))
+        self.set_value("update_available", self.satellite_monitor.get_value("update_available"))
+
+        # Check if the object is not a promise object
+        self.online = not self.satellite_monitor.is_promise
+        self.update()
 
     def get_state(self):
         return self.get_values()
 
     def get_health(self):
         return {
-            "online": True,
+            "online": self.online,
             "fault": False,
             "reason": ""
         }
+
+    @property
+    def action(self):
+        return None
+
+    @action.setter
+    def action(self, value):
+        logging.info(f"Received action: {value}")
+        if value == "reboot":
+            self.satellite_monitor.emit_event("reboot")
+        if value == "shutdown":
+            self.satellite_monitor.emit_event("shutdown")
+        if value == "update":
+            self.satellite_monitor.emit_event("update")
+        if value == "restart":
+            self.satellite_monitor.emit_event("restart")
+
+    @background
+    def update(self):
+        while True:
+            if self.satellite_monitor.is_promise:
+                self.online = False
+            else:
+                self.online = True
+                self.set_value("cpu_usage", self.satellite_monitor.get_value("cpu_usage"))
+                self.set_value("memory_usage", self.satellite_monitor.get_value("memory_usage"))
+                self.set_value("disk_usage", self.satellite_monitor.get_value("disk_usage"))
+                self.set_value("network_usage", self.satellite_monitor.get_value("network_usage"))
+                self.set_value("address", self.satellite_monitor.get_value("address"))
+                self.set_value("temperature", self.satellite_monitor.get_value("temperature"))
+                self.set_value("uptime_system", self.satellite_monitor.get_value("uptime_system"))
+                self.set_value("uptime_controller", self.satellite_monitor.get_value("uptime_controller"))
+                self.set_value("update_available", self.satellite_monitor.get_value("update_available"))
+            time.sleep(5)
 
     def get_type(self):
         return self.object_type
