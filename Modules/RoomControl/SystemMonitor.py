@@ -124,7 +124,7 @@ class SystemMonitorLocal(RoomObject):
                 self.set_value("network_usage", network_usage)
                 self.set_value("temperature", cpu_temp)
                 self.set_value("uptime_system", round(time.time() - psutil.boot_time()))
-                self.set_value("uptime_controller", round(time.time() - os.path.getmtime("main.py")))
+                self.set_value("uptime_controller", round(time.time() - psutil.Process().create_time()))
                 self.set_value("address", self.get_ip())
 
             except Exception as e:
