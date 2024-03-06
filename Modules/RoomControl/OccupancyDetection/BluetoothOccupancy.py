@@ -61,8 +61,8 @@ class BlueStalker(RoomObject):
 
         self.set_value("occupants", [])
         self.set_value("targets", {
-            uuid: {"address": address, "name": name, "role": role}
-            for uuid, address, name, role in self.get_targets()
+            data["uuid"]: {"address": data["address"], "name": data["name"], "role": data["role"]}
+            for data in self.get_targets()
         })
         self.set_value("occupied", None)
         self.occupant_info = {}
