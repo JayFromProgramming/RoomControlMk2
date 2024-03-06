@@ -302,9 +302,12 @@ class BlueStalker(RoomObject):
         if uuid == 0:
             logging.error(f"Failed to get UUID for {address}")
             return
-
-        self.occupant_info.update({uuid: {"name": self.get_name(uuid), "present": in_room,
-                                          "address": address, "last_changed": datetime.datetime.now().timestamp()}})
+        if in_room:
+            self.occupant_info.update({uuid: {"name": self.get_name(uuid), "present": in_room,
+                                              "address": address, "last_changed": datetime.datetime.now().timestamp()}})
+        else:
+            if uuid in self.occupant_info:
+                self.occupant_info.pop(uuid)
         self.set_value("occupants", self.occupant_info)
 
         # Check if an occupancy entry exists for the address
