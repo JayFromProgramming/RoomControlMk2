@@ -61,6 +61,7 @@ class BlueStalker(RoomObject):
 
         self.set_value("occupants", [])
         self.set_value("targets", self.get_targets())
+        self.set_value("occupied", None)
         self.occupant_info = {}
         self.target_mac_addresses = [target["address"] for target in self.get_targets()]
 
@@ -421,12 +422,7 @@ class BlueStalker(RoomObject):
         return "blue_stalker"
 
     def get_state(self):
-        return {
-            "on": self.enabled,
-            "high_frequency_scan": self.high_frequency_scan_enabled,
-            "occupied": self.is_occupied(),
-            "occupants": self.get_occupants_names()
-        }
+        return self.get_values()
 
     def get_info(self):
         return {
