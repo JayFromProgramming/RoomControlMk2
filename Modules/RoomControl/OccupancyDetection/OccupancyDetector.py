@@ -103,8 +103,9 @@ class OccupancyDetector(RoomModule):
         for source in self.blue_stalkers:
             try:
                 # logging.info(source.get_value("occupants"))
-                if device in source.get_value("occupants").keys():
-                    return True
+                for uuid, details in source.get_value("occupants"):
+                    if uuid == device:
+                        return True
             except Exception as e:
                 logging.error(f"Error checking if device is here: {e}")
         return False
