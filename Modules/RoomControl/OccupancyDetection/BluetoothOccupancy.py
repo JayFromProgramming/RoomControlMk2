@@ -440,8 +440,5 @@ class BlueStalker(RoomObject):
             "reason": self.fault_message
         }
 
-    def get_type(self):
-        return "blue_stalker"
-
     def auto_state(self):
         return False
