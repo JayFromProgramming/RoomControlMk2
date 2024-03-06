@@ -100,15 +100,22 @@ class OccupancyDetector(RoomModule):
 
     def is_here(self, device):
         for source in self.blue_stalkers:
-            logging.info(source.get_value("occupants"))
-            if device in source.get_value("occupants"):
-                return True
+            try:
+                logging.info(source.get_value("occupants"))
+                if device in source.get_value("occupants").keys():
+                    return True
+            except Exception as e:
+                logging.error(f"Error checking if device is here: {e}")
         return False
 
     def get_name(self, device):
         for source in self.blue_stalkers:
-            if device in source.get_value("targets").keys():
-                return source["name"]
+            try:
+                if device in source.get_value("targets").keys():
+                    return device["name"]
+            except Exception as e:
+                logging.error(f"Error getting device name: {e}")
+        return "Unknown"
 
     def get_all_devices(self):
         devices = []
