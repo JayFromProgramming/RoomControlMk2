@@ -23,8 +23,6 @@ class OccupancyDetector(RoomModule):
         self.room_controller = room_controller
         self.database = room_controller.database
         self.database_init()
-        self.sources = {}
-
         self.last_activity = 0  # type: int # Last time a user was detected either by door or motion sensor
 
         # if GPIO:
@@ -101,22 +99,26 @@ class OccupancyDetector(RoomModule):
         return self.last_activity + seconds > time.time()
 
     def is_here(self, device):
-        for source in self.sources.values():
+        for source in self.blue_stalkers:
             logging.info(source.get_value("occupants"))
             if str(device) in source.get_value("occupants").keys():
                 return True
         return False
 
     def get_name(self, device):
-        for source in self.sources.values():
+        for source in self.blue_stalkers:
             if str(device) in source.get_value("targets").keys():
                 return source["name"]
 
     def get_all_devices(self):
-        return self.sources.values()
+        devices = []
+        for source in self.blue_stalkers:
+            devices.extend(source.get_value("targets").keys())
+        return devices
 
     def get_device(self, device_id):
-        for device in self.sources.values():
+        return "Not implemented yet"
+        for device in self.blue_stalkers:
             if device.name() == device_id:
                 return device
 
