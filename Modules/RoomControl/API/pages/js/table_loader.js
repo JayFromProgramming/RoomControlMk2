@@ -120,7 +120,8 @@ function getState(device_json) {
                 state_string += "State: DISABLED";
             }
             break;
-        case "blue_stalker":
+        case "BlueStalker":
+        case "satellite_BlueStalker":
             if (device_json["state"]["on"] === true) {
                 if (device_json["health"]["fault"] === true) {
                     state_string += "State: FAULT";
