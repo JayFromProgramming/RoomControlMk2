@@ -93,6 +93,8 @@ class OccupancyDetector(RoomModule):
             if health is not None:
                 if health["online"]:
                     return False
+            else:
+                logging.warning("Bluetooth health is None")
         return True
 
     def was_activity_recent(self, seconds=60):
