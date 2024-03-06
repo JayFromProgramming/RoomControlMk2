@@ -145,11 +145,9 @@ class BlueStalker(RoomObject):
         # if not self.heartbeat_alive and heartbeat_was_alive:
         #     logging.error("BlueStalker: Heartbeat device lost, delaying next scan")
         #     return
-
-        targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
-        for target in targets:
-            if conn := self.sockets.get(target[1]):  # If the socket is already open
-                self.conn_is_alive(conn, target[1])  # Check if the connection is still alive
+        for target in self.target_mac_addresses:
+            if conn := self.sockets.get(target):  # If the socket is already open
+                self.conn_is_alive(conn, target)  # Check if the connection is still alive
 
         self.last_checkup = datetime.datetime.now().timestamp()
 
