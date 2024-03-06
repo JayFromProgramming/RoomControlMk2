@@ -89,8 +89,10 @@ class OccupancyDetector(RoomModule):
 
     def bluetooth_offline(self):
         for stalker in self.blue_stalkers:
-            if stalker.get_health()["online"]:
-                return False
+            health = stalker.get_health()
+            if health is not None:
+                if health["online"]:
+                    return False
         return True
 
     def was_activity_recent(self, seconds=60):
