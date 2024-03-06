@@ -102,13 +102,13 @@ class OccupancyDetector(RoomModule):
 
     def is_here(self, device):
         for source in self.sources.values():
-            if device in source.get_value("occupants"):
+            if str(device) in source.get_value("occupants").keys():
                 return True
         return False
 
     def get_name(self, device):
         for source in self.sources.values():
-            if device in source.get_value("targets"):
+            if str(device) in source.get_value("targets").keys():
                 return source["name"]
 
     def get_all_devices(self):
