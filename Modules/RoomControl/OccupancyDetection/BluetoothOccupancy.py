@@ -369,7 +369,7 @@ class BlueStalker(RoomObject):
         cursor.close()
         results = []
         for target in targets:
-            results.append(self.get_combined_target_info(target[0]))
+            results.append({"uuid": target[0], "address": target[1], "name": target[2], "role": target[3]})
         return results
 
     def get_combined_target_info(self, uuid):
