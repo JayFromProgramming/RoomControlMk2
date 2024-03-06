@@ -61,6 +61,7 @@ class BlueStalker(RoomObject):
 
         self.set_value("occupants", [])
         self.set_value("targets", self.get_targets())
+        self.occupant_info = {}
         self.target_mac_addresses = [target["address"] for target in self.get_targets()]
 
         if bluetooth is None or bluetoothLE is None:
@@ -297,6 +298,11 @@ class BlueStalker(RoomObject):
         if uuid == 0:
             logging.error(f"Failed to get UUID for {address}")
             return
+
+        self.occupant_info.update({uuid: {"name": self.get_name(uuid), "present": in_room,
+                                          "last_changed": datetime.datetime.now().timestamp()}})
+        self.set_value("occupants", self.occupant_info)
+
         # Check if an occupancy entry exists for the address
         self.database.lock.acquire()
         cursor = self.database.cursor()

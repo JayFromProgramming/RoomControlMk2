@@ -70,15 +70,15 @@ class OccupancyDetector(RoomModule):
         while True:
             if GPIO is None:
                 break
-            scanning_allowed = True
-            for source in self.sources.values():
-                if not isinstance(source, BluetoothDetector):
-                    if source.enabled:
-                        scanning_allowed = False
-            if scanning_allowed:
-                self.blue_stalker.high_frequency_scan_enabled = False
-            else:
-                self.blue_stalker.high_frequency_scan_enabled = True
+            # scanning_allowed = True
+            # for source in self.sources.values():
+            #     if not isinstance(source, BluetoothDetector):
+            #         if source.enabled:
+            #             scanning_allowed = False
+            # if scanning_allowed:
+            #     self.blue_stalker.high_frequency_scan_enabled = False
+            # else:
+            #     self.blue_stalker.high_frequency_scan_enabled = True
             time.sleep(5)
 
     def motion_detected(self, state):
@@ -97,14 +97,13 @@ class OccupancyDetector(RoomModule):
         return self.last_activity + seconds > time.time()
 
     def is_here(self, device):
-
-        return self.blue_stalker.is_here(device)
-
-    def on_campus(self, device):
-        return self.net_stalker.is_on_campus(device)
+        for source in self.sources.values():
+            if device in source.get_value("occupants"):
+                return True
+        return False
 
     def get_name(self, device):
-        return self.blue_stalker.get_name(device)
+        return "Not implemented"
 
     def get_all_devices(self):
         return self.sources.values()
