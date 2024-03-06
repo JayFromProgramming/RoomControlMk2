@@ -104,7 +104,7 @@ class OccupancyDetector(RoomModule):
             try:
                 # logging.info(source.get_value("occupants"))
                 for uuid, details in source.get_value("occupants").items():
-                    if uuid == device:
+                    if int(uuid) == device:
                         return True
             except Exception as e:
                 logging.error(f"Error checking if device is here: {e}")
