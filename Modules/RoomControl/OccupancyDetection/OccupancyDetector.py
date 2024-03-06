@@ -112,7 +112,7 @@ class OccupancyDetector(RoomModule):
         for source in self.blue_stalkers:
             try:
                 if device in source.get_value("targets").keys():
-                    return device["name"]
+                    return source.get_value("targets")[device]["name"]
             except Exception as e:
                 logging.error(f"Error getting device name: {e}")
         return "Unknown"
