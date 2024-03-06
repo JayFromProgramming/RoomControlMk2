@@ -59,6 +59,10 @@ class BlueStalker(RoomObject):
 
         self.route_lost = False
 
+        self.set_value("occupants", [])
+        self.set_value("targets", self.get_targets())
+        self.target_mac_addresses = [target["address"] for target in self.get_targets()]
+
         if bluetooth is None or bluetoothLE is None:
             self.reboot_locked_out = True
 
@@ -117,22 +121,6 @@ class BlueStalker(RoomObject):
             "CREATE TABLE IF NOT EXISTS bluetooth_occupancy (uuid INTEGER UNIQUE, in_room BOOLEAN, last_changed INTEGER)")
         cursor.close()
 
-    def add_target(self, address: str, name: str, role: str):
-        cursor = self.database.cursor()
-        # Make sure the target is not already in the database
-        cursor.execute("SELECT * FROM bluetooth_targets WHERE address=?", (address,))
-        if cursor.fetchone() is None:
-            cursor.execute("INSERT INTO bluetooth_targets (address, name, role) VALUES (?, ?, ?)",
-                           (address, name, role))
-            self.database.commit()
-            logging.info(f"Added {name} to the target list")
-        else:
-            cursor.execute("UPDATE bluetooth_targets SET name=?, role=? WHERE address=?",
-                           (name, role, address))
-            self.database.commit()
-            logging.warning(f"Target [{name}] already exists in database, updating instead")
-        cursor.close()
-
     def should_scan(self):
         """Called externally to tell that it is time to scan"""
         if not self.enabled:
@@ -175,10 +163,9 @@ class BlueStalker(RoomObject):
 
         self.scanning = True
         conn_threads = []
-        targets = self.database.cursor().execute("SELECT * FROM bluetooth_targets").fetchall()
-        for target in targets:
-            if self.sockets.get(target[1]) is None:  # If the socket is already open
-                conn_threads.append(self.connect(target[1]))  # Else attempt to connect to the device
+        for target in self.target_mac_addresses:
+            if self.sockets.get(target) is None:  # If the socket is already open
+                conn_threads.append(self.connect(target))  # Else attempt to connect to the device
 
         for thread in conn_threads:
             thread.join()
@@ -369,6 +356,17 @@ class BlueStalker(RoomObject):
             if device[1] == 1:
                 return True
         return False
+
+    def get_targets(self):
+        # Return a list of uuids
+        cursor = self.database.cursor()
+        cursor.execute("SELECT * FROM bluetooth_targets")
+        targets = cursor.fetchall()
+        cursor.close()
+        results = []
+        for target in targets:
+            results.append(self.get_combined_target_info(target[0]))
+        return results
 
     def get_combined_target_info(self, uuid):
 

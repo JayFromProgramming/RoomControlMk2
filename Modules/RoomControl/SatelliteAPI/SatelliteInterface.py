@@ -68,6 +68,7 @@ class Satellite:
         self.auth = auth
         self.last_seen = 0
         self.objects = []  # type: list[RoomObject]
+        self.subscribed_objects = []  # type: list[RoomObject]  # Objects that this satellite listens to
         self.room_controller = room_controller
 
     @property
@@ -198,7 +199,7 @@ class SatelliteInterface(RoomModule):
         # Downlink is from the perspective of the server to the satellite (e.g. sending commands, updates, etc.)
         self.app.add_routes([
             web.post('/uplink', self.uplink_data),  # How the satellite will send data to the server
-            # web.get('/downlink', self.downlink_poll),  # How the satellite will request information from the server
+            web.get('/downlink', self.downlink_poll),  # How the satellite will request information from the server
             web.post('/event', self.uplink_event),  # How the satellite will send events to the server
         ])
         # Satellites will host their own webserver to receive commands from the server they will have these routes:
@@ -229,6 +230,11 @@ class SatelliteInterface(RoomModule):
     async def get_site(self):
         await self.runner.setup()
         site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
+        try:
+            for satellite in self.satellites.values():
+                asyncio.create_task(satellite.auto_poll())
+        except Exception as e:
+            logging.error(f"Error starting satellite interface: {e}")
         return site
 
     async def uplink_data(self, request):
@@ -280,4 +286,19 @@ class SatelliteInterface(RoomModule):
             if satellite.auth == payload["auth"]:
                 satellite.parse_event(payload)
                 return web.Response(status=200)
+        return web.Response(status=401)
+
+    async def downlink_poll(self, request):
+        """
+        Called by a satellite to request data from the server
+        The json payload should contain the following:
+        {
+            "name": "Name of the satellite",
+            "auth": "Authentication token"
+        }
+        """
+        payload = await request.json()
+        for satellite in self.satellites.values():
+            if satellite.auth == payload["auth"]:
+                return web.json_response(satellite.generate_payload())
         return web.Response(status=401)

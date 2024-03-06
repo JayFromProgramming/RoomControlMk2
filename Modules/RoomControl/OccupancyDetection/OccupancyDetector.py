@@ -38,7 +38,8 @@ class OccupancyDetector(RoomModule):
         for name, enabled, _ in results:
             enabled_sources[name] = True if enabled == 1 else False
 
-        self.blue_stalker = self.room_controller.get_object("BlueStalker")
+        self.blue_stalkers = []
+        self.blue_stalkers.append(self.room_controller.get_object("BlueStalker"))
         self.motion_detector = self.room_controller.get_object("MotionDetector")
         self.motion_detector.attach_event_callback(self.motion_detected, "state_change")
 
@@ -83,15 +84,20 @@ class OccupancyDetector(RoomModule):
     def motion_detected(self, state):
         logging.info("Motion event received")
         self.last_activity = time.time()
-        self.blue_stalker.should_scan()
+        for stalker in self.blue_stalkers:
+            stalker.should_scan()
 
     def bluetooth_offline(self):
-        return not self.blue_stalker.online
+        for stalker in self.blue_stalkers:
+            if stalker.health()["online"]:
+                return False
+        return True
 
     def was_activity_recent(self, seconds=60):
         return self.last_activity + seconds > time.time()
 
     def is_here(self, device):
+
         return self.blue_stalker.is_here(device)
 
     def on_campus(self, device):
