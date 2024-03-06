@@ -107,7 +107,9 @@ class OccupancyDetector(RoomModule):
         return False
 
     def get_name(self, device):
-        return "Not implemented"
+        for source in self.sources.values():
+            if device in source.get_value("targets"):
+                return source["name"]
 
     def get_all_devices(self):
         return self.sources.values()

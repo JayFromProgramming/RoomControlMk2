@@ -60,7 +60,10 @@ class BlueStalker(RoomObject):
         self.route_lost = False
 
         self.set_value("occupants", [])
-        self.set_value("targets", self.get_targets())
+        self.set_value("targets", {
+            uuid: {"address": address, "name": name, "role": role}
+            for uuid, address, name, role in self.get_targets()
+        })
         self.set_value("occupied", None)
         self.occupant_info = {}
         self.target_mac_addresses = [target["address"] for target in self.get_targets()]
