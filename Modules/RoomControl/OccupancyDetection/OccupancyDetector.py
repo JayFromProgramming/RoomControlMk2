@@ -102,6 +102,7 @@ class OccupancyDetector(RoomModule):
 
     def is_here(self, device):
         for source in self.sources.values():
+            logging.info(source.get_value("occupants"))
             if str(device) in source.get_value("occupants").keys():
                 return True
         return False
