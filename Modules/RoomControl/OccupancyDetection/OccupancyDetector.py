@@ -129,4 +129,3 @@ class OccupancyDetector(RoomModule):
         for device in self.blue_stalkers:
             if device.name() == device_id:
                 return device
-

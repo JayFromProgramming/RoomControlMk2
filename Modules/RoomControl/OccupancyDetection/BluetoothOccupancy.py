@@ -442,3 +442,6 @@ class BlueStalker(RoomObject):
 
     def auto_state(self):
         return False
+
+    def get_type(self):
+        return self.object_type
