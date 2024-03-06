@@ -304,7 +304,7 @@ class BlueStalker(RoomObject):
             return
 
         self.occupant_info.update({uuid: {"name": self.get_name(uuid), "present": in_room,
-                                          "last_changed": datetime.datetime.now().timestamp()}})
+                                          "address": address, "last_changed": datetime.datetime.now().timestamp()}})
         self.set_value("occupants", self.occupant_info)
 
         # Check if an occupancy entry exists for the address
