@@ -84,7 +84,11 @@ class OccupancyDetector(RoomModule):
         logging.info("Motion event received")
         self.last_activity = time.time()
         for stalker in self.blue_stalkers:
-            stalker.should_scan()
+            try:
+                stalker.emit_event("scan")
+            except Exception as e:
+                logging.error(f"Error emitting scan event: {e}")
+                logging.exception(e)
 
     def bluetooth_offline(self):
         for stalker in self.blue_stalkers:

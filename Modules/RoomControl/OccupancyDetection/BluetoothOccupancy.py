@@ -74,6 +74,8 @@ class BlueStalker(RoomObject):
         # self.heartbeat_device = "38:1D:D9:F7:6D:44"
         # self.heartbeat_alive = False  # If the heartbeat device is alive
 
+        self.attach_event_callback(self.should_scan, "scan")
+
         if bluetooth is not None:
             self.online = True
             self.fault = False
