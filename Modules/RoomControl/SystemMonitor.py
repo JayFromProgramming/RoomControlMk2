@@ -220,6 +220,17 @@ class SystemMonitorRemote(RoomObject):
         if value == "restart":
             self.satellite_monitor.emit_event("restart")
 
+    def copy_over(self):
+        self.set_value("cpu_usage", self.satellite_monitor.get_value("cpu_usage"))
+        self.set_value("memory_usage", self.satellite_monitor.get_value("memory_usage"))
+        self.set_value("disk_usage", self.satellite_monitor.get_value("disk_usage"))
+        self.set_value("network_usage", self.satellite_monitor.get_value("network_usage"))
+        self.set_value("address", self.satellite_monitor.get_value("address"))
+        self.set_value("temperature", self.satellite_monitor.get_value("temperature"))
+        self.set_value("uptime_system", self.satellite_monitor.get_value("uptime_system"))
+        self.set_value("uptime_controller", self.satellite_monitor.get_value("uptime_controller"))
+        self.set_value("update_available", self.satellite_monitor.get_value("update_available"))
+
     @background
     def update(self):
         while True:
@@ -227,15 +238,7 @@ class SystemMonitorRemote(RoomObject):
                 self.online = False
             else:
                 self.online = True
-                self.set_value("cpu_usage", self.satellite_monitor.get_value("cpu_usage"))
-                self.set_value("memory_usage", self.satellite_monitor.get_value("memory_usage"))
-                self.set_value("disk_usage", self.satellite_monitor.get_value("disk_usage"))
-                self.set_value("network_usage", self.satellite_monitor.get_value("network_usage"))
-                self.set_value("address", self.satellite_monitor.get_value("address"))
-                self.set_value("temperature", self.satellite_monitor.get_value("temperature"))
-                self.set_value("uptime_system", self.satellite_monitor.get_value("uptime_system"))
-                self.set_value("uptime_controller", self.satellite_monitor.get_value("uptime_controller"))
-                self.set_value("update_available", self.satellite_monitor.get_value("update_available"))
+                self.copy_over()
             time.sleep(5)
 
     def get_type(self):

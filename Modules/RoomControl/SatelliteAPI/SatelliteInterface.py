@@ -47,7 +47,9 @@ class SatelliteObject(RoomObject):
         :param args: Any arguments to pass to the callback
         :param kwargs: Any keyword arguments to pass to the callback
         """
-        asyncio.create_task(self.satellite.downlink_event(self, event_name, *args, **kwargs))
+        super().emit_event(event_name, *args, **kwargs)
+        if "dont_repeat" not in kwargs:
+            asyncio.create_task(self.satellite.downlink_event(self, event_name, *args, **kwargs))
 
     def get_health(self):
         online = self.satellite.online and self._health.get("online", False)
@@ -139,7 +141,7 @@ class Satellite:
         for obj in self.objects:
             if obj.object_name == data["object"]:
                 logging.info(f"Received event {data['event']} from {data['object']}")
-                obj.emit_event(data["event"], *data["args"], **data["kwargs"])
+                obj.emit_event(data["event"], *data["args"], dont_repeat=True, **data["kwargs"])
                 return
         logging.warning(f"Received event data for object {data['object']} but it does not exist")
 
