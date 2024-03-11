@@ -47,9 +47,11 @@ class SatelliteObject(RoomObject):
         :param args: Any arguments to pass to the callback
         :param kwargs: Any keyword arguments to pass to the callback
         """
-        super().emit_event(event_name, *args, **kwargs)
         if "dont_repeat" not in kwargs:
             asyncio.create_task(self.satellite.downlink_event(self, event_name, *args, **kwargs))
+        # Strip the dont_repeat argument from the kwargs
+        kwargs.pop("dont_repeat", None)
+        super().emit_event(event_name, *args, **kwargs)
 
     def get_health(self):
         online = self.satellite.online and self._health.get("online", False)
