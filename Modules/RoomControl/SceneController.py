@@ -306,5 +306,6 @@ class SceneTrigger:
             "trigger_type": self.trigger_type,
             "trigger_value": self.trigger_value,
             "active": self.active if self.trigger_type != "immediate" else False,
-            "action": self.action_string
+            "action": self.action_string,
+            "api_action": self.api_action
         }
