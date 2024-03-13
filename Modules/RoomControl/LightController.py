@@ -63,7 +63,7 @@ class LightControllerHost(RoomModule):
         while True:
             for controller in self.light_controllers.values():
                 controller.update_state()
-            time.sleep(5)
+            time.sleep(2.5)
 
     def refresh_all(self):
         pass

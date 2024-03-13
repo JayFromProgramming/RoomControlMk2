@@ -53,6 +53,16 @@ class SceneController(RoomModule):
                 "data": scene['scene_data']
             }
 
+    def edit_scene(self, scene_id, json_payload):
+        """Called by the API to edit a scene"""
+        if scene_id not in self.scenes:
+            return False
+        scene = self.scenes[scene_id]
+        # The json payload will contain the triggers and the scene data
+        triggers = json_payload.get("triggers", [])
+        scene_data = json_payload.get("scene_data", "")
+        return True
+
     def get_scenes(self):
         """Returns a dictionary of all triggers"""
         val = {}
@@ -290,6 +300,7 @@ class SceneTrigger:
     def api_data(self) -> dict:
         """Returns a dictionary of data that can be used to populate an API response"""
         return {
+            "scene_id": self.scene_id,
             "trigger_id": self.trigger_id,
             "name": self.trigger_name,
             "trigger_type": self.trigger_type,
