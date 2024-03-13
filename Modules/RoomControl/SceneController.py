@@ -45,6 +45,9 @@ class SceneController(RoomModule):
         # self.database.commit()
 
     def _load_scenes(self):
+        for scene in self.scenes:
+            del scene
+        self.scenes = {}
         table = self.database.get_table("scenes")
         scenes = table.get_all()
         for scene in scenes:
@@ -55,13 +58,23 @@ class SceneController(RoomModule):
 
     def update_scene(self, scene_id, json_payload):
         """Called by the API to edit a scene"""
-        if scene_id not in self.scenes:
-            return "Scene does not exist"
-        scene = self.scenes[scene_id]
-        # The json payload will contain the triggers and the scene data
-        triggers = json_payload.get("triggers", [])
-        scene_data = json_payload.get("scene_data", "")
-        return "Not implemented"
+        try:
+            if scene_id not in self.scenes:
+                return "Scene does not exist"
+            scene = self.scenes[scene_id]
+            # The json payload will contain the triggers and the scene data
+            triggers = json_payload.get("triggers", [])  # implement later
+            scene_data = json_payload.get("scene_data", "")
+            logging.info(f"Updating scene {scene_id} with data {scene_data}")
+            # Update the scene data
+            self.database.run("UPDATE scenes SET scene_data=? WHERE scene_id=?", (scene_data, scene_id))
+            # Reload the scenes
+            self._load_scenes()
+            return "success"
+        except Exception as e:
+            logging.error(f"Error updating scene: {e}")
+            logging.exception(e)
+            return f"Sever Error while updating scene: {e}"
 
     def delete_scene(self, scene_id):
         """Called by the API to delete a scene"""
