@@ -80,7 +80,7 @@ class SceneController(RoomModule):
                     SceneTrigger(trigger['scene_id'], trigger['trigger_id'], trigger['trigger_name'],
                                  trigger['trigger_type'], trigger['trigger_value'], trigger['active'],
                                  self.database, self.execute_scene,
-                                 self.action_to_str(trigger['scene_id'], self.scenes[trigger['scene_id']]["data"]))
+                                 self.action_to_str(trigger['scene_id']), self.scenes[trigger['scene_id']]["data"])
             })
 
     def execute_trigger(self, trigger_id):
