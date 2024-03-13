@@ -302,7 +302,7 @@ class SceneTrigger:
         return {
             "scene_id": self.scene_id,
             "trigger_id": self.trigger_id,
-            "name": self.trigger_name,
+            "trigger_name": self.trigger_name,
             "trigger_type": self.trigger_type,
             "trigger_value": self.trigger_value,
             "active": self.active if self.trigger_type != "immediate" else False,

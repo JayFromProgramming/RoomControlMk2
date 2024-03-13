@@ -61,7 +61,7 @@ function scene_table() {
                for (const scene in scenes) {
                    const scene_data = scenes[scene];
                    const scene_row = $('<tr>');
-                   const name = scene_data['name'];
+                   const name = scene_data['trigger_name'];
                    const scene_name = $('<td class="device_name">').text(name);
 
                    const is_active = scene_data['active'];
