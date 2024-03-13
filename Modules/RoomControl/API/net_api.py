@@ -93,6 +93,8 @@ class NetAPI(RoomModule):
             + [web.get('/get_schema', self.handle_schema)]
             # + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
             + [web.get('/get_scenes', self.handle_get_scenes)]
+            + [web.post('/update_scene/{name}', self.handle_update_scene)]
+            + [web.get('/delete_scene/{name}', self.handle_delete_scene)]
             + [web.get('/set_scene/{name}', self.handle_set_scene)]
             + [web.get('/get_commands', self.handle_get_commands)]
             + [web.get('/run_command/{name}', self.handle_run_command)]
@@ -546,6 +548,33 @@ class NetAPI(RoomModule):
 
         return web.Response(text=msg.__str__())
 
+    async def handle_update_scene(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received UPDATE_SCENE request")
+
+        if self.room_controller.get_module("SceneController") is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            scene_name = request.match_info['name']
+            data = await request.json()
+            result = self.room_controller.get_module("SceneController").update_scene(scene_name, data)
+            msg = APIMessageTX(result=result)
+        return web.Response(text=msg.__str__())
+
+    async def handle_delete_scene(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received DELETE_SCENE request")
+
+        if self.room_controller.get_module("SceneController") is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            scene_name = request.match_info['name']
+            result = self.room_controller.get_module("SceneController").delete_scene(scene_name)
+            msg = APIMessageTX(result=result)
+        return web.Response(text=msg.__str__())
+
     async def handle_get_commands(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
@@ -656,3 +685,5 @@ class NetAPI(RoomModule):
         data = [monitor.object_name for monitor in monitors]
         msg = APIMessageTX(system_monitors=data)
         return web.Response(text=msg.__str__())
+
+

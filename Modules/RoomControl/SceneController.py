@@ -53,15 +53,25 @@ class SceneController(RoomModule):
                 "data": scene['scene_data']
             }
 
-    def edit_scene(self, scene_id, json_payload):
+    def update_scene(self, scene_id, json_payload):
         """Called by the API to edit a scene"""
         if scene_id not in self.scenes:
-            return False
+            return "Scene does not exist"
         scene = self.scenes[scene_id]
         # The json payload will contain the triggers and the scene data
         triggers = json_payload.get("triggers", [])
         scene_data = json_payload.get("scene_data", "")
-        return True
+        return "Not implemented"
+
+    def delete_scene(self, scene_id):
+        """Called by the API to delete a scene"""
+        if scene_id not in self.scenes:
+            return "Scene does not exist"
+        del self.scenes[scene_id]
+        # Remove all triggers associated with the scene
+        self.database.run("DELETE FROM scene_triggers WHERE scene_id=?", (scene_id,))
+        self.database.run("DELETE FROM scenes WHERE scene_id=?", (scene_id,))
+        return "Scene deleted"
 
     def get_scenes(self):
         """Returns a dictionary of all triggers"""
