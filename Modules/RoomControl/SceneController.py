@@ -79,7 +79,8 @@ class SceneController(RoomModule):
                 trigger['trigger_id']:
                     SceneTrigger(trigger['scene_id'], trigger['trigger_id'], trigger['trigger_name'],
                                  trigger['trigger_type'], trigger['trigger_value'], trigger['active'],
-                                 self.database, self.execute_scene, self.action_to_str(trigger['scene_id']))
+                                 self.database, self.execute_scene,
+                                 self.action_to_str(trigger['scene_id'], self.scenes[trigger['scene_id']]["data"]))
             })
 
     def execute_trigger(self, trigger_id):
@@ -158,12 +159,14 @@ class SceneController(RoomModule):
 class SceneTrigger:
 
     def __init__(self, scene_id, trigger_id, trigger_name, trigger_type,
-                 trigger_value, active, database: ConcurrentDatabase.Database, callback, action_string):
+                 trigger_value, active, database: ConcurrentDatabase.Database, callback, action_string,
+                 data):
         self.scene_id = scene_id
         self.trigger_id = trigger_id
         self.trigger_name = trigger_name
         self.trigger_type = trigger_type
         self.trigger_value = trigger_value
+        self.data = data
         self.active = False if active == 0 else True
         self.database = database
         self.callback = callback
@@ -307,5 +310,5 @@ class SceneTrigger:
             "trigger_value": self.trigger_value,
             "active": self.active if self.trigger_type != "immediate" else False,
             "action": self.action_string,
-            "api_action": self.api_action
+            "api_action": self.data
         }
