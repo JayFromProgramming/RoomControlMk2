@@ -65,6 +65,7 @@ class SceneController(RoomModule):
             # The json payload will contain the triggers and the scene data
             triggers = json_payload.get("triggers", [])  # implement later
             scene_data = json_payload.get("scene_data", "")
+            scene_data = APIMessageRX(scene_data).__str__()
             logging.info(f"Updating scene {scene_id} with data {scene_data}")
             # Update the scene data
             self.database.run("UPDATE scenes SET scene_data=? WHERE scene_id=?", (scene_data, scene_id))
@@ -74,7 +75,7 @@ class SceneController(RoomModule):
         except Exception as e:
             logging.error(f"Error updating scene: {e}")
             logging.exception(e)
-            return f"Sever Error while updating scene: {e}"
+            return f"{e}"
 
     def delete_scene(self, scene_id):
         """Called by the API to delete a scene"""
