@@ -52,8 +52,8 @@ class SceneController(RoomModule):
         scenes = table.fetchall()
         for scene in scenes:
             self.scenes[scene[0]] = {
-                "name": scene[0],
-                "data": scene[1]
+                "name": scene[1],
+                "data": scene[2]
             }
 
     def update_scene(self, scene_id, json_payload):
