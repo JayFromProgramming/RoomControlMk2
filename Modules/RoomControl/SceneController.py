@@ -71,6 +71,7 @@ class SceneController(RoomModule):
             self.database.run("UPDATE scenes SET scene_data=? WHERE scene_id=?", (scene_data, scene_id))
             # Reload the scenes
             self._load_scenes()
+            self._load_triggers()
             return "success"
         except Exception as e:
             logging.error(f"Error updating scene: {e}")
@@ -96,6 +97,9 @@ class SceneController(RoomModule):
 
     def _load_triggers(self):
         logging.info("SceneController: Loading triggers...")
+        for trigger in self.triggers:
+            del trigger
+        self.triggers = {}
         table = self.database.get_table("scene_triggers")
         triggers = table.get_all()
         for trigger in triggers:
