@@ -6,7 +6,7 @@ __all__ = ["APIMessageTX", "APIMessageRX"]
 from json import JSONDecodeError
 
 from multidict import MultiDictProxy
-
+from loguru import logger as logging
 
 class APIMessageTX:
 
@@ -49,7 +49,8 @@ class APIMessageRX:
             try:
                 self.__dict__.update(json.loads(json_raw))  # Load the json into the locals()
             except json.JSONDecodeError as e:
-                print(f"RX error: {e}")
+                logging.error(f"RX error: {e}")
+                logging.exception(e)
                 self.error = e
         elif isinstance(json_raw, str):
             try:
@@ -83,7 +84,8 @@ class APIMessageRX:
                 json.dumps(value)
                 values[key] = value
             except TypeError as e:
-                print(f"TX error: {e}")
+                logging.error(f"TX error: {e}")
+                logging.exception(e)
                 pass
         return json.dumps(values)
 

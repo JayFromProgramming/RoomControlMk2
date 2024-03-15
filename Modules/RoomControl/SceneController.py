@@ -7,6 +7,8 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
+from Modules.RoomControl.SceneTriggerTypes.IntervalTrigger import IntervalTrigger
+from Modules.RoomControl.SceneTriggerTypes.SceneTrigger import SceneTrigger
 from Modules.RoomModule import RoomModule
 
 
@@ -26,22 +28,24 @@ class SceneController(RoomModule):
         self._load_triggers()
 
     def _init_database(self):
-        # cursor = self.database.cursor()
-        #  The scenes table contains the scenes and their associated action data
-        # cursor.execute('''CREATE TABLE IF NOT EXISTS scenes (scene_id TEXT UNIQUE PRIMARY KEY, scene_data TEXT)''')
-        self.database.create_table("scenes", {"scene_id": "TEXT UNIQUE PRIMARY KEY", "scene_data": "TEXT"})
-        # The scene_timer table contains the scene_id and the time it should be executed
-        # cursor.execute('''
-        #     CREATE TABLE IF NOT EXISTS scene_triggers (scene_id TEXT REFERENCES scenes(scene_id) NOT NULL,
-        #     trigger_id TEXT UNIQUE PRIMARY KEY NOT NULL,
-        #     trigger_name TEXT NOT NULL, trigger_type TEXT NOT NULL, trigger_value TEXT NULL, active boolean)
-        # ''')
+        self.database.create_table("scenes", {"scene_id": "TEXT UNIQUE PRIMARY KEY", "scene_name": "TEXT NOT NULL",
+                                              "scene_data": "TEXT"})
         self.database.create_table("scene_triggers", {"scene_id": "TEXT REFERENCES scenes(scene_id) NOT NULL",
                                                       "trigger_id": "TEXT UNIQUE PRIMARY KEY NOT NULL",
                                                       "trigger_name": "TEXT NOT NULL",
                                                       "trigger_type": "TEXT NOT NULL",
                                                       "trigger_value": "TEXT NULL",
                                                       "active": "BOOLEAN"})
+        self.database.update_table("scene_triggers", 1, [
+            "DROP TABLE scene_triggers;",
+            "CREATE TABLE scene_triggers (scene_id TEXT REFERENCES scenes(scene_id) NOT NULL,"
+            "trigger_id SERIAL PRIMARY KEY NOT NULL,"
+            "trigger_type TEXT NOT NULL,"
+            "trigger_subtype TEXT NOT NULL,"
+            "trigger_value TEXT NULL, "
+            "active BOOLEAN);"
+        ])
+
         # self.database.commit()
 
     def _load_scenes(self):
@@ -86,14 +90,41 @@ class SceneController(RoomModule):
         # Remove all triggers associated with the scene
         self.database.run("DELETE FROM scene_triggers WHERE scene_id=?", (scene_id,))
         self.database.run("DELETE FROM scenes WHERE scene_id=?", (scene_id,))
-        return "Scene deleted"
+        return "success"
 
     def get_scenes(self):
-        """Returns a dictionary of all triggers"""
-        val = {}
+        """Returns a dictionary of all scenes, including their triggers"""
+        scenes = {}
+        for scene_id, scene in self.scenes.items():
+            triggers = self.get_triggers(scene_id)
+            scenes[scene_id] = {
+                "name": scene["name"],
+                "data": scene["data"],
+                "action": self.action_to_str(scene_id),
+                "triggers": triggers
+            }
+        return scenes
+
+    def get_triggers(self, scene_id):
+        """Returns a list of triggers for the specified scene"""
+        triggers = []
         for trigger_id, trigger in self.triggers.items():
-            val[trigger_id] = trigger.api_data()
-        return val
+            if trigger.scene_id == scene_id:
+                triggers.append(trigger.info())
+        return triggers
+
+    def execute_command(self, command, scene_id, payload):
+        match command:
+            case "add_scene":
+                return self.add_scene(scene_id, payload)
+            case "update_scene":
+                return self.update_scene(scene_id, payload)
+            case "delete_scene":
+                return self.delete_scene(scene_id)
+            case "execute_scene":
+                return self.execute_scene(scene_id)
+            case "test_scene":
+                return self.run_scene(payload)
 
     def _load_triggers(self):
         logging.info("SceneController: Loading triggers...")
@@ -103,20 +134,15 @@ class SceneController(RoomModule):
         table = self.database.get_table("scene_triggers")
         triggers = table.get_all()
         for trigger in triggers:
-            self.triggers.update({
-                trigger['trigger_id']:
-                    SceneTrigger(trigger['scene_id'], trigger['trigger_id'], trigger['trigger_name'],
-                                 trigger['trigger_type'], trigger['trigger_value'], trigger['active'],
-                                 self.database, self.execute_scene,
-                                 self.action_to_str(trigger['scene_id']), self.scenes[trigger['scene_id']]["data"])
-            })
-
-    def execute_trigger(self, trigger_id):
-        if trigger_id not in self.triggers:
-            logging.error("Trigger {} does not exist".format(trigger_id))
-            return False
-        trigger = self.triggers[trigger_id]
-        return trigger.execute_command()
+            match trigger['trigger_type']:
+                case "IntervalTrigger":
+                    self.triggers[trigger['trigger_id']] = \
+                        IntervalTrigger(self, trigger['scene_id'],
+                                        trigger['trigger_subtype'], trigger['trigger_value'], trigger['active'])
+                case _:
+                    logging.error(f"Unknown trigger type {trigger['trigger_type']}")
+        for trigger in self.triggers.values():
+            trigger.run()
 
     def execute_scene(self, scene_id):
         if scene_id not in self.scenes:
@@ -125,9 +151,11 @@ class SceneController(RoomModule):
         scene_data = self.scenes[scene_id]["data"]
         command = APIMessageRX(scene_data)
         logging.info("Executing scene {}".format(scene_id))
+        self.run_scene(command)
+
+    def run_scene(self, command):
 
         for device in self.room_controller.room_objects:
-
             if hasattr(command, device.object_name):
                 logging.info(f"Executing scene command for device {device.name()}")
                 device_command = getattr(command, device.name())
@@ -182,161 +210,3 @@ class SceneController(RoomModule):
                                                                                            name=f"[{device.name()}]"))
 
         return ", ".join(actions)
-
-
-class SceneTrigger:
-
-    def __init__(self, scene_id, trigger_id, trigger_name, trigger_type,
-                 trigger_value, active, database: ConcurrentDatabase.Database, callback, action_string,
-                 data):
-        self.scene_id = scene_id
-        self.trigger_id = trigger_id
-        self.trigger_name = trigger_name
-        self.trigger_type = trigger_type
-        self.trigger_value = trigger_value
-        self.data = data
-        self.active = False if active == 0 else True
-        self.database = database
-        self.callback = callback
-
-        self.action_string = action_string
-
-        logging.info(f"Initializing SceneTrigger ({self.trigger_name})")
-        self.api_action = None
-        self.prime()
-
-    def prime(self):
-        """When called this will cause the scene trigger to prepare either a timer or a sensor trigger"""
-        match self.trigger_type:
-            case "weekly":
-                self._prep_interval_trigger(self.trigger_type, self.trigger_value)
-                self.api_action = "arm/disarm"
-            case "daily":
-                self._prep_interval_trigger(self.trigger_type, self.trigger_value)
-                self.api_action = "arm/disarm"
-            case "hourly":
-                self._prep_interval_trigger(self.trigger_type, self.trigger_value)
-                self.api_action = "arm/disarm"
-            case "immediate":
-                self.api_action = "run"
-            case _:
-                logging.error(f"SceneTrigger ({self.trigger_name}) has an invalid trigger type ({self.trigger_type})")
-                return
-        logging.info(
-            f"SceneTrigger ({self.trigger_name}): Initialized with trigger type {self.trigger_type} and api action {self.api_action}")
-
-    def _prep_interval_trigger(self, interval_type: str, interval_value: str):
-        """
-        Prepares a timer trigger
-        :param interval_type: The type of interval trigger (daily, weekly, hourly)
-        :param interval_value: The time of day to trigger the scene either in the format WD*:HH:MM or WD*:HH:MM:SS
-        """
-        match interval_type:
-            case "weekly":
-                datetime_format = "%w:%H:%M"
-            case "daily":
-                datetime_format = "%H:%M"
-            case "hourly":
-                datetime_format = "%M:%S"
-            case _:
-                logging.error(f"SceneTrigger ({self.trigger_name}) has an invalid interval type ({interval_type})")
-                return
-
-        # Parse the interval value
-        try:
-            interval_time = datetime.datetime.strptime(interval_value, datetime_format)
-            # The interval time will 1900-01-01 plus whatever the interval rate will be so we need to add the current date
-            # to the interval time
-            interval_time = datetime.datetime.combine(datetime.datetime.now().date(), interval_time.time())
-
-        except ValueError:
-            logging.error(f"SceneTrigger ({self.trigger_name}): has an invalid interval value ({interval_value})")
-            return
-
-        # Get the current time
-        now = datetime.datetime.now()
-
-        # Calculate the time delta between now and the trigger time
-        match interval_type:
-            case "weekly":
-                # If the trigger time is before now then add 7 days to the trigger time
-                if interval_time < now:
-                    interval_time += datetime.timedelta(days=7)
-                # Calculate the time delta
-                time_delta = interval_time - now
-            case "daily":
-                # If the trigger time is before now then add 1 day to the trigger time
-                if interval_time < now:
-                    interval_time += datetime.timedelta(days=1)
-                # Calculate the time delta
-                time_delta = interval_time - now
-            case "hourly":
-                # If the trigger time is before now then however many hours have gone by today
-                interval_time += datetime.timedelta(hours=now.hour)
-                if interval_time < now:
-                    interval_time += datetime.timedelta(hours=1)
-                # Calculate the time delta
-                time_delta = interval_time - now
-            case _:
-                time_delta = 0
-                logging.error(f"SceneTrigger ({self.trigger_name}) has an invalid interval type ({interval_type})")
-
-        # Create the timer
-        logging.info(f"SceneTrigger ({self.trigger_name}): will trigger at {interval_time}")
-        self._timer_trigger(time_delta.total_seconds())
-
-    @background
-    def _timer_trigger(self, execution_delay):
-        """Executes the scene after the specified delay"""
-        logging.info(f"SceneTrigger ({self.trigger_name}): Trigger primed, will execute in {execution_delay} seconds")
-        time.sleep(execution_delay)
-        self.execute()
-        # Re-prime the trigger after it has executed
-        self.prime()
-
-    def execute_command(self):
-        match self.api_action:
-            case "arm/disarm":
-                self.toggle_active()
-                return True
-            case "run":
-                self.execute()
-                return True
-            case _:
-                logging.error(f"SceneTrigger ({self.trigger_name}): Invalid api action ({self.api_action})")
-                return False
-
-    def toggle_active(self):
-        # self.active = not self.active
-        # cursor = self.database.cursor()
-        # cursor.execute("UPDATE scene_triggers SET active=? WHERE trigger_id=?", (self.active, self.trigger_id))
-        # self.database.commit()
-        self.active = not self.active
-        logging.info(f"SceneTrigger ({self.trigger_name}): Toggled active to {self.active}")
-
-        self.database.run("UPDATE scene_triggers SET active=? WHERE trigger_id=?",
-                          (0 if self.active is False else 1, self.trigger_id))
-
-        # table = self.database.get_table("scene_triggers")
-        # row = table.get_row(trigger_id=self.trigger_id)
-        # row.active = self.active
-
-    def execute(self):
-        """Executes the scene associated with this trigger"""
-        if self.active or self.trigger_type == "immediate":
-            self.callback(self.scene_id)
-        else:
-            logging.info(f"SceneTrigger ({self.trigger_name}): not executing because it is not active")
-
-    def api_data(self) -> dict:
-        """Returns a dictionary of data that can be used to populate an API response"""
-        return {
-            "scene_id": self.scene_id,
-            "trigger_id": self.trigger_id,
-            "trigger_name": self.trigger_name,
-            "trigger_type": self.trigger_type,
-            "trigger_value": self.trigger_value,
-            "active": self.active if self.trigger_type != "immediate" else False,
-            "action": self.action_string,
-            "api_action": self.data
-        }
