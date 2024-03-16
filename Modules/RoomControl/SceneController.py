@@ -24,6 +24,7 @@ class SceneController(RoomModule):
 
         self.scenes = {}  # type: dict[str, dict, bool]
         self.triggers = {}  # type: dict[str, SceneTrigger]
+        self.trigger_tasks = []
         self._load_scenes()
         self._load_triggers()
 
@@ -73,6 +74,28 @@ class SceneController(RoomModule):
             logging.info(f"Updating scene {scene_id} with data {scene_data}")
             # Update the scene data
             self.database.run("UPDATE scenes SET scene_data=? WHERE scene_id=?", (scene_data, scene_id))
+            # Update the triggers
+            # The triggers contain the trigger_id, trigger_type, trigger_subtype, trigger_value, and active
+            # With trigger_id "0" indicating a new trigger
+            for trigger in triggers:
+                if trigger["trigger_id"] == "0":
+                    logging.info(f"Adding new trigger to scene {scene_id}")
+                    # Calculate the next trigger_id
+                    new_id = self.database.run("SELECT MAX(trigger_id) FROM scene_triggers").fetchone()[0] + 1
+                    # Add a new trigger
+                    self.database.run("INSERT INTO scene_triggers "
+                                      "(scene_id, trigger_id, trigger_type, trigger_subtype, "
+                                      "trigger_value, active) VALUES (?, ?, ?, ?, ?, ?)",
+                                      (scene_id, new_id,
+                                       trigger["trigger_type"], trigger["trigger_subtype"],
+                                       trigger["trigger_value"], trigger["enabled"]))
+                else:
+                    # Update the trigger
+                    logging.info(f"Updating trigger {trigger['trigger_id']} for scene {scene_id}")
+                    self.database.run("UPDATE scene_triggers SET trigger_type=?, trigger_subtype=?, trigger_value=?, "
+                                      "active=? WHERE trigger_id=?",
+                                      (trigger["trigger_type"], trigger["trigger_subtype"], trigger["trigger_value"],
+                                       trigger["enabled"], trigger["trigger_id"]))
             # Reload the scenes
             self._load_scenes()
             self._load_triggers()
@@ -128,17 +151,17 @@ class SceneController(RoomModule):
 
     def _load_triggers(self):
         logging.info("SceneController: Loading triggers...")
-        for trigger in self.triggers:
+        for trigger in self.triggers.values():
+            trigger.stopped = True
             del trigger
         self.triggers = {}
-        table = self.database.get_table("scene_triggers")
-        triggers = table.get_all()
+        table = self.database.run("SELECT * FROM scene_triggers")
+        triggers = table.fetchall()
         for trigger in triggers:
-            match trigger['trigger_type']:
+            match trigger[2]:
                 case "IntervalTrigger":
-                    self.triggers[trigger['trigger_id']] = \
-                        IntervalTrigger(self, trigger['scene_id'],
-                                        trigger['trigger_subtype'], trigger['trigger_value'], trigger['active'])
+                    self.triggers[trigger[1]] = IntervalTrigger(self, trigger[0], trigger[1], trigger[3], trigger[4],
+                                                                trigger[5])
                 case _:
                     logging.error(f"Unknown trigger type {trigger['trigger_type']}")
         for trigger in self.triggers.values():

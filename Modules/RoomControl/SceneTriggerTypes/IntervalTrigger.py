@@ -8,9 +8,9 @@ from Modules.RoomControl.SceneTriggerTypes.SceneTrigger import SceneTrigger
 
 class IntervalTrigger(SceneTrigger):
 
-    def __init__(self, scene_controller, scene_id, trigger_subtype, trigger_value, enabled):
-        super().__init__(scene_controller, scene_id, trigger_subtype, trigger_value, enabled)
-        logging.info(f"Initializing IntervalTrigger for Scene ({scene_id})")
+    def __init__(self, scene_controller, scene_id, trigger_id, trigger_subtype, trigger_value, enabled):
+        super().__init__(scene_controller, scene_id, trigger_id, trigger_subtype, trigger_value, enabled)
+        logging.info(f"Initializing IntervalTrigger[{self.trigger_id}] for Scene ({scene_id})")
 
     def _prep_interval_trigger(self, interval_type: str, interval_value: str):
         """
@@ -26,7 +26,8 @@ class IntervalTrigger(SceneTrigger):
             case "hourly":
                 datetime_format = "%M:%S"
             case _:
-                logging.error(f"TimerTrigger for Scene ({self.scene_id}) has an invalid interval type ({interval_type})")
+                logging.error(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id}) has an invalid interval "
+                              f"type ({interval_type})")
                 return
 
         # Parse the interval value
@@ -37,7 +38,8 @@ class IntervalTrigger(SceneTrigger):
             interval_time = datetime.datetime.combine(datetime.datetime.now().date(), interval_time.time())
 
         except ValueError:
-            logging.error(f"TimerTrigger for Scene ({self.scene_id}) has an invalid interval value ({interval_value})")
+            logging.error(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id}) has an"
+                          f" invalid interval value ({interval_value})")
             return
 
         # Get the current time
@@ -66,19 +68,22 @@ class IntervalTrigger(SceneTrigger):
                 time_delta = interval_time - now
             case _:
                 time_delta = 0
-                logging.error(f"TimerTrigger for Scene ({self.scene_id}) has an invalid interval type ({interval_type})")
+                logging.error(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id})"
+                              f" has an invalid interval type ({interval_type})")
 
         # Return the time delta in seconds
         return time_delta.total_seconds()
 
     def exec(self):
-        while True:
+        while not self.stopped:
             wait = self._prep_interval_trigger(self.trigger_subtype, self.trigger_value)
-            logging.debug(f"TimerTrigger for Scene ({self.scene_id}) will trigger in {wait} seconds")
+            logging.info(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id}) will trigger in {wait} seconds")
             time.sleep(wait)  # Sleep this trigger until the target time arrives
-            if self.enabled:
+            if self.enabled and not self.stopped:
                 self.scene_controller.run_scene(self.scene_id)
             else:
-                logging.info(f"TimerTrigger for Scene ({self.scene_id}) elapsed but trigger was disabled")
+                logging.info(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id})"
+                             f" elapsed but trigger was disabled")
+        logging.info(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id}) has been stopped")
 
 

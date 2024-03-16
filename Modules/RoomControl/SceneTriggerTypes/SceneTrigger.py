@@ -6,12 +6,15 @@ class SceneTrigger:
     This is a derived class that represents a trigger for a scene.
     """
 
-    def __init__(self, scene_controller, scene_id, trigger_subtype, trigger_value, enabled):
+    def __init__(self, scene_controller, scene_id, trigger_id, trigger_subtype, trigger_value, enabled):
         self.scene_controller = scene_controller
         self.scene_id = scene_id
+        self.trigger_id = trigger_id
         self.trigger_subtype = trigger_subtype
         self.trigger_value = trigger_value
         self.enabled = enabled
+
+        self.stopped = False
 
     def exec(self):
         raise NotImplementedError
@@ -23,6 +26,7 @@ class SceneTrigger:
     def info(self):
         return {
             "trigger_type": self.__class__.__name__,
+            "trigger_id": self.trigger_id,
             "trigger_subtype": self.trigger_subtype,
             "trigger_value": self.trigger_value,
             "enabled": self.enabled
