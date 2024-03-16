@@ -103,7 +103,7 @@ class SceneController(RoomModule):
             logging.info(f"Adding scene with data {json_payload}")
             # Create an empty scene to get a scene_id and then run the update_scene method to populate the scene
             scene_id = self.database.run("INSERT INTO scenes (scene_id, scene_name, scene_data) VALUES (?, ?, ?)",
-                                            ("temp", "", "")).lastrowid
+                                         ("temp", "", "")).lastrowid
             # Replace the temp scene_id with the actual scene_id
             self.database.run("UPDATE scenes SET scene_id=? WHERE scene_id=?", (scene_id, "temp"))
             logging.info(f"Created new scene entry with id {scene_id}, updating with data")
@@ -214,24 +214,41 @@ class SceneController(RoomModule):
         self.run_scene(command)
 
     def run_scene(self, command):
-
         for device in self.room_controller.room_objects:
             if hasattr(command, device.object_name):
-                logging.info(f"Executing scene command for device {device.name()}")
-                device_command = getattr(command, device.name())
-                for action, value in device_command.items():
-                    if action == "on" and hasattr(device, "on"):
-                        device.on = value
-                    if action == "brightness" and hasattr(device, "brightness"):
-                        device.brightness = value
-                    if action == "color" and hasattr(device, "color"):
-                        device.color = value
-                    if action == "white" and hasattr(device, "white"):
-                        device.white = value
-                    if action == "target_value" and hasattr(device, "setpoint"):
-                        device.setpoint = value
-                    if action == "enable_dnd" and hasattr(device, "enable_dnd"):
-                        device.enable_dnd = value
+                self.execute_commands(device, command)
+
+    @background
+    def execute_commands(self, device, command):
+        logging.info(f"Executing scene command for device {device.name()}")
+        device_command = getattr(command, device.name())
+        for action, value in device_command.items():
+            try:
+                if value == "true" or value == "True":
+                    value = True
+                if value == "false" or value == "False":
+                    value = False
+                # Dynamically check if the device supports the action and set the value
+                if hasattr(device, action):
+                    setattr(device, action, value)
+                else:
+                    logging.warning(f"Device {device.name()} does not support action {action}")
+            except Exception as e:
+                logging.error(f"Error executing scene command: {e}")
+                logging.exception(e)
+
+            # if action == "on" and hasattr(device, "on"):
+            #     device.on = value
+            # if action == "brightness" and hasattr(device, "brightness"):
+            #     device.brightness = value
+            # if action == "color" and hasattr(device, "color"):
+            #     device.color = value
+            # if action == "white" and hasattr(device, "white"):
+            #     device.white = value
+            # if action == "target_value" and hasattr(device, "setpoint"):
+            #     device.setpoint = value
+            # if action == "enable_dnd" and hasattr(device, "enable_dnd"):
+            #     device.enable_dnd = value
 
     def action_to_str(self, scene_id):
         """
