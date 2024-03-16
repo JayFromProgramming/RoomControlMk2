@@ -222,28 +222,31 @@ class SceneController(RoomModule):
         scene_data = self.scenes[scene_id]["data"]
         command = APIMessageRX(scene_data)
         for device in self.room_controller.room_objects:
-            if hasattr(command, device.object_name):
-                device_command = getattr(command, device.name())
-                for action, value in device_command.items():
-                    if action == "on":
-                        actions.append("{name} {value}".format(name=f"[{device.name()}]",
-                                                               value='on' if value else 'off'))
-                    elif action == "brightness":
-                        actions.append("{name} brightness {value}".format(name=f"[{device.name()}]",
-                                                                          value=value))
-                    elif action == "color":
-                        r, g, b = value
-                        color = f"({r}, {g}, {b})"
-                        actions.append("{name} color to {value}".format(name=f"[{device.name()}]", value=color))
-                    elif action == "white":
-                        actions.append("{name} white to {value}".format(name=f"[{device.name()}]", value=value))
-                    elif action == "target_value":
-                        actions.append("{name} setpoint to {value}".format(name=f"[{device.name()}]", value=value))
-                    elif action == "enable_dnd":
-                        actions.append("{name} DND {value}".format(name=f"[{device.name()}]",
+            try:
+                if hasattr(command, device.object_name):
+                    device_command = getattr(command, device.name())
+                    for action, value in device_command.items():
+                        if action == "on":
+                            actions.append("{name} {value}".format(name=f"[{device.name()}]",
                                                                    value='on' if value else 'off'))
-                    else:
-                        actions.append("Preforms unknown action {action} on {name}".format(action=action,
-                                                                                           name=f"[{device.name()}]"))
-
+                        elif action == "brightness":
+                            actions.append("{name} brightness {value}".format(name=f"[{device.name()}]",
+                                                                              value=value))
+                        elif action == "color":
+                            r, g, b = value
+                            color = f"({r}, {g}, {b})"
+                            actions.append("{name} color to {value}".format(name=f"[{device.name()}]", value=color))
+                        elif action == "white":
+                            actions.append("{name} white to {value}".format(name=f"[{device.name()}]", value=value))
+                        elif action == "target_value":
+                            actions.append("{name} setpoint to {value}".format(name=f"[{device.name()}]", value=value))
+                        elif action == "enable_dnd":
+                            actions.append("{name} DND {value}".format(name=f"[{device.name()}]",
+                                                                       value='on' if value else 'off'))
+                        else:
+                            actions.append("Preforms unknown action {action} on {name}".format(action=action,
+                                                                                               name=f"[{device.name()}]"))
+            except Exception as e:
+                logging.error(f"Error creating action string: {e}")
+                logging.exception(e)
         return ", ".join(actions)
