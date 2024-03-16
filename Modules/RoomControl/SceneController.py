@@ -46,6 +46,9 @@ class SceneController(RoomModule):
             "trigger_value TEXT NULL, "
             "active BOOLEAN);"
         ])
+        self.database.update_table("scenes", 1, [
+            "ALTER TABLE scenes ADD COLUMN scene_description TEXT;",
+        ])
 
         # self.database.commit()
 
@@ -58,7 +61,8 @@ class SceneController(RoomModule):
         for scene in scenes:
             self.scenes[scene[0]] = {
                 "name": scene[1],
-                "data": scene[2]
+                "data": scene[2],
+                "description": scene[3],
             }
 
     def _update_triggers(self, scene_id, triggers):
@@ -93,15 +97,32 @@ class SceneController(RoomModule):
                                   (trigger["trigger_type"], trigger["trigger_subtype"], trigger["trigger_value"],
                                    trigger["enabled"], trigger["trigger_id"]))
 
-    def update_scene(self, scene_id, json_payload):
+    def add_scene(self, json_payload):
+        """Called by the API to add a scene"""
+        try:
+            logging.info(f"Adding scene with data {json_payload}")
+            # Create an empty scene to get a scene_id and then run the update_scene method to populate the scene
+            scene_id = self.database.run("INSERT INTO scenes (scene_id, scene_name, scene_data) VALUES (?, ?, ?)",
+                                            ("temp", "", "")).lastrowid
+            # Replace the temp scene_id with the actual scene_id
+            self.database.run("UPDATE scenes SET scene_id=? WHERE scene_id=?", (scene_id, "temp"))
+            logging.info(f"Created new scene entry with id {scene_id}, updating with data")
+            self.update_scene(scene_id, json_payload, new_scene_override=True)
+            logging.info(f"Scene {scene_id} added successfully")
+            return "success"
+        except Exception as e:
+            logging.error(f"Error adding scene: {e}")
+            logging.exception(e)
+            return f"{e}"
+
+    def update_scene(self, scene_id, json_payload, new_scene_override=False):
         """Called by the API to edit a scene"""
         try:
-            if scene_id not in self.scenes:
+            if scene_id not in self.scenes and not new_scene_override:
                 return "Scene does not exist"
-            scene = self.scenes[scene_id]
             # The json payload will contain the triggers and the scene data
             triggers = json_payload.get("triggers", [])  # implement later
-            scene_data = json_payload.get("scene_data", "")
+            scene_data = json_payload.get("scene_data", "{}")
             scene_name = json_payload.get("scene_name", "")
             scene_data = APIMessageRX(scene_data).__str__()
             logging.info(f"Updating scene {scene_id} with data {scene_data} and name {scene_name}")
@@ -127,6 +148,8 @@ class SceneController(RoomModule):
         # Remove all triggers associated with the scene
         self.database.run("DELETE FROM scene_triggers WHERE scene_id=?", (scene_id,))
         self.database.run("DELETE FROM scenes WHERE scene_id=?", (scene_id,))
+        logging.info(f"Deleted scene {scene_id}")
+        self._load_scenes()
         return "success"
 
     def get_scenes(self):
@@ -153,7 +176,7 @@ class SceneController(RoomModule):
     def execute_command(self, command, scene_id, payload):
         match command:
             case "add_scene":
-                return self.add_scene(scene_id, payload)
+                return self.add_scene(payload)
             case "update_scene":
                 return self.update_scene(scene_id, payload)
             case "delete_scene":
