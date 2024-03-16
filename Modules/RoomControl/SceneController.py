@@ -73,7 +73,11 @@ class SceneController(RoomModule):
             if trigger["trigger_id"] == "0":
                 logging.info(f"Adding new trigger to scene {scene_id}")
                 # Calculate the next trigger_id
-                new_id = self.database.run("SELECT MAX(trigger_id) FROM scene_triggers").fetchone()[0] + 1
+                new_id = self.database.run("SELECT MAX(trigger_id) FROM scene_triggers").fetchone()[0]
+                if new_id is None:
+                    new_id = 1
+                else:
+                    new_id += 1
                 # Add a new trigger
                 self.database.run("INSERT INTO scene_triggers "
                                   "(scene_id, trigger_id, trigger_type, trigger_subtype, "
