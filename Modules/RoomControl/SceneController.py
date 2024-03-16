@@ -61,6 +61,34 @@ class SceneController(RoomModule):
                 "data": scene[2]
             }
 
+    def _update_triggers(self, scene_id, triggers):
+        db_triggers = self.database.run("SELECT * FROM scene_triggers WHERE scene_id=?", (scene_id,))
+        db_triggers = db_triggers.fetchall()
+        for db_trigger in db_triggers:
+            if db_trigger[1] not in [trigger["trigger_id"] for trigger in triggers]:
+                logging.info(f"Deleting trigger {db_trigger[1]} from scene {scene_id}")
+                # Delete the trigger
+                self.database.run("DELETE FROM scene_triggers WHERE trigger_id=?", (db_trigger[1],))
+        for trigger in triggers:
+            if trigger["trigger_id"] == "0":
+                logging.info(f"Adding new trigger to scene {scene_id}")
+                # Calculate the next trigger_id
+                new_id = self.database.run("SELECT MAX(trigger_id) FROM scene_triggers").fetchone()[0] + 1
+                # Add a new trigger
+                self.database.run("INSERT INTO scene_triggers "
+                                  "(scene_id, trigger_id, trigger_type, trigger_subtype, "
+                                  "trigger_value, active) VALUES (?, ?, ?, ?, ?, ?)",
+                                  (scene_id, new_id,
+                                   trigger["trigger_type"], trigger["trigger_subtype"],
+                                   trigger["trigger_value"], trigger["enabled"]))
+            else:
+                # Update the trigger
+                logging.info(f"Updating trigger {trigger['trigger_id']} for scene {scene_id}")
+                self.database.run("UPDATE scene_triggers SET trigger_type=?, trigger_subtype=?, trigger_value=?, "
+                                  "active=? WHERE trigger_id=?",
+                                  (trigger["trigger_type"], trigger["trigger_subtype"], trigger["trigger_value"],
+                                   trigger["enabled"], trigger["trigger_id"]))
+
     def update_scene(self, scene_id, json_payload):
         """Called by the API to edit a scene"""
         try:
@@ -75,27 +103,7 @@ class SceneController(RoomModule):
             # Update the scene data
             self.database.run("UPDATE scenes SET scene_data=? WHERE scene_id=?", (scene_data, scene_id))
             # Update the triggers
-            # The triggers contain the trigger_id, trigger_type, trigger_subtype, trigger_value, and active
-            # With trigger_id "0" indicating a new trigger
-            for trigger in triggers:
-                if trigger["trigger_id"] == "0":
-                    logging.info(f"Adding new trigger to scene {scene_id}")
-                    # Calculate the next trigger_id
-                    new_id = self.database.run("SELECT MAX(trigger_id) FROM scene_triggers").fetchone()[0] + 1
-                    # Add a new trigger
-                    self.database.run("INSERT INTO scene_triggers "
-                                      "(scene_id, trigger_id, trigger_type, trigger_subtype, "
-                                      "trigger_value, active) VALUES (?, ?, ?, ?, ?, ?)",
-                                      (scene_id, new_id,
-                                       trigger["trigger_type"], trigger["trigger_subtype"],
-                                       trigger["trigger_value"], trigger["enabled"]))
-                else:
-                    # Update the trigger
-                    logging.info(f"Updating trigger {trigger['trigger_id']} for scene {scene_id}")
-                    self.database.run("UPDATE scene_triggers SET trigger_type=?, trigger_subtype=?, trigger_value=?, "
-                                      "active=? WHERE trigger_id=?",
-                                      (trigger["trigger_type"], trigger["trigger_subtype"], trigger["trigger_value"],
-                                       trigger["enabled"], trigger["trigger_id"]))
+            self._update_triggers(scene_id, triggers)
             # Reload the scenes
             self._load_scenes()
             self._load_triggers()
@@ -163,7 +171,7 @@ class SceneController(RoomModule):
                     self.triggers[trigger[1]] = IntervalTrigger(self, trigger[0], trigger[1], trigger[3], trigger[4],
                                                                 trigger[5])
                 case _:
-                    logging.error(f"Unknown trigger type {trigger['trigger_type']}")
+                    logging.error(f"Unknown trigger type {trigger[2]}")
         for trigger in self.triggers.values():
             trigger.run()
 
