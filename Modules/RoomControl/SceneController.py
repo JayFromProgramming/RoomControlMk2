@@ -102,10 +102,12 @@ class SceneController(RoomModule):
             # The json payload will contain the triggers and the scene data
             triggers = json_payload.get("triggers", [])  # implement later
             scene_data = json_payload.get("scene_data", "")
+            scene_name = json_payload.get("scene_name", "")
             scene_data = APIMessageRX(scene_data).__str__()
             logging.info(f"Updating scene {scene_id} with data {scene_data}")
             # Update the scene data
-            self.database.run("UPDATE scenes SET scene_data=? WHERE scene_id=?", (scene_data, scene_id))
+            self.database.run("UPDATE scenes SET scene_data=?, scene_name=? WHERE scene_id=?",
+                              (scene_data, scene_name, scene_id))
             # Update the triggers
             self._update_triggers(scene_id, triggers)
             # Reload the scenes
