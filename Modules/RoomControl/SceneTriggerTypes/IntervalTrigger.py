@@ -80,7 +80,8 @@ class IntervalTrigger(SceneTrigger):
             logging.info(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id}) will trigger in {wait} seconds")
             time.sleep(wait)  # Sleep this trigger until the target time arrives
             if self.enabled and not self.stopped:
-                self.scene_controller.run_scene(self.scene_id)
+                logging.info(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id}) has elapsed")
+                self.scene_controller.execute_scene(self.scene_id)
             else:
                 logging.info(f"TimerTrigger[{self.trigger_id}] for Scene ({self.scene_id})"
                              f" elapsed but trigger was disabled")
