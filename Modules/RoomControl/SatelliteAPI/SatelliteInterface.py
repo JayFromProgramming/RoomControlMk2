@@ -142,7 +142,7 @@ class Satellite:
         self.last_seen = time.time()
         for obj in self.objects:
             if obj.object_name == data["object"]:
-                logging.info(f"Received event {data['event']} from {data['object']}")
+                # logging.info(f"Received event {data['event']} from {data['object']}")
                 obj.emit_event(data["event"], *data["args"], dont_repeat=True, **data["kwargs"])
                 return
         logging.warning(f"Received event data for object {data['object']} but it does not exist")
@@ -182,7 +182,7 @@ class Satellite:
             "kwargs": kwargs,
             "auth": self.auth
         }
-        logging.info(f"Sending event {event_name} to {self.name} @ {self.ip}:47670")
+        # logging.info(f"Sending event {event_name} to {self.name} @ {self.ip}:47670")
         if self.ip is None:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
