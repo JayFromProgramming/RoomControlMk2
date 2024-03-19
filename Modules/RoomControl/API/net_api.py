@@ -92,7 +92,7 @@ class NetAPI(RoomModule):
             # + [web.get('/set_auto/{mode}', self.handle_auto)]
             + [web.get('/get_schema', self.handle_schema)]
             # + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
-            + [web.get('/get_scenes', self.handle_get_scenes)]
+            + [web.get('/scene_get/{value}/{target}', self.handle_get_scenes)]
             + [web.post('/scene_action/{action}/{scene_id}', self.handle_scene_command)]
             + [web.get('/run_command/{name}', self.handle_run_command)]
             + [web.get('/sys_info', self.handle_sys_info)]
@@ -527,7 +527,9 @@ class NetAPI(RoomModule):
         if self.room_controller.get_module("SceneController") is None:
             msg = APIMessageTX(error="Scene controller not found")
         else:
-            msg = APIMessageTX(scenes=self.room_controller.get_module("SceneController").get_scenes())
+            value = request.match_info['value']
+            target = request.match_info['target']
+            msg = APIMessageTX(result=self.room_controller.get_module("SceneController").execute_get(value, target))
 
         return web.Response(text=msg.__str__())
 
@@ -542,7 +544,7 @@ class NetAPI(RoomModule):
             command = request.match_info['action']
             scene_id = request.match_info['scene_id']
             payload = await request.json()
-            result = self.room_controller.get_module("SceneController").\
+            result = self.room_controller.get_module("SceneController"). \
                 execute_command(command, scene_id, payload)
             msg = APIMessageTX(result=result)
 
@@ -646,5 +648,3 @@ class NetAPI(RoomModule):
         data = [monitor.object_name for monitor in monitors]
         msg = APIMessageTX(system_monitors=data)
         return web.Response(text=msg.__str__())
-
-

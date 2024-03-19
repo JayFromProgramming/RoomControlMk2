@@ -7,9 +7,16 @@ from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
-from Modules.RoomControl.SceneTriggerTypes.IntervalTrigger import IntervalTrigger
 from Modules.RoomControl.SceneTriggerTypes.SceneTrigger import SceneTrigger
 from Modules.RoomModule import RoomModule
+import os
+
+# Auto import all files in the SceneTriggerTypes directory
+for module in os.listdir("Modules/RoomControl/SceneTriggerTypes"):
+    if module.endswith(".py") and module != "__init__.py":
+        module_name = module.replace(".py", "")
+        logging.info(f"Importing {module_name}")
+        __import__(f"Modules.RoomControl.SceneTriggerTypes.{module_name}", fromlist=[module_name])
 
 
 class SceneController(RoomModule):
@@ -24,9 +31,23 @@ class SceneController(RoomModule):
 
         self.scenes = {}  # type: dict[str, dict, bool]
         self.triggers = {}  # type: dict[str, SceneTrigger]
+        self.available_triggers = []
         self.trigger_tasks = []
         self._load_scenes()
         self._load_triggers()
+
+    def _create_trigger(self, scene_id, trigger_id, trigger_type, trigger_subtype, trigger_value, active):
+        """Create a new trigger"""
+        trigger = None
+        for trigger_class in SceneTrigger.__subclasses__():
+            if trigger_class.__name__ == trigger_type:
+                trigger = trigger_class(self, scene_id, trigger_id, trigger_subtype, trigger_value, active)
+                break
+        if trigger is None:
+            logging.error(f"Invalid trigger type {trigger_type}")
+            return
+        self.triggers[trigger_id] = trigger
+        return trigger
 
     def _init_database(self):
         self.database.create_table("scenes", {"scene_id": "TEXT UNIQUE PRIMARY KEY", "scene_name": "TEXT NOT NULL",
@@ -152,6 +173,21 @@ class SceneController(RoomModule):
         self._load_scenes()
         return "success"
 
+    def execute_scene(self, scene_id):
+        if scene_id not in self.scenes:
+            logging.error("Scene {} does not exist".format(scene_id))
+            return False
+        scene_data = self.scenes[scene_id]["data"]
+        command = APIMessageRX(scene_data)
+        logging.info("Executing scene {}".format(scene_id))
+        self.run_scene(command)
+        return "success"
+
+    def run_scene(self, command):
+        for device in self.room_controller.room_objects:
+            if hasattr(command, device.object_name):
+                self.execute_commands(device, command)
+
     def get_scenes(self):
         """Returns a dictionary of all scenes, including their triggers"""
         scenes = {}
@@ -159,11 +195,25 @@ class SceneController(RoomModule):
             triggers = self.get_triggers(scene_id)
             scenes[scene_id] = {
                 "name": scene["name"],
+                "description": scene["description"],
                 "data": scene["data"],
                 "action": self.action_to_str(scene_id),
-                "triggers": triggers
+                "triggers": triggers,
             }
         return scenes
+
+    def get_default_triggers(self):
+        """Returns a list of default triggers"""
+        triggers = []
+        for trigger_class in SceneTrigger.__subclasses__():
+            triggers.append({
+                "trigger_id": "0",
+                "trigger_type": trigger_class.__name__,
+                "trigger_subtype": trigger_class.default_trigger_subtype,
+                "trigger_value": trigger_class.default_trigger_value,
+                "enabled": -1,
+            })
+        return triggers
 
     def get_triggers(self, scene_id):
         """Returns a list of triggers for the specified scene"""
@@ -172,6 +222,19 @@ class SceneController(RoomModule):
             if trigger.scene_id == scene_id:
                 triggers.append(trigger.info())
         return triggers
+
+    def execute_get(self, value, target):
+        match value:
+            case "scenes":
+                return self.get_scenes()
+            case "default_triggers":
+                return self.get_default_triggers()
+            case "triggers":
+                return self.get_triggers(target)
+            case "scene":
+                pass
+            case _:
+                logging.error(f"Invalid get value {value}")
 
     def execute_command(self, command, scene_id, payload):
         match command:
@@ -195,28 +258,9 @@ class SceneController(RoomModule):
         table = self.database.run("SELECT * FROM scene_triggers")
         triggers = table.fetchall()
         for trigger in triggers:
-            match trigger[2]:
-                case "IntervalTrigger":
-                    self.triggers[trigger[1]] = IntervalTrigger(self, trigger[0], trigger[1], trigger[3], trigger[4],
-                                                                trigger[5])
-                case _:
-                    logging.error(f"Unknown trigger type {trigger[2]}")
+            self._create_trigger(trigger[0], trigger[1], trigger[2], trigger[3], trigger[4], trigger[5])
         for trigger in self.triggers.values():
             trigger.run()
-
-    def execute_scene(self, scene_id):
-        if scene_id not in self.scenes:
-            logging.error("Scene {} does not exist".format(scene_id))
-            return False
-        scene_data = self.scenes[scene_id]["data"]
-        command = APIMessageRX(scene_data)
-        logging.info("Executing scene {}".format(scene_id))
-        self.run_scene(command)
-
-    def run_scene(self, command):
-        for device in self.room_controller.room_objects:
-            if hasattr(command, device.object_name):
-                self.execute_commands(device, command)
 
     @background
     def execute_commands(self, device, command):
@@ -236,19 +280,6 @@ class SceneController(RoomModule):
             except Exception as e:
                 logging.error(f"Error executing scene command: {e}")
                 logging.exception(e)
-
-            # if action == "on" and hasattr(device, "on"):
-            #     device.on = value
-            # if action == "brightness" and hasattr(device, "brightness"):
-            #     device.brightness = value
-            # if action == "color" and hasattr(device, "color"):
-            #     device.color = value
-            # if action == "white" and hasattr(device, "white"):
-            #     device.white = value
-            # if action == "target_value" and hasattr(device, "setpoint"):
-            #     device.setpoint = value
-            # if action == "enable_dnd" and hasattr(device, "enable_dnd"):
-            #     device.enable_dnd = value
 
     def action_to_str(self, scene_id):
         """

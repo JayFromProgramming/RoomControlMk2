@@ -8,6 +8,9 @@ from Modules.RoomControl.SceneTriggerTypes.SceneTrigger import SceneTrigger
 
 class IntervalTrigger(SceneTrigger):
 
+    default_trigger_subtype = "daily"
+    default_trigger_value = "00:00"
+
     def __init__(self, scene_controller, scene_id, trigger_id, trigger_subtype, trigger_value, enabled):
         super().__init__(scene_controller, scene_id, trigger_id, trigger_subtype, trigger_value, enabled)
         logging.info(f"Initializing IntervalTrigger[{self.trigger_id}] for Scene ({scene_id})")
