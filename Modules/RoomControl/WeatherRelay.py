@@ -44,7 +44,7 @@ class WeatherRelay(RoomModule):
             try:
                 if time.time() - getattr(self.forecast, "last_update", 0) > 720:
                     logging.info("Updating forecast")
-                    self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+                    self.forecast = self.mgr.one_call(lat=42.5751, lon=-83.4882)
                     self.forecast.last_update = time.time()
                     pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
                     # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
