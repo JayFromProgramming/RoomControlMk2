@@ -60,7 +60,7 @@ class WeatherRelay(RoomModule):
         while True:
             try:
                 logging.debug("Checking for new weather data")
-                observation = self.mgr.weather_at_place("Commerce, Michigan, US")
+                observation = self.mgr.weather_at_place("Commerce Charter Township, Michigan, US")
                 self.current_weather = observation.weather
                 # Check if the there is a newer weather report
                 self.save_current_weather()
