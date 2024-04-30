@@ -30,7 +30,8 @@ class WeatherRelay(RoomModule):
                 self.forecast = pickle.load(file)
                 logging.info(f"Loaded forecast from cache {len(self.forecast.forecast_hourly)}")
         if self.forecast is None:
-            self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+            # self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
+            self.forecast = self.mgr.one_call(lat=42.5751, lon=-83.4882)
             logging.info(f"Loaded forecast for {len(self.forecast.forecast_hourly)} hourly forecasts"
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
@@ -59,7 +60,7 @@ class WeatherRelay(RoomModule):
         while True:
             try:
                 logging.debug("Checking for new weather data")
-                observation = self.mgr.weather_at_place("Houghton, Michigan, US")
+                observation = self.mgr.weather_at_place("Commerce, Michigan, US")
                 self.current_weather = observation.weather
                 # Check if the there is a newer weather report
                 self.save_current_weather()
