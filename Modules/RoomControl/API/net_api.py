@@ -602,6 +602,10 @@ class NetAPI(RoomModule):
         # if not self.check_auth(request):
         #     raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_NOW request")
+        if web.json_response(self.room_controller.get_module("WeatherRelay") is None):
+            return web.Response(text="Weather module not found", status=503)
+        if web.json_response(self.room_controller.get_module("WeatherRelay").current_weather is None):
+            return web.Response(text="Weather data not found", status=503)
         return web.json_response(self.room_controller.get_module("WeatherRelay").current_weather.to_dict())
 
     async def handle_weather_forecast_list(self, request):
