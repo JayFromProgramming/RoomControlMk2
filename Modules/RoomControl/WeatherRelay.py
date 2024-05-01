@@ -4,6 +4,7 @@ import time
 
 from pyowm.owm import OWM
 from threading import Thread
+import geocoder
 
 from loguru import logger as logging
 
@@ -23,6 +24,9 @@ class WeatherRelay(RoomModule):
         self.current_weather = None
         self.current_reference_time = None
         self.forecast = None
+        self.location_address = geocoder.ip('me').address
+        self.location_latlong = geocoder.ip('me').latlng
+        logging.info(f"Location: {self.location_address} {self.location_latlong}")
         self.thread = Thread(target=self.update, daemon=True)
         self.thread.start()
         if os.path.exists("Cache/forecast.pkl"):
@@ -31,7 +35,7 @@ class WeatherRelay(RoomModule):
                 logging.info(f"Loaded forecast from cache {len(self.forecast.forecast_hourly)}")
         if self.forecast is None:
             # self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
-            self.forecast = self.mgr.one_call(lat=42.5751, lon=-83.4882)
+            self.forecast = self.mgr.one_call(lat=self.location_latlong[0], lon=self.location_latlong[1])
             logging.info(f"Loaded forecast for {len(self.forecast.forecast_hourly)} hourly forecasts"
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
@@ -44,7 +48,7 @@ class WeatherRelay(RoomModule):
             try:
                 if time.time() - getattr(self.forecast, "last_update", 0) > 720:
                     logging.info("Updating forecast")
-                    self.forecast = self.mgr.one_call(lat=42.5751, lon=-83.4882)
+                    self.forecast = self.mgr.one_call(lat=self.location_latlong[0], lon=self.location_latlong[1])
                     self.forecast.last_update = time.time()
                     pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
                     # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
@@ -60,7 +64,7 @@ class WeatherRelay(RoomModule):
         while True:
             try:
                 logging.debug("Checking for new weather data")
-                observation = self.mgr.weather_at_place("Milford, Michigan, US")
+                observation = self.mgr.weather_at_place(self.location_address)
                 self.current_weather = observation.weather
                 # Check if the there is a newer weather report
                 self.save_current_weather()
