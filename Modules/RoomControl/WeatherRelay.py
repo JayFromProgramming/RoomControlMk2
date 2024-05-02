@@ -21,6 +21,7 @@ class WeatherRelay(RoomModule):
         api_key = self.database.get_table("secrets").get_row(secret_name="openweathermap")["secret_value"]
         self.owm = OWM(api_key)
         self.mgr = self.owm.weather_manager()
+        self.actual_location = None
         self.current_weather = None
         self.current_reference_time = None
         self.forecast = None
@@ -64,8 +65,9 @@ class WeatherRelay(RoomModule):
         while True:
             try:
                 logging.debug("Checking for new weather data")
-                observation = self.mgr.weather_at_place(self.location_address)
+                observation = self.mgr.weather_at_coords(self.location_latlong[0], self.location_latlong[1])
                 self.current_weather = observation.weather
+                self.actual_location = observation.location
                 # Check if the there is a newer weather report
                 self.save_current_weather()
                 logging.debug(f"Updated weather for {self.current_weather.reference_time(timeformat='iso')}")
