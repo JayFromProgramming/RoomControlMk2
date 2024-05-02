@@ -34,7 +34,7 @@ class VoiceMonkeyAPI(RoomModule):
         cursor = self.database.cursor()
         for device in cursor.execute("SELECT * FROM voicemonkey_devices").fetchall():
             self.devices.append(
-                VoiceMonkeyDevice(device[0], self.room_controller, self.api_key, self.api_secret))
+                VoiceMonkeyDevice(device[0], self.room_controller, self.api_key, self.api_secret, device[4]))
 
         self.periodic_refresh()
 
@@ -44,6 +44,8 @@ class VoiceMonkeyAPI(RoomModule):
     def init_database(self):
         self.database.create_table("voicemonkey_devices", {"device_name": "TEXT", "on_monkey": "TEXT",
                                                            "off_monkey": "TEXT", "current_state": "BOOLEAN"})
+        self.database.update_table("voicemonkey_devices", 1,
+                                   ["""ALTER TABLE voicemonkey_devices ADD COLUMN govee_host TEXT"""])
 
     def get_device(self, device_name):
         for device in self.devices:
@@ -80,10 +82,11 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
     is_promise = False  # Indicates to whatever references this object that it is now ready to be used
     supported_actions = ["toggleable"]
 
-    def __init__(self, device_id, room_controller, monkey_token, monkey_secret):
+    def __init__(self, device_id, room_controller, monkey_token, monkey_secret, govee_host=None):
         super().__init__(device_id, "VoiceMonkeyDevice")
         self.device_id = device_id
         self.room_controller = room_controller
+        self.govee_host = govee_host
         self.database = room_controller.database
         self.monkey_token = monkey_token
         self.monkey_secret = monkey_secret
@@ -144,6 +147,14 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
 
     @background
     def run_monkey(self, monkey, state_after=None):
+
+        device_host = self.room_controller.get_module("GoveeAPI").get_device(self.govee_host)
+        if device_host is None:
+            logging.error(f"VoiceMonkey ({monkey}): Could not find Govee device {self.govee_host}")
+        else:
+            self.online = device_host.online
+            self.offline_reason = "Plug Offline" if not device_host.online else "Unknown"
+
         url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
         logging.debug(f"Running monkey {monkey}")
         try:
@@ -151,30 +162,29 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
         except requests.exceptions.ConnectionError as e:
             try:
                 cause = e.args[0].reason
-
-                self.online = False
+                self.fault = True
                 self.offline_reason = f"{type(cause).__name__}"
                 # Get the cause of the connection error
                 logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server ({cause})")
             except Exception:
                 logging.error(f"VoiceMonkey ({monkey}): Could not connect to VoiceMonkey server, unknown error")
-                self.online = False
+                self.fault = True
                 self.offline_reason = "UnknownConnError"
         except Exception as e:
             logging.error(f"VoiceMonkey ({monkey}): Unknown error ({e})")
-            self.online = False
+            self.online = True
             self.offline_reason = "Request Error"
         else:
             if resp.status_code == 200:
                 logging.debug(f"Monkey {monkey} queued successfully")
-                self.online = True
+                self.fault = False
                 self.offline_reason = "Unknown"
                 if state_after is not None:
                     self.current_state = state_after
                     self.row.set(current_state=state_after)
             else:
                 logging.error(f"Monkey {monkey} failed to queue, status code {resp.status_code}\n{resp.text}")
-                self.online = False
+                self.fault = True
                 self.offline_reason = f"API Error, code: {resp.status_code}"
 
     def refresh_info(self):

@@ -66,5 +66,13 @@
   "MotionDetector": {
     "group": "Sensors",
     "starred": false
+  },
+  "plug_7a": {
+    "group": null,
+    "starred": false
+  },
+  "plug_7b": {
+      "group": null,
+      "starred": false
   }
 }
