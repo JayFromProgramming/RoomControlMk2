@@ -163,6 +163,10 @@ class NetAPI(RoomModule):
         """Get the display name for a device from the schema"""
         if self.schema is None:
             return device_name
+        # Get the device object from room controller
+        device = self.get_device(device_name)
+        if name := device.get_display_name():
+            return name
         for device in self.schema['schema']:
             num = 0
             for d in device["device"] if isinstance(device["device"], list) else [device["device"]]:
