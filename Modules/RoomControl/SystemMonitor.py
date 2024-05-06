@@ -39,6 +39,7 @@ class SystemMonitorLocal(RoomObject):
         self.set_value("disk_usage", 0)
         self.set_value("network_usage", 0)
         self.set_value("address", None)
+        self.set_value("hostname", socket.gethostname())
         self.last_network_usage = 0
         self.set_value("temperature", 0)
         self.set_value("update_available", None)
@@ -185,6 +186,7 @@ class SystemMonitorRemote(RoomObject):
         self.set_value("disk_usage", self.satellite_monitor.get_value("disk_usage"))
         self.set_value("network_usage", self.satellite_monitor.get_value("network_usage"))
         self.set_value("address", self.satellite_monitor.get_value("address"))
+        self.set_value("hostname", self.satellite_monitor.get_value("hostname"))
         self.set_value("temperature", self.satellite_monitor.get_value("temperature"))
         self.set_value("uptime_system", self.satellite_monitor.get_value("uptime_system"))
         self.set_value("uptime_controller", self.satellite_monitor.get_value("uptime_controller"))
@@ -226,6 +228,7 @@ class SystemMonitorRemote(RoomObject):
         self.set_value("disk_usage", self.satellite_monitor.get_value("disk_usage"))
         self.set_value("network_usage", self.satellite_monitor.get_value("network_usage"))
         self.set_value("address", self.satellite_monitor.get_value("address"))
+        self.set_value("hostname", self.satellite_monitor.get_value("hostname"))
         self.set_value("temperature", self.satellite_monitor.get_value("temperature"))
         self.set_value("uptime_system", self.satellite_monitor.get_value("uptime_system"))
         self.set_value("uptime_controller", self.satellite_monitor.get_value("uptime_controller"))
