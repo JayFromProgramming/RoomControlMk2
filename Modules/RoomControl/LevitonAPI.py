@@ -55,6 +55,16 @@ class LevitonDevice(RoomObject, AbstractToggleDevice):
 
         self.room_controller.attach_object(self)
 
+    @background
+    def periodic_refresh(self):
+        while True:
+            self.switch.refresh()
+            self.online = self.switch.connected
+            self.local_ip = None
+            if self.online:
+                self.local_ip = self.switch.localIP
+            time.sleep(5)
+
     def get_display_name(self):
         return self.switch.name
 
