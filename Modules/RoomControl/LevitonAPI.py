@@ -52,7 +52,7 @@ class LevitonDevice(RoomObject, AbstractToggleDevice):
 
         logging.info(f"Leviton Device {self.switch.name}[{self.mac_address}]"
                      f" is {'online' if self.online else 'offline'}")
-
+        self.periodic_refresh()
         self.room_controller.attach_object(self)
 
     @background
