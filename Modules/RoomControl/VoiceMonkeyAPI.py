@@ -178,7 +178,8 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
             if resp.status_code == 200:
                 logging.debug(f"Monkey {monkey} queued successfully")
                 self.fault = False
-                self.offline_reason = "Unknown"
+                if device_host is not None and device_host.online:
+                    self.offline_reason = "Unknown"
                 if state_after is not None:
                     self.current_state = state_after
                     self.row.set(current_state=state_after)
