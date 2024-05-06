@@ -29,7 +29,7 @@
   },
   "intake": {
     "group": "Living Room",
-    "starred": true
+    "starred": false
   },
   "exhaust": {
     "group": "Living Room",
@@ -73,6 +73,6 @@
   },
   "plug_7b": {
       "group": null,
-      "starred": false
+      "starred": true
   }
 }

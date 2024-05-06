@@ -74,6 +74,19 @@
       ]
     },
     {
+      "slot": -1,
+      "type": "combo_plug",
+      "name": "Home",
+      "device": [
+        "plug_7a",
+        "plug_7b"
+      ],
+      "device_names": [
+        "Plug 7a",
+        "Room Lamp"
+      ]
+    },
+    {
       "slot": 5,
       "type": "combo_plug",
       "name": "Living Room",
