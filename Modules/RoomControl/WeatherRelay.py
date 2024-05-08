@@ -33,6 +33,7 @@ class WeatherRelay(RoomModule):
         if os.path.exists("Cache/forecast.pkl"):
             with open("Cache/forecast.pkl", "rb") as file:
                 self.forecast = pickle.load(file)
+                self.forecast.last_update = time.time()
                 logging.info(f"Loaded forecast from cache {len(self.forecast.forecast_hourly)}")
         if self.forecast is None:
             # self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
@@ -41,6 +42,7 @@ class WeatherRelay(RoomModule):
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
+            self.forecast.last_update = time.time()
         self.forecast_thread = Thread(target=self.update_forecast, daemon=True)
         self.forecast_thread.start()
 

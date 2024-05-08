@@ -66,11 +66,11 @@
       "name": "Bedroom",
       "device": [
         "bed_fan",
-        "rad_fan"
+        "big_humid"
       ],
       "device_names": [
-        "Bed Fan",
-        "Plug 3"
+        "Loft Light",
+        "Desk Fan"
       ]
     },
     {
@@ -82,7 +82,7 @@
         "plug_7b"
       ],
       "device_names": [
-        "Plug 7a",
+        "Window Fan",
         "Room Lamp"
       ]
     },

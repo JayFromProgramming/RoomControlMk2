@@ -5,23 +5,25 @@
   },
   "B4E842D7A9F8": {
     "group": "Living Room",
-    "starred": true
+    "starred": false
   },
   "18B905D086A5": {
     "group": "Bedroom",
-    "starred": true
+    "starred": false
   },
   "B4E842136DA6": {
     "group": "Kitchen",
-    "starred": true
+    "starred": false
   },
   "bed_fan": {
     "group": "Bedroom",
-    "starred": false
+    "starred": true,
+    "priority": 1
   },
   "big_humid": {
     "group": "Bedroom",
-    "starred": false
+    "starred": true,
+    "priority": 1
   },
   "rad_fan": {
     "group": null,
@@ -41,11 +43,11 @@
   },
   "temperature_control": {
     "group": "Automatic Controllers",
-    "starred": true
+    "starred": false
   },
   "humidity_control": {
     "group": "Automatic Controllers",
-    "starred": true
+    "starred": false
   },
   "room_light_controller": {
     "group": "Automatic Controllers",
@@ -69,7 +71,7 @@
   },
   "plug_7a": {
     "group": null,
-    "starred": false
+    "starred": true
   },
   "plug_7b": {
       "group": null,

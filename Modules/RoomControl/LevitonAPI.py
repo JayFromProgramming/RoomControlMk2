@@ -1,3 +1,4 @@
+import datetime
 import random
 import time
 
@@ -16,14 +17,18 @@ class LevitonAPI(RoomModule):
     def __init__(self, room_controller):
         super().__init__(room_controller)
         self.database = room_controller.database
+        self.room_controller = room_controller
+        self.connect()
 
+    @background
+    def connect(self):
         secrets = self.database.get_table("secrets")
         username = secrets.get_row(secret_name="leviton_username")["secret_value"]
+        # username = " "
         password = secrets.get_row(secret_name="leviton_password")["secret_value"]
         self.session = DecoraWiFiSession()
         self.session.login(username, password)
         self.devices = []
-        print(self.session.user)
         perms = self.session.user.get_residential_permissions()
         for permission in perms:
             print(permission)
@@ -33,26 +38,37 @@ class LevitonAPI(RoomModule):
                 print(residence)
                 switches = residence.get_iot_switches()
                 for switch in switches:
-                    self.devices.append(LevitonDevice(room_controller, switch))
+                    self.devices.append(LevitonDevice(self.room_controller, switch))
 
 
 class LevitonDevice(RoomObject, AbstractToggleDevice):
+
+    is_promise = False
+    supported_actions = ["toggleable", "brightness"]
 
     def __init__(self, room_controller, switch):
         super().__init__(switch.mac, "LevitonDevice")
         self.room_controller = room_controller
         self.switch = switch
         self.mac_address = switch.mac
+        timestamp = switch.lastUpdated
+        timestamp = timestamp.replace("Z", "+00:00")
+        self.last_updated = datetime.datetime.fromisoformat(timestamp)
+        self.room_id = switch.residentialRoomId
 
         self.online = self.switch.connected
         self.local_ip = None
         if self.online:
             self.local_ip = self.switch.localIP
+            self.signal_strength = self.switch.rssi
         self.dimmable = self.switch.canSetLevel
+        self.min_level = self.switch.minLevel
+        self.max_level = self.switch.maxLevel
 
         logging.info(f"Leviton Device {self.switch.name}[{self.mac_address}]"
                      f" is {'online' if self.online else 'offline'}")
         self.periodic_refresh()
+        self.auto = False
         self.room_controller.attach_object(self)
 
     @background
@@ -99,5 +115,9 @@ class LevitonDevice(RoomObject, AbstractToggleDevice):
     def get_info(self):
         return {
             "local_ip": self.local_ip,
-            "dimmable": self.dimmable
+            "dimmable": self.dimmable,
+            "min_level": self.min_level,
+            "max_level": self.max_level,
+            "signal_strength": self.signal_strength,
+            "last_updated": self.last_updated.timestamp()
         }

@@ -96,8 +96,6 @@ class OccupancyDetector(RoomModule):
             if health is not None:
                 if health["online"]:
                     return False
-            else:
-                logging.warning("Bluetooth health is None")
         return True
 
     def was_activity_recent(self, seconds=60):
@@ -106,10 +104,10 @@ class OccupancyDetector(RoomModule):
     def is_here(self, device):
         for source in self.blue_stalkers:
             try:
-                # logging.info(source.get_value("occupants"))
-                for uuid, details in source.get_value("occupants").items():
-                    if int(uuid) == device:
-                        return True
+                if source.get_value("occupants") is not None:
+                    for uuid, details in source.get_value("occupants").items():
+                        if int(uuid) == device:
+                            return True
             except Exception as e:
                 logging.error(f"Error checking if device is here: {e}")
         return False
