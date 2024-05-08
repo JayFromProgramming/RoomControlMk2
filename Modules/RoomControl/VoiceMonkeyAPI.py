@@ -154,7 +154,8 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
         else:
             self.online = device_host.online
             self.offline_reason = "Plug Offline" if not device_host.online else "Unknown"
-            return
+            if not device_host.online:
+                return
 
         url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
         logging.debug(f"Running monkey {monkey}")
