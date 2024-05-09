@@ -57,7 +57,7 @@ class GoveeDevice:
     def periodic_refresh(self):
         while True:
             self._get_device_info()
-            logging.info(f"Device {self.device_id} is {'online' if self.online else 'offline'}")
+            # logging.info(f"Device {self.device_id} is {'online' if self.online else 'offline'}")
             time.sleep(60)
 
     @background

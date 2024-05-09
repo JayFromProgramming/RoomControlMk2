@@ -31,11 +31,11 @@
   },
   "intake": {
     "group": "Living Room",
-    "starred": false
+    "starred": true
   },
   "exhaust": {
     "group": "Living Room",
-    "starred": false
+    "starred": true
   },
   "plug_2": {
     "group": "Kitchen",
