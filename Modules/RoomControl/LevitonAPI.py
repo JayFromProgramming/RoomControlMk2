@@ -90,11 +90,20 @@ class LevitonDevice(RoomObject, AbstractToggleDevice):
     def set_on(self, on: bool):
         self.switch.update_attributes({'power': 'ON' if on else 'OFF'})
 
+    @property
+    def brightness(self):
+        return self.get_brightness()
+
+    @brightness.setter
+    def brightness(self, value: int):
+        self.set_brightness(value)
+
+    @background
     def set_brightness(self, brightness: int):
         if not self.dimmable:
             self.set_on(brightness > 0)
         else:
-            self.switch.update_attributes({'brightness': brightness, 'power': 'ON' if brightness > 0 else 'OFF'})
+            self.switch.update_attributes({'brightness': str(brightness), 'power': 'ON' if brightness > 0 else 'OFF'})
 
     def get_brightness(self):
         return self.switch.data['brightness']
