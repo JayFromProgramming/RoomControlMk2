@@ -15,6 +15,7 @@ import hashlib
 # from Modules.RoomControl.API import page_builder
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
+from Modules.RoomControl.API.name_handler import NameHandler
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
 from Modules.RoomControl.Decorators import background
 
@@ -73,6 +74,7 @@ class NetAPI(RoomModule):
         self.scene_controller = room_controller.get_module("SceneController")
         self.command_controller = room_controller.get_module("CommandController")
         # self.data_logger = datalogger  # type: # DataLoggerHost
+        self.name_handler = NameHandler(room_controller)
 
         self.init_database()
 
@@ -103,6 +105,7 @@ class NetAPI(RoomModule):
             + [web.get('/page/js/{file}', self.handle_js)]
             + [web.get('/page/img/{file}', self.handle_img)]
             + [web.get('/name/{device_id}', self.handle_name)]
+            + [web.get('/set_name/{device_id}/{new_name}', self.set_name)]
             + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
             + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
             + [web.get('/weather/now', self.handle_weather_now)]
@@ -167,13 +170,7 @@ class NetAPI(RoomModule):
         device = self.get_device(device_name)
         if name := device.get_display_name():
             return name
-        for device in self.schema['schema']:
-            num = 0
-            for d in device["device"] if isinstance(device["device"], list) else [device["device"]]:
-                if d == device_name:
-                    return device["device_names"][num] if "device_names" in device else device["name"]
-                num += 1
-        return device_name
+        return self.name_handler.get_name(device_name)
 
     def check_auth(self, request):
         """Check if the request has a valid cookie"""
@@ -582,6 +579,15 @@ class NetAPI(RoomModule):
         device_id = request.match_info['device_id']
         device_name = self.get_device_display_name(device_id)
         return web.Response(text=device_name)
+
+    async def set_name(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        # logging.info("Received SET_NAME request")
+        device_id = request.match_info['device_id']
+        new_name = request.match_info['new_name']
+        self.name_handler.set_name(device_id, new_name)
+        return web.Response(text="OK")
 
     async def handle_data_log_sources(self, request):
         if not self.check_auth(request):
