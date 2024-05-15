@@ -47,14 +47,19 @@ def get_host_names():
 
 IP_BLACKLIST = ["83.97"]
 
+lock = asyncio.Lock()
+
 
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
-        await asyncio.sleep(random.random() * 0.5)  # TODO: Remove soon, just for testing
+        # await lock.acquire()
+        await asyncio.sleep(random.random() * 0.5)  # Add variable delay to response
         for ip in IP_BLACKLIST:
             if request.remote.startswith(ip):
                 logging.debug(f"Blacklisted IP {request.remote} attempted to access the API")
+                # lock.release()
                 return web.Response(status=403)  # Forbidden
+        # lock.release()
         return await handler(request)
 
     return middleware_handler
@@ -112,6 +117,8 @@ class NetAPI(RoomModule):
             + [web.get('/weather/available_forecast', self.handle_weather_forecast_list)]
             + [web.get('/weather/forecast/{time}', self.handle_weather_forecast)]
             + [web.get('/weather/past/{from_time}/{to_time}', self.handle_weather_past)]
+            + [web.get('/weather/available_radars', self.handle_radar_list)]
+            + [web.get('/weather/radar/{timestamp}/{x}/{y}/{color}', self.handle_radar)]
         )
 
         # Set webserver address and port
@@ -130,8 +137,8 @@ class NetAPI(RoomModule):
         logging.info(f"Loaded {len(self.login_lockouts)} login lockouts")
 
         # Load the schema
-        with open("Modules/RoomControl/Configs/schema.json") as f:
-            self.schema = json.load(f)
+        # with open("Modules/RoomControl/Configs/schema.json") as f:
+        #     self.schema = json.load(f)
         logging.info("Loaded schema")
         # self.app.logger = None
         self.runner = web.AppRunner(self.app, access_log=None)
@@ -164,8 +171,6 @@ class NetAPI(RoomModule):
 
     def get_device_display_name(self, device_name):
         """Get the display name for a device from the schema"""
-        if self.schema is None:
-            return device_name
         # Get the device object from room controller
         device = self.get_device(device_name)
         if name := device.get_display_name():
@@ -644,6 +649,21 @@ class NetAPI(RoomModule):
         data = self.room_controller.get_module("WeatherRelay").get_past()
         msg = APIMessageTX(weather_past=data)
         return web.Response(text=msg.__str__())
+
+    async def handle_radar_list(self, request):
+        data = self.room_controller.get_module("WeatherRelay").get_available_radar()
+        msg = APIMessageTX(weather_radar_list=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_radar(self, request):
+        timestamp = request.match_info['timestamp']
+        x = request.match_info['x']
+        y = request.match_info['y']
+        color = request.match_info['color']
+        data = self.room_controller.get_module("WeatherRelay").get_radar_tile(timestamp, x, y, color)
+        if data is None:
+            return web.Response(status=404)
+        return web.Response(body=data, content_type="image/png")
 
     async def handle_device_ping_update(self, request):
         if not self.check_auth(request):

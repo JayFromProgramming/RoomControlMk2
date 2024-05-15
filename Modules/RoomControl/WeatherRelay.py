@@ -6,10 +6,19 @@ from pyowm.owm import OWM
 from threading import Thread
 import geocoder
 
+import requests
+
 from loguru import logger as logging
 
+from Modules.RoomControl import background
 from Modules.RoomModule import RoomModule
 import pickle
+
+radar_index_url = "https://api.rainviewer.com/public/weather-maps.json"
+radar_base_url = "{host}/{path}/{size}/6/{x}/{y}/{color}/{options}.png"
+radar_tiles = [(15, 22), (16, 22), (17, 22), (18, 22),
+               (15, 23), (16, 23), (17, 23), (18, 23),
+               (15, 24), (16, 24), (17, 24), (18, 24)]
 
 
 class WeatherRelay(RoomModule):
@@ -45,6 +54,7 @@ class WeatherRelay(RoomModule):
             self.forecast.last_update = time.time()
         self.forecast_thread = Thread(target=self.update_forecast, daemon=True)
         self.forecast_thread.start()
+        self.radar_fetch_background()
 
     def update_forecast(self):
         while True:
@@ -86,6 +96,10 @@ class WeatherRelay(RoomModule):
             "status": "text", "secondary_status": "text",
             "visibility": "real", "chance": "real", "rain": "real", "snow": "real", "clouds": "real"
         }, primary_keys=["timestamp"])
+        self.database.create_table("radar_tiles", {
+            "timestamp": "integer", "x": "integer", "y": "integer", "color": "integer", "options": "text",
+            "image": "blob"
+        }, primary_keys=["timestamp", "x", "y", "color"])
 
     def process_probability(self, probability):
         if probability is None:
@@ -93,7 +107,52 @@ class WeatherRelay(RoomModule):
         if "1h" in probability:
             return probability["1h"]
         else:
-            return 0
+            return
+
+    def fetch_radar_tile(self, timestamp, host, path, x, y, color):
+        # Check if we already have saved this timestamp in the database
+        result = self.database.run("SELECT * FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
+                                   (timestamp, x, y, color))
+        if result.fetchone():
+            # logging.info(f"Skipping radar tile {timestamp} {x} {y}")
+            return
+        tile_url = radar_base_url.format(host=host, path=path, size=512, x=x, y=y,
+                                         color=4, options="0_0")
+        tile = requests.get(tile_url).content
+        self.database.run("INSERT INTO radar_tiles (timestamp, x, y, color, image) VALUES (?, ?, ?, ?, ?)",
+                          (timestamp, x, y, color, tile))
+
+    @background
+    def fetch_radar_imagery(self):
+        radar_data = requests.get(radar_index_url).json()
+        host = radar_data["host"]
+        past = radar_data["radar"]["past"]
+        nowcast = radar_data["radar"]["nowcast"]
+        logging.info(f"Getting radar imagery from {host}")
+        for tile in radar_tiles:
+            for frame in past:
+                self.fetch_radar_tile(frame['time'], host, frame['path'], tile[0], tile[1], 4)
+        logging.info("Finished getting past radar imagery")
+
+    @background
+    def radar_fetch_background(self):
+        while True:
+            self.fetch_radar_imagery()
+            time.sleep(900)  # 15 minutes
+
+    def get_available_radar(self):
+        # Return the distinct timestamps from the radar_tiles table
+        result = self.database.run("SELECT DISTINCT timestamp FROM radar_tiles")
+        return [row[0] for row in result.fetchall()]
+
+    def get_radar_tile(self, timestamp, x, y, color):
+        result = self.database.run("SELECT image "
+                                   "FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
+                                   (timestamp, x, y, color)).fetchone()
+        # Check if something was returned
+        if not result:
+            return
+        return result[0]
 
     def save_current_weather(self):
         """
