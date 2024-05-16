@@ -109,18 +109,31 @@ class WeatherRelay(RoomModule):
         else:
             return
 
-    def fetch_radar_tile(self, timestamp, host, path, x, y, color):
+    def fetch_radar_tile(self, timestamp, host, path, x, y, color, is_nowcast=False):
         # Check if we already have saved this timestamp in the database
         result = self.database.run("SELECT * FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
-                                   (timestamp, x, y, color))
-        if result.fetchone():
-            # logging.info(f"Skipping radar tile {timestamp} {x} {y}")
-            return
+                                   (timestamp, x, y, color)).fetchone()
+        if result and is_nowcast:
+            # Check if this nowcast was fetched within the last 10 minutes and skip if it was
+            if time.time() - float(result[4]) < 600:
+                logging.info(f"Skipping nowcast tile {timestamp} {x} {y} {color}")
+                return
+            logging.info(f"Updating nowcast tile {timestamp} {x} {y} {color}")
+            # Delete the old tile from the database
+            self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
+                                (timestamp, x, y, color))
+        elif result:
+            if result[4] is not None:
+                logging.info(f"Replacing old tile {timestamp} {x} {y} {color}")
+                self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
+                                  (timestamp, x, y, color))
+            else:
+                return
         tile_url = radar_base_url.format(host=host, path=path, size=512, x=x, y=y,
                                          color=color, options="0_0")
         tile = requests.get(tile_url).content
-        self.database.run("INSERT INTO radar_tiles (timestamp, x, y, color, image) VALUES (?, ?, ?, ?, ?)",
-                          (timestamp, x, y, color, tile))
+        self.database.run("INSERT INTO radar_tiles (timestamp, x, y, color, image, options) VALUES (?, ?, ?, ?, ?, ?)",
+                          (timestamp, x, y, color, tile, time.time() if is_nowcast else None))
 
     @background
     def fetch_radar_imagery(self):
@@ -132,6 +145,9 @@ class WeatherRelay(RoomModule):
         for tile in radar_tiles:
             for frame in past:
                 self.fetch_radar_tile(frame['time'], host, frame['path'], tile[0], tile[1], 4)
+        for tile in radar_tiles:
+            for frame in nowcast:
+                self.fetch_radar_tile(frame['time'], host, frame['path'], tile[0], tile[1], 4, is_nowcast=True)
         logging.info("Finished getting past radar imagery")
 
     @background
