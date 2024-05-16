@@ -117,7 +117,7 @@ class WeatherRelay(RoomModule):
             # logging.info(f"Skipping radar tile {timestamp} {x} {y}")
             return
         tile_url = radar_base_url.format(host=host, path=path, size=512, x=x, y=y,
-                                         color=4, options="0_0")
+                                         color=color, options="0_0")
         tile = requests.get(tile_url).content
         self.database.run("INSERT INTO radar_tiles (timestamp, x, y, color, image) VALUES (?, ?, ?, ?, ?)",
                           (timestamp, x, y, color, tile))
@@ -137,8 +137,12 @@ class WeatherRelay(RoomModule):
     @background
     def radar_fetch_background(self):
         while True:
-            self.fetch_radar_imagery()
-            time.sleep(900)  # 15 minutes
+            try:
+                self.fetch_radar_imagery()
+            except Exception as e:
+                logging.exception(e)
+            finally:
+                time.sleep(600)  # 10 minutes
 
     def get_available_radar(self):
         # Return the distinct timestamps from the radar_tiles table
