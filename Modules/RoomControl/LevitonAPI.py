@@ -19,6 +19,7 @@ class LevitonAPI(RoomModule):
         self.database = room_controller.database
         self.room_controller = room_controller
         self.connect()
+        self.leviton_periodic_refresh()
 
     @background
     def connect(self):
@@ -40,9 +41,15 @@ class LevitonAPI(RoomModule):
                 for switch in switches:
                     self.devices.append(LevitonDevice(self.room_controller, switch))
 
+    @background
+    def leviton_periodic_refresh(self):
+        while True:
+            for device in self.devices:
+                device.refresh_info()
+            time.sleep(5)
+
 
 class LevitonDevice(RoomObject, AbstractToggleDevice):
-
     is_promise = False
     supported_actions = ["toggleable", "brightness"]
 
@@ -67,19 +74,20 @@ class LevitonDevice(RoomObject, AbstractToggleDevice):
 
         logging.info(f"Leviton Device {self.switch.name}[{self.mac_address}]"
                      f" is {'online' if self.online else 'offline'}")
-        self.periodic_refresh()
+        self.leviton_periodic_refresh()
         self.auto = False
         self.room_controller.attach_object(self)
 
-    @background
-    def periodic_refresh(self):
-        while True:
+    def refresh_info(self):
+        try:
             self.switch.refresh()
             self.online = self.switch.connected
             self.local_ip = None
             if self.online:
                 self.local_ip = self.switch.localIP
-            time.sleep(5)
+        except Exception as e:
+            logging.error(f"Failed to refresh Leviton Device {self.switch.name}[{self.mac_address}]: {e}")
+            self.online = False
 
     def get_display_name(self):
         return self.switch.name

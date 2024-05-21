@@ -37,8 +37,6 @@ class WeatherRelay(RoomModule):
         self.location_address = geocoder.ip('me').address
         self.location_latlong = geocoder.ip('me').latlng
         logging.info(f"Location: {self.location_address} {self.location_latlong}")
-        self.thread = Thread(target=self.update, daemon=True)
-        self.thread.start()
         if os.path.exists("Cache/forecast.pkl"):
             with open("Cache/forecast.pkl", "rb") as file:
                 self.forecast = pickle.load(file)
@@ -52,10 +50,11 @@ class WeatherRelay(RoomModule):
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
             self.forecast.last_update = time.time()
-        self.forecast_thread = Thread(target=self.update_forecast, daemon=True)
-        self.forecast_thread.start()
         self.radar_fetch_background()
+        self.update_current_weather()
+        self.update_forecast()
 
+    @background
     def update_forecast(self):
         while True:
             try:
@@ -73,7 +72,8 @@ class WeatherRelay(RoomModule):
             finally:
                 time.sleep(300)
 
-    def update(self):
+    @background
+    def update_current_weather(self):
         while True:
             try:
                 logging.debug("Checking for new weather data")
@@ -135,7 +135,6 @@ class WeatherRelay(RoomModule):
         self.database.run("INSERT INTO radar_tiles (timestamp, x, y, color, image, options) VALUES (?, ?, ?, ?, ?, ?)",
                           (timestamp, x, y, color, tile, time.time() if is_nowcast else None))
 
-    @background
     def fetch_radar_imagery(self):
         radar_data = requests.get(radar_index_url).json()
         host = radar_data["host"]

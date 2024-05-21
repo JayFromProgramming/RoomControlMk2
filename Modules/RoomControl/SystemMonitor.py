@@ -46,7 +46,7 @@ class SystemMonitorLocal(RoomObject):
         self.set_value("uptime_system", round(time.time() - psutil.boot_time()))
         self.set_value("uptime_controller", round(time.time() - os.path.getmtime("main.py")))
         self.latest = None
-        self.check_version()
+        # self.check_version()
         self.start_monitoring()
         self.room_controller.attach_object(self)
 

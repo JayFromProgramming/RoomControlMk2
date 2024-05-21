@@ -20,9 +20,8 @@ class GoveeAPI(RoomModule):
 
         secrets = self.database.get_table("secrets")
         self.api_key = secrets.get_row(secret_name="govee_key")["secret_value"]
-
-        devices_payload = self.request_devices()
         self.devices = []
+        devices_payload = self.request_devices()
         for device in devices_payload["data"]:
             logging.info(f"Creating device {device['deviceName']} [{device['device']}]")
             self.devices.append(GoveeDevice(room_controller, self.api_key, device["sku"], device["device"]))
@@ -36,9 +35,12 @@ class GoveeAPI(RoomModule):
         return response.json()
 
     def get_device(self, device_id):
-        for device in self.devices:
-            if device.device_id == device_id:
-                return device
+        try:
+            for device in self.devices:
+                if device.device_id == device_id:
+                    return device
+        except Exception as e:
+            pass
 
 
 class GoveeDevice:

@@ -121,6 +121,7 @@ class MagicHome(RoomModule):
             all_status[device.macaddr] = device.get_status()
         return all_status
 
+    @background
     def refresh_all(self):
         for device in self.devices:
             device.fetch_status()

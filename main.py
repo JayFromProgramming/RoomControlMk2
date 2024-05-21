@@ -45,8 +45,8 @@ async def webserver_runner():
     logging.info("Starting web servers")
     sites = []
     for module in room_controller.get_modules():
-        if hasattr(module, "wait_for_ready"):
-            module.wait_for_ready()
+        # if hasattr(module, "wait_for_ready"):
+        #     module.wait_for_ready()
         # Collect any aiohttp servers and run use asyncio.gather to run them all at once
 
         if hasattr(module, "is_webserver") and getattr(module, "get_site", None) is not None:
