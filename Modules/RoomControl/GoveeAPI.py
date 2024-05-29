@@ -52,7 +52,7 @@ class GoveeDevice:
         self.api_key = api_key
         # Device info variables
         self.online = None
-        self.initalized = False
+        self.initialized = False
         self.plug_states = None
         self.periodic_refresh()
 
@@ -83,7 +83,7 @@ class GoveeDevice:
         }
         response = requests.post(url, headers=headers, json=params)
         data = response.json()["payload"]
-        self.initalized = True
+        self.initialized = True
         capabilities = data["capabilities"]
         for capability in capabilities:
             match capability["type"]:
