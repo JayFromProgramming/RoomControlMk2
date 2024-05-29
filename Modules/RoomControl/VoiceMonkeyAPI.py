@@ -152,7 +152,7 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
         if device_host is None:
             logging.error(f"VoiceMonkey ({monkey}): Could not find Govee device {self.govee_host}")
         else:
-            self.online = device_host.online
+            self.online = device_host.online if device_host.initialized else True
             self.offline_reason = "Plug Offline" if not device_host.online else "Unknown"
             if not device_host.online:
                 return

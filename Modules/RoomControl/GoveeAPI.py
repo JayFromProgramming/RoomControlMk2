@@ -52,15 +52,20 @@ class GoveeDevice:
         self.api_key = api_key
         # Device info variables
         self.online = None
+        self.initalized = False
         self.plug_states = None
         self.periodic_refresh()
 
     @background
     def periodic_refresh(self):
         while True:
-            self._get_device_info()
-            # logging.info(f"Device {self.device_id} is {'online' if self.online else 'offline'}")
-            time.sleep(60)
+            try:
+                self._get_device_info()
+                # logging.info(f"Device {self.device_id} is {'online' if self.online else 'offline'}")
+            except Exception as e:
+                self.online = False
+            finally:
+                time.sleep(60)
 
     @background
     def _get_device_info(self):
@@ -78,6 +83,7 @@ class GoveeDevice:
         }
         response = requests.post(url, headers=headers, json=params)
         data = response.json()["payload"]
+        self.initalized = True
         capabilities = data["capabilities"]
         for capability in capabilities:
             match capability["type"]:
