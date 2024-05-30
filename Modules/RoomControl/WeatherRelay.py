@@ -149,11 +149,21 @@ class WeatherRelay(RoomModule):
                 self.fetch_radar_tile(frame['time'], host, frame['path'], tile[0], tile[1], 4, is_nowcast=True)
         logging.info("Finished getting past radar imagery")
 
+    def prune_radar_cache(self):
+        # Clear the radar tiles that are older than 7 days
+        size = self.database.run("SELECT SUM(LENGTH((image))) FROM radar_tiles").fetchone()[0]
+        logging.info(f"Current radar tile cache size: {size / 1024 / 1024:.2f}MB")
+        results = self.database.run("DELETE FROM radar_tiles WHERE timestamp < ?", (time.time() - 604800,))
+        logging.info(f"Deleted {results.rowcount} old radar tiles")
+        size = self.database.run("SELECT SUM(LENGTH((image))) FROM radar_tiles").fetchone()[0]
+        logging.info(f"Pruned radar tile cache size: {size / 1024 / 1024:.2f}MB")
+
     @background
     def radar_fetch_background(self):
         while True:
             try:
                 self.fetch_radar_imagery()
+                self.prune_radar_cache()
             except Exception as e:
                 logging.exception(e)
             finally:

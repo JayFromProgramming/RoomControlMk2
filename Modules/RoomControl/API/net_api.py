@@ -53,7 +53,7 @@ lock = asyncio.Lock()
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
         # await lock.acquire()
-        await asyncio.sleep(random.random() * 0.5)  # Add variable delay to response
+        await asyncio.sleep(random.random() * 0.5)  # Add variable delay to response to show off lazy loading
         for ip in IP_BLACKLIST:
             if request.remote.startswith(ip):
                 logging.debug(f"Blacklisted IP {request.remote} attempted to access the API")
