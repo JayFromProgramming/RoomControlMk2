@@ -19,6 +19,8 @@ class LevitonAPI(RoomModule):
         self.database = room_controller.database
         self.room_controller = room_controller
         self.connect()
+        self.session = DecoraWiFiSession()
+        self.devices = []
         self.leviton_periodic_refresh()
 
     @background
@@ -27,9 +29,7 @@ class LevitonAPI(RoomModule):
         username = secrets.get_row(secret_name="leviton_username")["secret_value"]
         # username = " "
         password = secrets.get_row(secret_name="leviton_password")["secret_value"]
-        self.session = DecoraWiFiSession()
         self.session.login(username, password)
-        self.devices = []
         perms = self.session.user.get_residential_permissions()
         for permission in perms:
             print(permission)
