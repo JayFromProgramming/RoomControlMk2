@@ -92,7 +92,7 @@ class LevitonDevice(RoomObject, AbstractToggleDevice):
             timestamp = timestamp.replace("Z", "+00:00")
             self.last_updated = datetime.datetime.fromisoformat(timestamp)
             # Check what attributes have changed and make a log of them
-            ignored_attributes = ['lastUpdated', 'rssi']
+            ignored_attributes = ['lastUpdated', 'rssi', 'otaStatus', 'apply_ota']
             for key, value in self.switch.data.items():
                 if key in old_attributes and old_attributes[key] != value and key not in ignored_attributes:
                     logging.info(f"Leviton Device \"{self.switch.name}[{self.mac_address}]\""
