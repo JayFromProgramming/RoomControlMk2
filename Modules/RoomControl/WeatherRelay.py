@@ -116,15 +116,15 @@ class WeatherRelay(RoomModule):
         if result and is_nowcast:
             # Check if this nowcast was fetched within the last 10 minutes and skip if it was
             if time.time() - float(result[4]) < 600:
-                logging.info(f"Skipping nowcast tile {timestamp} {x} {y} {color}")
+                logging.debug(f"Skipping nowcast tile {timestamp} {x} {y} {color}")
                 return
-            logging.info(f"Updating nowcast tile {timestamp} {x} {y} {color}")
+            logging.debug(f"Updating nowcast tile {timestamp} {x} {y} {color}")
             # Delete the old tile from the database
             self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                                 (timestamp, x, y, color))
         elif result:
             if result[4] is not None:
-                logging.info(f"Replacing old tile {timestamp} {x} {y} {color}")
+                logging.debug(f"Replacing old tile {timestamp} {x} {y} {color}")
                 self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                                   (timestamp, x, y, color))
             else:
