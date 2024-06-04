@@ -317,7 +317,7 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         device_name = request.match_info['name']
-        logging.info(f"Received SET request for {device_name}")
+        logging.info(f"Received SET request for {device_name} from {request.remote}")
         data = request.query
 
         # if "redirect" in data:

@@ -18,9 +18,9 @@ class LevitonAPI(RoomModule):
         super().__init__(room_controller)
         self.database = room_controller.database
         self.room_controller = room_controller
-        self.connect()
         self.session = DecoraWiFiSession()
         self.devices = []
+        self.connect()
         self.leviton_periodic_refresh()
 
     @background
