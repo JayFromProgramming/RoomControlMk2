@@ -337,7 +337,7 @@ class NetAPI(RoomModule):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
         device_name = request.match_info['name']
-        logging.info(f"Received POST SET request for {device_name}")
+        logging.info(f"Received POST SET request for {device_name} from {request.remote}")
         data = await request.json()
         logging.info(f"Received data: {data}")
         msg = APIMessageRX(data)
