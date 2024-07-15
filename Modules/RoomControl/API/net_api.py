@@ -65,6 +65,16 @@ async def blacklist_middleware(app, handler):
     return middleware_handler
 
 
+async def on_prepare(request, response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Max-Age"] = "3600"
+
+    if request.method == "OPTIONS":
+        return web.Response(status=200)
+
+
 class NetAPI(RoomModule):
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
@@ -84,6 +94,7 @@ class NetAPI(RoomModule):
         self.init_database()
 
         self.app = web.Application(middlewares=[blacklist_middleware])
+        self.app.on_response_prepare.append(on_prepare)
         self.app.add_routes(  # Yes this could be done with a loop, but this is easier for me to keep track of
             [web.get('', self.handle_web)]
             + [web.get("/page/{page}", self.handle_page)]
