@@ -34,8 +34,10 @@ class WeatherRelay(RoomModule):
         self.current_weather = None
         self.current_reference_time = None
         self.forecast = None
-        self.location_address = geocoder.ip('me').address
-        self.location_latlong = geocoder.ip('me').latlng
+        self.location_address = "Milford, MI"
+        self.location_latlong = (42.5903, -83.5983)
+        # self.location_address = geocoder.ip('me').address
+        # self.location_latlong = geocoder.ip('me').latlng
         logging.info(f"Location: {self.location_address} {self.location_latlong}")
         if os.path.exists("Cache/forecast.pkl"):
             with open("Cache/forecast.pkl", "rb") as file:
