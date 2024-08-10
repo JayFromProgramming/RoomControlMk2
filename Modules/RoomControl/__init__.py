@@ -24,7 +24,11 @@ for module in os.listdir("Modules/RoomControl"):
     if module.endswith(".py") and module != "__init__.py":
         module_name = module.replace(".py", "")
         logging.info(f"Importing {module_name}")
-        __import__(f"Modules.RoomControl.{module_name}", fromlist=[module_name])
+        try:
+            __import__(f"Modules.RoomControl.{module_name}", fromlist=[module_name])
+        except Exception as e:
+            logging.error(f"Error importing {module_name}: {e}")
+            logging.exception(e)
     if os.path.isdir(f"Modules/RoomControl/{module}"):
         logging.info(f"Importing {module}")
         for module_file in os.listdir(f"Modules/RoomControl/{module}"):
