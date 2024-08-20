@@ -103,6 +103,7 @@ class LightController(RoomObject):
 
         self.online = True
         self.changing_state = False
+        self.attempts = 0
         self.dnd_active = True if self.current_state == StateEnumerator.dnd else False
 
         self.occupancy_detector = self.room_controller.get_module("OccupancyDetector")  # type: OccupancyDetector
@@ -154,6 +155,7 @@ class LightController(RoomObject):
         return False
 
     def update_state(self):
+        return
         if self.enabled and not self.changing_state:
             if self.dnd_active:
                 if self.dnd_state is not None:
@@ -180,6 +182,8 @@ class LightController(RoomObject):
     @background
     def set_state(self, state_val, state=None):
         prev_state = self.current_state
+        if self.attempts > 3:
+            return
         try:
             if self.current_state != state_val:
                 self.changing_state = True
@@ -214,18 +218,21 @@ class LightController(RoomObject):
                                                       f" to {value} current value is "
                                                       f"{getattr(device, key)}")
                                         self.current_state = prev_state
+                                        self.attempts += 1
                                 elif getattr(device, key) != value:
                                     logging.error(f"LightController: {self.controller_name} failed to change state"
                                                   f" to {state_val}")
                                     logging.error(f"LightController: {self.controller_name} failed to change {key} "
                                                   f"to {value} current value is "
                                                   f"{getattr(device, key)}")
+                                    self.attempts += 1
                                     self.current_state = prev_state
         except Exception as e:
             logging.error(f"LightController: {self.controller_name} failed to change state to {state_val} due to {e}")
             self.current_state = prev_state
         finally:
             self.changing_state = False
+            self.attempts = 0
             try:
                 # Update current state in the database
                 self.controller.set(current_state=self.current_state)

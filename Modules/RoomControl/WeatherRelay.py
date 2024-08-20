@@ -77,6 +77,9 @@ class WeatherRelay(RoomModule):
         while True:
             try:
                 logging.debug("Checking for new weather data")
+                if self.location_latlong is None:
+                    logging.error("Failed to acquire location data")
+                    continue
                 observation = self.mgr.weather_at_coords(self.location_latlong[0], self.location_latlong[1])
                 self.current_weather = observation.weather
                 self.actual_location = observation.location

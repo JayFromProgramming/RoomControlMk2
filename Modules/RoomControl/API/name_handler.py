@@ -16,7 +16,7 @@ class NameHandler:
         if row:
             return row[0]
         # logging.warning(f"{object_id} did not have a front facing name in name_relations")
-        return object_id
+        return f"|{object_id}|"
 
     def set_name(self, object_id, name):
         current_name = self.get_name(object_id)

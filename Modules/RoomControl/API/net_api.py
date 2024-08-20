@@ -184,6 +184,9 @@ class NetAPI(RoomModule):
         """Get the display name for a device from the schema"""
         # Get the device object from room controller
         device = self.get_device(device_name)
+        if not device:
+            response = web.Response(text="Device not found", status=404)
+            return False
         if name := device.get_display_name():
             return name
         return self.name_handler.get_name(device_name)
@@ -594,6 +597,8 @@ class NetAPI(RoomModule):
         # logging.info("Received NAME request")
         device_id = request.match_info['device_id']
         device_name = self.get_device_display_name(device_id)
+        if device_name is False:
+            return web.Response(text="Device not found", status=404)
         return web.Response(text=device_name)
 
     async def set_name(self, request):
@@ -641,6 +646,8 @@ class NetAPI(RoomModule):
         # if not self.check_auth(request):
         #     raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_FORECAST_LIST request")
+        if self.room_controller.get_module("WeatherRelay") is None:
+            return web.Response(text="Weather module not found", status=503)
         data = self.room_controller.get_module("WeatherRelay").get_available_forecast()
         msg = APIMessageTX(weather_forecast_list=data)
         return web.Response(text=msg.__str__())
