@@ -63,8 +63,8 @@ class MagicHome(RoomModule):
         devices = []
         for device in hw_devices:
             try:
-                logging.debug(f"MagicHome: Found device {device.macaddr}, creating device object")
-                devices.append(MagicDevice(self.api, device.macaddr, self.room_controller))
+                # logging.debug(f"MagicHome: Found device {device.macaddr}, creating device object")
+                devices.append(MagicDevice(self.api, device.macaddr, self.room_controller, device.local_ip))
             except magichue.exceptions.MagicHueAPIError as e:
                 logging.error(f"MagicHome: Error creating device object for {device.macaddr}: {e}")
         self.devices = devices
@@ -132,7 +132,7 @@ class MagicDevice(RoomObject, AbstractRGB):
     is_promise = False
     supported_actions = ["toggleable", "color", "brightness", "white"]
 
-    def __init__(self, api, macaddr, room_controller):
+    def __init__(self, api, macaddr, room_controller, local_ip=None):
         super().__init__(macaddr, "MagicDevice")
         self.room_controller = room_controller
         database = room_controller.database
@@ -147,7 +147,12 @@ class MagicDevice(RoomObject, AbstractRGB):
             cursor.close()
 
         try:
-            self.light = magichue.RemoteLight(api=api, macaddr=macaddr, allow_fading=True)
+            if local_ip is not None:
+                logging.info(f"MagicHomeDevice: Creating device object for {macaddr} with local IP {local_ip}")
+                self.light = magichue.LocalLight(local_ip)
+            else:
+                logging.info(f"MagicHomeDevice: Creating device object for {macaddr} using Remote API")
+                self.light = magichue.RemoteLight(api=api, macaddr=macaddr, allow_fading=True)
             logging.info(f"MagicHomeDevice: {macaddr} is ready, bulb type is "
                          f"{bulb_type_to_string(self.light.status.bulb_type)}")
             self.status = self.light.status
