@@ -155,7 +155,6 @@ class LightController(RoomObject):
         return False
 
     def update_state(self):
-        return
         if self.enabled and not self.changing_state:
             if self.dnd_active:
                 if self.dnd_state is not None:
