@@ -247,7 +247,7 @@ class MagicDevice(RoomObject, AbstractRGB):
                     self.light.color = (white, white, white)
                 # self.light.cw = white
             except magichue.exceptions.MagicHueAPIError as e:
-                print(f"{self.macaddr} set brightness error: {e}")
+                logging.error(f"{self.macaddr} set brightness error: {e}")
                 self.offline_reason = str(e)
                 self.online = False
         else:
