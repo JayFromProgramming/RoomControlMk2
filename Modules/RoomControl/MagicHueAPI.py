@@ -147,12 +147,12 @@ class MagicDevice(RoomObject, AbstractRGB):
             cursor.close()
 
         try:
-            if local_ip is not None:
-                logging.info(f"MagicHomeDevice: Creating device object for {macaddr} with local IP {local_ip}")
-                self.light = magichue.LocalLight(local_ip)
-            else:
-                logging.info(f"MagicHomeDevice: Creating device object for {macaddr} using Remote API")
-                self.light = magichue.RemoteLight(api=api, macaddr=macaddr, allow_fading=True)
+            # if local_ip is not None:
+            #     logging.info(f"MagicHomeDevice: Creating device object for {macaddr} with local IP {local_ip}")
+            #     self.light = magichue.LocalLight(local_ip)
+            # else:
+            logging.info(f"MagicHomeDevice: Creating device object for {macaddr} using Remote API")
+            self.light = magichue.RemoteLight(api=api, macaddr=macaddr, allow_fading=True)
             logging.info(f"MagicHomeDevice: {macaddr} is ready, bulb type is "
                          f"{bulb_type_to_string(self.light.status.bulb_type)}")
             self.status = self.light.status
