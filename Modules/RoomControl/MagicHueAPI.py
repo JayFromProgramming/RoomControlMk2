@@ -232,6 +232,14 @@ class MagicDevice(RoomObject, AbstractRGB):
         else:
             return 0
 
+    @property
+    def white(self):
+        return self.get_white()
+
+    @white.setter
+    def white(self, value: int):
+        self.set_white(value)
+
     @background
     def set_white(self, white: int):
         if self.online:
