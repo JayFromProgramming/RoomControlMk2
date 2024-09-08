@@ -63,6 +63,11 @@ class SatelliteObject(RoomObject):
             "reason": reason
         }
 
+    @property
+    def set_on(self):
+        raise NotImplementedError("set_on is not implemented for this object")
+
+    @set_on.setter
     def set_on(self, state):
         if not self.satellite.online:
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
