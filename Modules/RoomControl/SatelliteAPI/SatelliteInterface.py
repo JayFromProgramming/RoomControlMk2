@@ -66,7 +66,7 @@ class SatelliteObject(RoomObject):
 
     @property
     def on(self):
-        raise NotImplementedError
+        return None
 
     @on.setter
     def on(self, state):
