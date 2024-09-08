@@ -11,6 +11,11 @@
     "group": null,
     "starred": false
   },
+  "Radiator": {
+    "group": "Living Room",
+    "starred": true,
+    "priority": 1
+  },
   "B4E842136DA6": {
     "group": "Bedroom",
     "starred": false
