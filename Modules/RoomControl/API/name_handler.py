@@ -19,7 +19,7 @@ class NameHandler:
         return f"|{object_id}|"
 
     def set_name(self, object_id, name):
-        current_name = self.get_name(object_id)
+        current_name = self.get_name(object_id).strip('|')
         if current_name == object_id:
             logging.info(f"Adding {object_id} name {name}")
             self.database.run("INSERT INTO name_relations (name, object_id) VALUES (?, ?)", (name, object_id))
