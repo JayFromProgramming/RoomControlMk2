@@ -29,6 +29,7 @@ def get_host_names():
 
 class SatelliteObject(RoomObject):
     is_promise = False
+    is_satellite = True
 
     def __init__(self, object_name, object_type, satellite):
         super().__init__(object_name, object_type)
@@ -64,11 +65,11 @@ class SatelliteObject(RoomObject):
         }
 
     @property
-    def set_on(self):
-        raise NotImplementedError("set_on is not implemented for this object")
+    def on(self):
+        raise NotImplementedError
 
-    @set_on.setter
-    def set_on(self, state):
+    @on.setter
+    def on(self, state):
         if not self.satellite.online:
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return

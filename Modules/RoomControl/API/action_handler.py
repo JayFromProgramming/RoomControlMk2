@@ -16,6 +16,8 @@ def process_device_command(device:
         if device is None:
             raise ValueError(f"Device ({device}) not found")
         else:  # Device found
+            # if device.is_satellite:
+
             # print(message.__dict__)
             for key, value in message.__dict__.items():  # Loop through all attributes in the message
                 if hasattr(device, key):  # Check the device has an attribute with the same name
