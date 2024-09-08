@@ -10,7 +10,7 @@ from Modules.RoomControl.EnvironmentController import EnvironmentController
 
 
 def process_device_command(device:
-typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message: APIMessageRX) -> tuple[APIMessageTX, bool] | APIMessageTX:
+    typing.Union[AbstractRGB, AbstractToggleDevice, EnvironmentController], message: APIMessageRX) -> tuple[APIMessageTX, bool] | APIMessageTX:
     preformed_actions = []
     try:
         if device is None:

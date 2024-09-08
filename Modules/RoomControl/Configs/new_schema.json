@@ -4,24 +4,24 @@
     "starred": false
   },
   "B4E842D7A9F8": {
-    "group": "Living Room",
+    "group": "Kitchen",
     "starred": true
   },
   "18B905D086A5": {
-    "group": "Bedroom",
+    "group": null,
     "starred": false
   },
   "B4E842136DA6": {
-    "group": "Kitchen",
+    "group": "Bedroom",
     "starred": false
   },
   "bed_fan": {
-    "group": "Bedroom",
+    "group": "Living Room",
     "starred": true,
     "priority": 1
   },
   "big_humid": {
-    "group": "Bedroom",
+    "group": "Living Room",
     "starred": true,
     "priority": 1
   },
@@ -30,11 +30,11 @@
     "starred": false
   },
   "intake": {
-    "group": "Living Room",
+    "group": "Bedroom",
     "starred": true
   },
   "exhaust": {
-    "group": "Living Room",
+    "group": "Bedroom",
     "starred": true
   },
   "plug_2": {
