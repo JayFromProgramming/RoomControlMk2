@@ -34,6 +34,7 @@ class SatelliteObject(RoomObject):
     def __init__(self, object_name, object_type, satellite):
         super().__init__(object_name, object_type)
         self.satellite = satellite
+        asyncio.create_task(self.heartbeat())
 
     def get_state(self):
         return self.get_values()
