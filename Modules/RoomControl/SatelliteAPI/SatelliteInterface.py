@@ -64,6 +64,12 @@ class SatelliteObject(RoomObject):
             "reason": reason
         }
 
+    async def heartbeat(self):
+        while True:
+            if self.satellite.online:
+                self.emit_event("heartbeat")
+            await asyncio.sleep(60)
+
     @property
     def on(self):
         return None
