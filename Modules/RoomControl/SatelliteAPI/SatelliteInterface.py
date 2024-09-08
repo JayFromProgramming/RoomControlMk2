@@ -73,7 +73,7 @@ class SatelliteObject(RoomObject):
         if not self.satellite.online:
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return
-        self.satellite.downlink_event(self, "set_on", state)
+        asyncio.create_task(self.satellite.downlink_event(self, "set_on", state))
 
 
 class Satellite:
