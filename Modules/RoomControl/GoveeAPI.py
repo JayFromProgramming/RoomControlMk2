@@ -19,7 +19,11 @@ class GoveeAPI(RoomModule):
         self.database = room_controller.database
 
         secrets = self.database.get_table("secrets")
-        self.api_key = secrets.get_row(secret_name="govee_key")["secret_value"]
+        try:
+            self.api_key = secrets.get_row(secret_name="govee_key")["secret_value"]
+        except Exception as e:
+            logging.error("Govee API key not found in secrets table")
+            return
         self.devices = []
         devices_payload = self.request_devices()
         for device in devices_payload["data"]:
