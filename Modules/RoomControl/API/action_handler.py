@@ -31,6 +31,7 @@ def process_device_command(device:
                     logging.warning(f"Device {device} has no attribute called {key}")
     except Exception as e:
         logging.error(f"Error processing device command: {e}")
+        logging.exception(e)
         return (APIMessageTX(
             success=False,
             error=f"Error: {e}\n{traceback.format_exc()}"
