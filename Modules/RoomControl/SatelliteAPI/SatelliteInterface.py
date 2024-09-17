@@ -195,7 +195,7 @@ class Satellite:
         logging.info(f"Starting link cycle for {self.name}")
         while True:
             if not self.online:
-                await asyncio.sleep(1)
+                await asyncio.sleep(10)
                 continue
             try:
                 event = await self.downlink_queue.get()
@@ -283,17 +283,20 @@ class SatelliteInterface(RoomModule):
             self.satellites[name] = Satellite(name, ip, auth, self.room_controller)
             self.satellites[name].last_seen = last_seen
 
-    async def get_site(self):
-        await self.runner.setup()
-        site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
+    async def start_satellites(self):
         try:
             for satellite in self.satellites.values():
                 logging.info(f"Starting satellite interface for {satellite.name}")
-                # await asyncio.create_task(satellite.auto_poll())
+                await asyncio.create_task(satellite.auto_poll())
                 await asyncio.create_task(satellite.link_cycle())
                 logging.info(f"Satellite interface for {satellite.name} started")
         except Exception as e:
             logging.error(f"Error starting satellite interface: {e}")
+
+    async def get_site(self):
+        await self.runner.setup()
+        site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
+        await self.start_satellites()
         return site
 
     async def uplink_data(self, request):
