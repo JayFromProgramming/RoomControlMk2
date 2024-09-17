@@ -34,6 +34,7 @@ class SatelliteObject(RoomObject):
     def __init__(self, object_name, object_type, satellite):
         super().__init__(object_name, object_type)
         self.satellite = satellite
+        self.event_loop = asyncio.get_event_loop()
         asyncio.create_task(self.heartbeat())
 
     def get_state(self):
@@ -80,7 +81,8 @@ class SatelliteObject(RoomObject):
         if not self.satellite.online:
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return
-        asyncio.create_task(self.satellite.downlink_event(self, "set_on", state))
+        # Use the event loop from the net-api
+        asyncio.run_coroutine_threadsafe(self.satellite.downlink_event(self, "set_state", state), self.event_loop)
 
 
 class Satellite:
