@@ -289,7 +289,7 @@ class SatelliteInterface(RoomModule):
         try:
             for satellite in self.satellites.values():
                 await asyncio.create_task(satellite.auto_poll())
-                await asyncio.create_task(satellite.link_cycle())
+                # await asyncio.create_task(satellite.link_cycle())
         except Exception as e:
             logging.error(f"Error starting satellite interface: {e}")
         return site
