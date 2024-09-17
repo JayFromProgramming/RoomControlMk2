@@ -181,7 +181,7 @@ class EnvironmentController(RoomObject):
     def total_down_devices(self):
         down = 0
         for device in self.devices:
-            if self.device.device.is_satellite:
+            if device.device.is_satellite:
                 health = device.device.get_health()
                 if not health["online"] or health["fault"]:
                     down += 1
