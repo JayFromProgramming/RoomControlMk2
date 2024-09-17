@@ -230,13 +230,14 @@ class Satellite:
         kwargs = {key: value for key, value in kwargs.items() if value is not None}
         # If args or kwargs are empty, set them to None
         args = args if args != [[], {}] else []
+        print(args)
         kwargs = kwargs if len(kwargs) > 0 else {}
         data = {
             "name": self.name,
             "current_ip": self.ip,
             "object": object_ref.name(),
             "event": event_name,
-            "args": args,
+            "args": [],
             "kwargs": kwargs,
             "auth": self.auth
         }
