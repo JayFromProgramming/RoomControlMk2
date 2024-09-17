@@ -192,6 +192,7 @@ class Satellite:
         """
         Cycle through the downlink queue and send the events to the satellite
         """
+        logging.info(f"Starting link cycle for {self.name}")
         while True:
             if not self.online:
                 await asyncio.sleep(1)
@@ -201,7 +202,11 @@ class Satellite:
                 logging.info(f"Sending downlink event {event[1]} to {self.name}")
                 await self._downlink_event(*event)
             except asyncio.CancelledError:
+                logging.info(f"Stopping link cycle for {self.name}")
                 break
+            except Exception as e:
+                logging.error(f"Error sending downlink event to {self.name}: {e}")
+                logging.exception(e)
 
     def send_downlink(self, object_ref, event_name, *args, **kwargs):
         """
