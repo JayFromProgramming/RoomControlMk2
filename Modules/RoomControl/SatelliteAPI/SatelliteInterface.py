@@ -288,7 +288,7 @@ class SatelliteInterface(RoomModule):
         site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
         try:
             for satellite in self.satellites.values():
-                # pass
+                logging.info(f"Starting satellite interface for {satellite.name}")
                 await asyncio.create_task(satellite.auto_poll())
                 await asyncio.create_task(satellite.link_cycle())
         except Exception as e:
