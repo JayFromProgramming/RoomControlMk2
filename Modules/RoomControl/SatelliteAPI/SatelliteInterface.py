@@ -35,6 +35,7 @@ class SatelliteObject(RoomObject):
         super().__init__(object_name, object_type)
         self.satellite = satellite
         asyncio.create_task(self.heartbeat())
+        self.event_loop = self.satellite.event_loop
 
     def get_state(self):
         return self.get_values()
@@ -80,9 +81,8 @@ class SatelliteObject(RoomObject):
         if not self.satellite.online:
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return
-        event_loop = asyncio.get_event_loop()
-        event_loop.create_task(self.satellite.downlink_event(self, "set_state", state))
-
+        # Use the main event loop to set the state not the event loop of the calling method
+        self.event_loop.create_task(self.satellite.downlink_event(self, "set_state", state))
 
 class Satellite:
 
@@ -94,6 +94,7 @@ class Satellite:
         self.objects = []  # type: list[RoomObject]
         self.subscribed_objects = []  # type: list[RoomObject]  # Objects that this satellite listens to
         self.room_controller = room_controller
+        self.event_loop = asyncio.get_event_loop()
 
     @property
     def online(self):
@@ -173,6 +174,7 @@ class Satellite:
         mark the satellite as offline and continue to poll every 60 seconds
         """
         while True:
+
             if self.ip is None:
                 await asyncio.sleep(60)
                 continue
