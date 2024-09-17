@@ -95,7 +95,6 @@ class Satellite:
         self.objects = []  # type: list[RoomObject]
         self.subscribed_objects = []  # type: list[RoomObject]  # Objects that this satellite listens to
         self.room_controller = room_controller
-        self.event_loop = asyncio.get_event_loop()
 
     @property
     def online(self):
@@ -193,6 +192,13 @@ class Satellite:
         """
         Call the async downlink event method from a non-async context
         """
+        # Check if there is an event loop running
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            logging.warning(f"Event loop not running, starting one")
+            event_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(event_loop)
         asyncio.run(self.downlink_event(object_ref, event_name, *args, **kwargs))
 
     async def downlink_event(self, object_ref, event_name, *args, **kwargs):
