@@ -237,7 +237,7 @@ class Satellite:
             "current_ip": self.ip,
             "object": object_ref.name(),
             "event": event_name,
-            "args": [],
+            "args": args[0],
             "kwargs": kwargs,
             "auth": self.auth
         }
