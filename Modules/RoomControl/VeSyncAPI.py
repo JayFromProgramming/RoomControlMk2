@@ -25,7 +25,12 @@ class VeSyncAPI(RoomModule):
         email = secretes_table.get_row(secret_name='VesyncUsername')
         password = secretes_table.get_row(secret_name='VesyncPassword')
         self.manager = VeSync(email['secret_value'], password['secret_value'], time_zone='America/New_York')
-        self.manager.login()
+
+        try:
+            self.manager.login()
+        except Exception as e:
+            logging.error(f"VeSyncAPI: Error logging in: {e}")
+            return
 
         self.manager.update()  # Populate the devices list
 
