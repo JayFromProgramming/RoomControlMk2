@@ -228,6 +228,9 @@ class Satellite:
         # Clean up the args and kwargs
         args = [arg for arg in args if arg is not None]
         kwargs = {key: value for key, value in kwargs.items() if value is not None}
+        # If args or kwargs are empty, set them to None
+        args = args if len(args) > 0 else None
+        kwargs = kwargs if len(kwargs) > 0 else None
         data = {
             "name": self.name,
             "current_ip": self.ip,
