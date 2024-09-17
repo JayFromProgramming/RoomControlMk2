@@ -96,7 +96,6 @@ class Satellite:
         self.room_controller = room_controller
         self.downlink_queue = asyncio.Queue()  # Allow transfer of downlink events from a non-async context
         self.uplink_queue = asyncio.Queue()  # Allow transfer of uplink events from a non-async context
-        # self.link_task = asyncio.create_task(self.link_cycle())
 
     @property
     def online(self):
@@ -284,7 +283,8 @@ class SatelliteInterface(RoomModule):
         site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
         try:
             for satellite in self.satellites.values():
-                asyncio.create_task(satellite.auto_poll())
+                await asyncio.create_task(satellite._auto_poll())
+                await asyncio.create_task(satellite.link_cycle())
         except Exception as e:
             logging.error(f"Error starting satellite interface: {e}")
         return site
