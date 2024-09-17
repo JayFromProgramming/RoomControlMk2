@@ -82,7 +82,8 @@ class SatelliteObject(RoomObject):
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return
         # Use the main event loop to set the state not the event loop of the calling method
-        self.event_loop.create_task(self.satellite.downlink_event(self, "set_state", state))
+        self.satellite.non_async_downlink_event(self, "set_state", state)
+
 
 class Satellite:
 
@@ -187,6 +188,12 @@ class Satellite:
                     else:
                         self.parse_uplink(await response.json())
             await asyncio.sleep(60)
+
+    def non_async_downlink_event(self, object_ref, event_name, *args, **kwargs):
+        """
+        Call the async downlink event method from a non-async context
+        """
+        asyncio.run(self.downlink_event(object_ref, event_name, *args, **kwargs))
 
     async def downlink_event(self, object_ref, event_name, *args, **kwargs):
         """
