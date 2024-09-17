@@ -161,7 +161,8 @@ class EnvironmentController(RoomObject):
         value = {
             "name": self.controller_name,
             "sensor": self.source.get_value("name"),
-            "units": self.source.get_value("unit")
+            "units": self.source.get_value("unit"),
+            "controlled_devices": [device.device for device in self.devices],
         }
         # logging.info(f"EnvironmentController ({self.controller_name}): Info requested ({value})")
         return value
