@@ -199,7 +199,7 @@ class Satellite:
                 continue
             try:
                 event = await self.downlink_queue.get()
-                logging.info(f"Sending downlink event {event[1]} to {self.name}")
+                # logging.info(f"Sending downlink event {event[1]} to {self.name}")
                 await self._downlink_event(*event)
             except asyncio.CancelledError:
                 logging.info(f"Stopping link cycle for {self.name}")
@@ -213,7 +213,7 @@ class Satellite:
         Add an event to the downlink queue
         """
         try:
-            logging.info(f"Adding event {event_name} to downlink queue for {self.name}")
+            # logging.info(f"Adding event {event_name} to downlink queue for {self.name}")
             self.downlink_queue.put_nowait((object_ref, event_name, args, kwargs))
         except asyncio.QueueFull:
             logging.warning(f"Downlink queue full for {self.name}")
@@ -225,6 +225,9 @@ class Satellite:
         if not self.online:
             logging.warning(f"Cannot send event to {self.name} because it is offline")
             return
+        # Clean up the args and kwargs
+        args = [arg for arg in args if arg is not None]
+        kwargs = {key: value for key, value in kwargs.items() if value is not None}
         data = {
             "name": self.name,
             "current_ip": self.ip,
