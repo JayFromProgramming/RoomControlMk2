@@ -1,8 +1,4 @@
 {
-  "plug_1": {
-    "group": "Bathroom",
-    "starred": true
-  },
   "B4E842D7A9F8": {
     "group": "Kitchen",
     "starred": true
@@ -36,7 +32,7 @@
   },
   "intake": {
     "group": "Bedroom",
-    "starred": true
+    "starred": false
   },
   "exhaust": {
     "group": "Bedroom",
@@ -44,7 +40,7 @@
   },
   "plug_2": {
     "group": "Kitchen",
-    "starred": false
+    "starred": true
   },
   "temperature_control": {
     "group": "Automatic Controllers",
@@ -79,7 +75,11 @@
     "starred": false
   },
   "plug_7b": {
-      "group": null,
-      "starred": false
+    "group": null,
+    "starred": false
+  },
+  "plug_1": {
+    "group": "Bathroom",
+    "starred": true
   }
 }
