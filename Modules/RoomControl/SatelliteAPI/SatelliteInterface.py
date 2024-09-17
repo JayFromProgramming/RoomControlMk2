@@ -289,7 +289,7 @@ class SatelliteInterface(RoomModule):
         try:
             for satellite in self.satellites.values():
                 logging.info(f"Starting satellite interface for {satellite.name}")
-                await asyncio.create_task(satellite.auto_poll())
+                # await asyncio.create_task(satellite.auto_poll())
                 await asyncio.create_task(satellite.link_cycle())
                 logging.info(f"Satellite interface for {satellite.name} started")
         except Exception as e:
