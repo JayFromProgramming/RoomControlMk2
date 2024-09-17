@@ -81,7 +81,7 @@ class SatelliteObject(RoomObject):
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return
         # Use the main event loop to set the state not the event loop of the calling method
-        self.satellite.non_async_downlink_event(self, "set_state", state)
+        self.satellite.send_downlink(self, "set_state", state)
 
 
 class Satellite:
@@ -94,6 +94,9 @@ class Satellite:
         self.objects = []  # type: list[RoomObject]
         self.subscribed_objects = []  # type: list[RoomObject]  # Objects that this satellite listens to
         self.room_controller = room_controller
+        self.downlink_queue = asyncio.Queue()  # Allow transfer of downlink events from a non-async context
+        self.uplink_queue = asyncio.Queue()  # Allow transfer of uplink events from a non-async context
+        self.link_task = asyncio.create_task(self.link_cycle())
 
     @property
     def online(self):
@@ -187,20 +190,32 @@ class Satellite:
                         self.parse_uplink(await response.json())
             await asyncio.sleep(60)
 
-    def non_async_downlink_event(self, object_ref, event_name, *args, **kwargs):
+    async def link_cycle(self):
         """
-        Call the async downlink event method from a non-async context
+        Cycle through the downlink queue and send the events to the satellite
         """
-        # Check if there is an event loop running
-        try:
-            asyncio.get_event_loop()
-        except RuntimeError:
-            logging.warning(f"Event loop not running, starting one")
-            event_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(event_loop)
-        asyncio.run(self.downlink_event(object_ref, event_name, *args, **kwargs))
+        while True:
+            if not self.online:
+                await asyncio.sleep(1)
+                continue
+            try:
+                event = await self.downlink_queue.get()
+                logging.info(f"Sending downlink event {event[1]} to {self.name}")
+                await self._downlink_event(*event)
+            except asyncio.CancelledError:
+                break
 
-    async def downlink_event(self, object_ref, event_name, *args, **kwargs):
+    def send_downlink(self, object_ref, event_name, *args, **kwargs):
+        """
+        Add an event to the downlink queue
+        """
+        try:
+            logging.info(f"Adding event {event_name} to downlink queue for {self.name}")
+            self.downlink_queue.put_nowait((object_ref, event_name, args, kwargs))
+        except asyncio.QueueFull:
+            logging.warning(f"Downlink queue full for {self.name}")
+
+    async def _downlink_event(self, object_ref, event_name, *args, **kwargs):
         """
         Send an event to the satellite
         """
