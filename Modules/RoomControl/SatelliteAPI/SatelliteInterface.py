@@ -81,7 +81,7 @@ class SatelliteObject(RoomObject):
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return
         # Use the main event loop to set the state not the event loop of the calling method
-        self.satellite.send_downlink(self, "set_state", state)
+        self.satellite.send_downlink(self, "set_on", state)
 
 
 class Satellite:
