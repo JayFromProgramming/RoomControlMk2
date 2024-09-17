@@ -50,7 +50,7 @@ class SatelliteObject(RoomObject):
         :param kwargs: Any keyword arguments to pass to the callback
         """
         if "dont_repeat" not in kwargs:
-            asyncio.create_task(self.satellite.downlink_event(self, event_name, *args, **kwargs))
+            self.satellite.send_downlink(self, event_name, *args, **kwargs)
         # Strip the dont_repeat argument from the kwargs
         kwargs.pop("dont_repeat", None)
         super().emit_event(event_name, *args, **kwargs)
