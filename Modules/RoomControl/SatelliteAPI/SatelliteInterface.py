@@ -96,7 +96,7 @@ class Satellite:
         self.room_controller = room_controller
         self.downlink_queue = asyncio.Queue()  # Allow transfer of downlink events from a non-async context
         self.uplink_queue = asyncio.Queue()  # Allow transfer of uplink events from a non-async context
-        self.link_task = asyncio.create_task(self.link_cycle())
+        # self.link_task = asyncio.create_task(self.link_cycle())
 
     @property
     def online(self):
@@ -176,7 +176,6 @@ class Satellite:
         mark the satellite as offline and continue to poll every 60 seconds
         """
         while True:
-
             if self.ip is None:
                 await asyncio.sleep(60)
                 continue
