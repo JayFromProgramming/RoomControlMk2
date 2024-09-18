@@ -73,7 +73,7 @@ class SatelliteObject(RoomObject):
 
     @property
     def on(self):
-        return None
+        return self.get_state().get("on", False)
 
     @on.setter
     def on(self, state):
