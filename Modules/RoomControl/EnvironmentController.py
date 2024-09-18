@@ -148,11 +148,19 @@ class EnvironmentController(RoomObject):
     def get_value(self, value_name):
         return self.setpoint
 
+    def get_active_increasers(self):
+        return len([device for device in self.devices if device.increasing()])
+
+    def get_active_decreasers(self):
+        return len([device for device in self.devices if device.decreasing()])
+
     def get_state(self):
         value = {
             "on": self.enabled,
             "target_value": self.current_setpoint,
             "current_value": self.source.get_value("current_value"),
+            "active_increasers": self.get_active_increasers(),
+            "active_decreasers": self.get_active_decreasers(),
         }
         # logging.info(f"EnvironmentController ({self.controller_name}): State requested ({value})")
         return value
@@ -272,6 +280,12 @@ class ControlledDevice:
         self.lower_hysteresis = float(device['lower_delta'])
         self.upper_hysteresis = float(device['upper_delta'])
         self.fault = False
+
+    def increasing(self):
+        return self.action_direction == 1 and self.device.on
+
+    def decreasing(self):
+        return self.action_direction == -1 and self.device.on
 
     def check(self, current_value, setpoint):
         """
