@@ -285,7 +285,7 @@ class ControlledDevice:
         return self.action_direction == 1 and self.device.on
 
     def decreasing(self):
-        return self.action_direction == -1 and self.device.on
+        return self.action_direction != 1 and self.device.on
 
     def check(self, current_value, setpoint):
         """
