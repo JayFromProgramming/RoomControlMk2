@@ -35,7 +35,6 @@ class SatelliteObject(RoomObject):
         super().__init__(object_name, object_type)
         self.satellite = satellite
         # Attach event callback
-        self.attach_event_callback(self.state_change_callback, "state_change")
         asyncio.create_task(self.heartbeat())
 
     def get_state(self):
@@ -72,15 +71,6 @@ class SatelliteObject(RoomObject):
             if self.satellite.online:
                 self.emit_event("heartbeat")
             await asyncio.sleep(60)
-
-    def state_change_callback(self, new_state):
-        logging.info(f"State change callback for {self.object_name}")
-        try:
-            for value in new_state:
-                self.set_value(value, new_state[value])
-        except Exception as e:
-            logging.error(f"Failure to set state on event for {self.object_name}: {e}")
-            logging.exception(e)
 
     @property
     def on(self):
@@ -176,8 +166,12 @@ class Satellite:
         self.last_seen = time.time()
         for obj in self.objects:
             if obj.object_name == data["object"]:
-                # logging.info(f"Received event {data['event']} from {data['object']}")
-                obj.emit_event(data["event"], *data["args"], dont_repeat=True, **data["kwargs"])
+                if data["event"] == "state_change":
+                    for key, value in data["args"][0].items():
+                        obj.set_value(key, value)
+                else:
+                    # logging.info(f"Received event {data['event']} from {data['object']}")
+                    obj.emit_event(data["event"], *data["args"], dont_repeat=True, **data["kwargs"])
                 return
         logging.warning(f"Received event data for object {data['object']} but it does not exist")
 
