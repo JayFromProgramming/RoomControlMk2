@@ -74,6 +74,7 @@ class SatelliteObject(RoomObject):
             await asyncio.sleep(60)
 
     def state_change_callback(self, new_state):
+        logging.info(f"State change callback for {self.object_name}")
         try:
             for value in new_state:
                 self.set_value(value, new_state[value])
