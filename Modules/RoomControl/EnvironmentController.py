@@ -113,6 +113,10 @@ class EnvironmentController(RoomObject):
                     if self.source.object_type == "promise":
                         self._fault = True
                         self._reason = "Source Is Promise"
+                        for device in self.devices:
+                            if not device.fault:
+                                device.fault = True
+                                device.fault_encountered()
                     elif not self.source.get_health()["online"]:
                         for device in self.devices:
                             if not device.fault:
@@ -133,7 +137,7 @@ class EnvironmentController(RoomObject):
                             device.fault = False
                     else:
                         for device in self.devices:
-                            device.fault = False
+                            device.fault_resolved()
                             device.check(self.source.get_value("current_value"), self.current_setpoint)
                         self._fault = False
                         self._reason = "Unknown"
@@ -310,17 +314,25 @@ class ControlledDevice:
                     self.device.on = True
                     logging.info(f"ControlledDevice ({self.name}): Turning on")
 
-    @background
     def fault_encountered(self):
         """
         Called when the temperature sensor encounters a fault
         The device will be turned off and will not be turned on until the fault is resolved
         or the device is manually turned on
         """
-        while self.fault:
-            if self.device.auto:
-                if self.device.on:
-                    self.device.on = False
-                self.device.fault = True
-                self.device.offline_reason = "SRC CTLR SENSOR FAULT"
-            time.sleep(1)
+        if self.device.auto:
+            if self.device.on:
+                self.device.on = False
+            self.device.fault = True
+            self.device.offline_reason = "SRC CTLR SENSOR FAULT"
+
+    def fault_resolved(self):
+        """
+        Called when the temperature sensor fault is resolved
+        The device will be turned on if it was on before the fault occurred
+        """
+        if self.device.auto:
+            if self.device.offline_reason == "SRC CTLR SENSOR FAULT":
+                self.device.fault = False
+                self.device.offline_reason = None
+
