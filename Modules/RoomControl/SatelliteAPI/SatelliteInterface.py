@@ -158,6 +158,7 @@ class Satellite:
         """
         Parses the event data from the satellite
         """
+        logging.info(f"Received event {data['event']} from {data['object']}")
         if data["name"] != self.name:
             logging.warning(f"Received event data from {data['name']} but expected {self.name}")
             return
