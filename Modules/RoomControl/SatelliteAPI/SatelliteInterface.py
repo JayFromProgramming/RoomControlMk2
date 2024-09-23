@@ -159,21 +159,25 @@ class Satellite:
         """
         Parses the event data from the satellite
         """
-        logging.info(f"Received event {data['event']} from {data['object']}")
-        if data["name"] != self.name:
-            logging.warning(f"Received event data from {data['name']} but expected {self.name}")
-            return
-        self.last_seen = time.time()
-        for obj in self.objects:
-            if obj.object_name == data["object"]:
-                if data["event"] == "state_change":
-                    for key, value in data["args"][0].items():
-                        obj.set_value(key, value)
-                else:
-                    # logging.info(f"Received event {data['event']} from {data['object']}")
-                    obj.emit_event(data["event"], *data["args"], dont_repeat=True, **data["kwargs"])
+        try:
+            logging.info(f"Received event {data['event']} from {data['object']}")
+            if data["name"] != self.name:
+                logging.warning(f"Received event data from {data['name']} but expected {self.name}")
                 return
-        logging.warning(f"Received event data for object {data['object']} but it does not exist")
+            self.last_seen = time.time()
+            for obj in self.objects:
+                if obj.object_name == data["object"]:
+                    if data["event"] == "state_change":
+                        for key, value in data["args"][0].items():
+                            obj.set_value(key, value)
+                    else:
+                        # logging.info(f"Received event {data['event']} from {data['object']}")
+                        obj.emit_event(data["event"], *data["args"], dont_repeat=True, **data["kwargs"])
+                    return
+            logging.warning(f"Received event data for object {data['object']} but it does not exist")
+        except Exception as e:
+            logging.error(f"Error parsing event data: {e}")
+            logging.exception(e)
 
     async def auto_poll(self):
         """
