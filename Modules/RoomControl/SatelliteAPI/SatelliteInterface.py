@@ -34,6 +34,8 @@ class SatelliteObject(RoomObject):
     def __init__(self, object_name, object_type, satellite):
         super().__init__(object_name, object_type)
         self.satellite = satellite
+        # Attach event callback
+        self.attach_event_callback(self.state_change_callback, "state_change")
         asyncio.create_task(self.heartbeat())
 
     def get_state(self):
@@ -70,6 +72,14 @@ class SatelliteObject(RoomObject):
             if self.satellite.online:
                 self.emit_event("heartbeat")
             await asyncio.sleep(60)
+
+    def state_change_callback(self, new_state):
+        try:
+            for value in new_state:
+                self.set_value(value, new_state[value])
+        except Exception as e:
+            logging.error(f"Failure to set state on event for {self.object_name}: {e}")
+            logging.exception(e)
 
     @property
     def on(self):
