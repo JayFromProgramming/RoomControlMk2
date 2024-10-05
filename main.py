@@ -42,8 +42,8 @@ other_main()
 
 async def webserver_runner():
     await asyncio.sleep(5)
-    logging.info("Starting web servers")
-    sites = []
+    logging.info("Starting asynchronous tasks")
+    async_tasks = []
     for module in room_controller.get_modules():
         # if hasattr(module, "wait_for_ready"):
         #     module.wait_for_ready()
@@ -52,14 +52,24 @@ async def webserver_runner():
         if hasattr(module, "is_webserver") and getattr(module, "get_site", None) is not None:
             try:
                 logging.info(f"Found web server {module}")
-                sites.append(await module.get_site())
+                site = await module.get_site()
+                async_tasks.append(site.start())
             except Exception as e:
                 logging.error(f"Error starting web server: {e}")
                 logging.exception(e)
-    if len(sites) > 0:
-        await asyncio.gather(*(site.start() for site in sites))
 
-    logging.info("Web servers started")
+        if hasattr(module, "requires_async") and getattr(module, "start", None) is not None:
+            try:
+                logging.info(f"Found async module {module}")
+                async_tasks.append(module.start())
+            except Exception as e:
+                logging.error(f"Error starting async module: {e}")
+                logging.exception(e)
+
+    if len(async_tasks) > 0:
+        await asyncio.gather(*async_tasks)
+
+    logging.info("All asynchronous tasks started, waiting forever")
     while True:
         await asyncio.sleep(9999)
 
