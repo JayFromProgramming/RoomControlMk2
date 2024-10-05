@@ -69,6 +69,11 @@ class EnvironmentControllerHost(RoomModule):
 
 class EnvironmentController(RoomObject):
 
+    class DirectionEnums:
+        INCREASE = 1
+        DECREASE = 2
+        BOTH = 0
+
     def __init__(self, name, room_controller):
         super().__init__(name, "environment_controller")
 
@@ -85,6 +90,8 @@ class EnvironmentController(RoomObject):
         self.source = self.room_controller.get_object(self.controller_entry['source_name'])
         self.enabled = (False if self.controller_entry['enabled'] == 0 else True)
 
+        self.directionality = self.DirectionEnums.BOTH
+
         self.devices = []
         table = self.database.get_table("enviv_control_devices")
         devices = table.get_rows(control_source=self.controller_name)
@@ -93,7 +100,7 @@ class EnvironmentController(RoomObject):
         for device in devices:
             self.devices.append(
                 ControlledDevice(device['device_id'], self.room_controller.get_object(device['device_id']),
-                                 self.database))
+                                 self.database, self))
 
         self.on = self.enabled
 
@@ -271,8 +278,9 @@ class EnvironmentController(RoomObject):
 
 class ControlledDevice:
 
-    def __init__(self, name, device: AbstractToggleDevice, database: ConcurrentDatabase.Database):
+    def __init__(self, name, device: AbstractToggleDevice, database: ConcurrentDatabase.Database, parent=None):
         self.name = name
+        self.parent = parent
         self.device = device
         self.database = database
 
@@ -296,6 +304,9 @@ class ControlledDevice:
         Checks if this particular device should be on or off
         """
         if self.action_direction == 1:  # If the action direction is positive (the device causes the source to increase)
+            if not (self.parent.directionality == self.parent.DirectionEnums.BOTH or
+                    self.parent.directionality == self.parent.DirectionEnums.INCREASE):
+                return
             if self.device.on:  # If the device is on check if it should be turned off
                 if current_value > setpoint + self.upper_hysteresis:  # If the current value is above the setpoint plus the upper hysteresis
                     self.device.on = False
@@ -305,6 +316,9 @@ class ControlledDevice:
                     self.device.on = True
                     logging.info(f"ControlledDevice ({self.name}): Turning on")
         else:  # If the action direction is negative (the device causes the source to decrease)
+            if not (self.parent.directionality == self.parent.DirectionEnums.BOTH or
+                    self.parent.directionality == self.parent.DirectionEnums.DECREASE):
+                return
             if self.device.on:  # If the device is on check if it should be turned off
                 if current_value < setpoint + self.lower_hysteresis:  # If the current value is below the setpoint minus the upper hysteresis
                     self.device.on = False
