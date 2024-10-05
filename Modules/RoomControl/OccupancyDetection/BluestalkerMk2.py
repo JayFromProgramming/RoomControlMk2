@@ -46,18 +46,21 @@ class BluestalkerMk2Object(RoomObject):
         self.room_controller.attach_object(self)
 
     async def start(self):
-        logging.info(f"Starting Bluestalker2 connections to {len(self.targets)} targets")
-        connection_tasks = []
+        try:
+            logging.info(f"Starting Bluestalker2 connections to {len(self.targets)} targets")
+            connection_tasks = []
 
-        discovered = await BleakScanner.discover()
-        matches = [device for device in discovered if device.address in [target[1] for target in self.targets]]
+            discovered = await BleakScanner.discover()
+            matches = [device for device in discovered if device.address in [target[1] for target in self.targets]]
 
-        logging.info(f"Found {len(matches)} devices out of {len(self.targets)}")
+            logging.info(f"Found {len(matches)} devices out of {len(self.targets)}")
 
-        for target in self.targets:
-            connection_tasks.append(self.establish_connection(target))
+            for target in self.targets:
+                connection_tasks.append(self.establish_connection(target))
 
-        await asyncio.gather(*connection_tasks)
+            await asyncio.gather(*connection_tasks)
+        except Exception as e:
+            logging.error(f"Failed to start Bluestalker2: {e}")
 
     async def establish_connection(self, target):
         target_name, target_device = target
