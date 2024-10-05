@@ -90,7 +90,7 @@ class EnvironmentController(RoomObject):
         self.source = self.room_controller.get_object(self.controller_entry['source_name'])
         self.enabled = (False if self.controller_entry['enabled'] == 0 else True)
 
-        self.directionality = self.DirectionEnums.BOTH
+        self._directionality = self.DirectionEnums.BOTH
 
         self.devices = []
         table = self.database.get_table("enviv_control_devices")
@@ -172,6 +172,7 @@ class EnvironmentController(RoomObject):
             "current_value": self.source.get_value("current_value"),
             "active_increasers": self.get_active_increasers(),
             "active_decreasers": self.get_active_decreasers(),
+            "directionality": self.directionality,
         }
         # logging.info(f"EnvironmentController ({self.controller_name}): State requested ({value})")
         return value
@@ -274,6 +275,15 @@ class EnvironmentController(RoomObject):
     @property
     def unit(self):
         return self.source.get_unit()
+
+    @property
+    def directionality(self):
+        return self._directionality
+
+    @directionality.setter
+    def directionality(self, value):
+        if value in [self.DirectionEnums.INCREASE, self.DirectionEnums.DECREASE, self.DirectionEnums.BOTH]:
+            self._directionality = value
 
 
 class ControlledDevice:
