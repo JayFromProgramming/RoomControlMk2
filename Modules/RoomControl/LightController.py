@@ -168,8 +168,7 @@ class LightController(RoomObject):
             # If the state is off or faulted
             if self.current_state == StateEnumerator.inactive or self.current_state == StateEnumerator.fault:
                 if self.occupancy_detector.was_activity_recent():  # If there was activity in the room recently
-                    if self.door_motion_state is not None:
-                        self.set_state(StateEnumerator.motion, self.door_motion_state)
+                    self.set_state(StateEnumerator.motion, self.active_state)
             if not self.occupancy_detector.bluetooth_offline():  # If the bluetooth detector has faulted
                 if self._check_occupancy():
                     self.set_state(StateEnumerator.active, self.active_state)
