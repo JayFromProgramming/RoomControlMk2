@@ -63,6 +63,7 @@ class BluestalkerMk2Object(RoomObject):
             logging.error(f"Failed to start Bluestalker2: {e}")
 
     async def establish_connection(self, target):
+        return
         target_name, target_device = target
         try:
             logging.info(f"Connecting to {target_name} ({target_device})")

@@ -206,6 +206,7 @@ class BlueStalker(RoomObject):
 
     @background
     def refresh(self):
+        return
         logging.debug(
             f"BlueStalker: Refresh loop started, high frequency scan is {'enabled' if self.high_frequency_scan_enabled else 'disabled'}")
         # Check OS, if not linux then return

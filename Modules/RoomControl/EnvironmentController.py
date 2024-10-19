@@ -87,7 +87,8 @@ class EnvironmentController(RoomObject):
         table = self.database.get_table("enviv_controllers")
         self.controller_entry = table.get_row(name=self.controller_name)
         self.current_setpoint = self.controller_entry['current_set_point']
-        self.source = self.room_controller.get_object(self.controller_entry['source_name'])
+        self.source = self.room_controller.get_object(self.controller_entry['source_name'].split(";")[0])
+        self.sub_source = self.controller_entry['source_name'].split(";")[1]
         self.enabled = (False if self.controller_entry['enabled'] == 0 else True)
 
         self._directionality = self.DirectionEnums.BOTH
@@ -145,7 +146,7 @@ class EnvironmentController(RoomObject):
                     else:
                         for device in self.devices:
                             device.fault_resolved()
-                            device.check(self.source.get_value("current_value"), self.current_setpoint)
+                            device.check(self.source.get_value(self.sub_source), self.current_setpoint)
                         self._fault = False
                         self._reason = "Unknown"
                 time.sleep(30)
@@ -169,7 +170,7 @@ class EnvironmentController(RoomObject):
         value = {
             "on": self.enabled,
             "target_value": self.current_setpoint,
-            "current_value": self.source.get_value("current_value"),
+            "current_value": self.source.get_value(self.sub_source),
             "active_increasers": self.get_active_increasers(),
             "active_decreasers": self.get_active_decreasers(),
             "directionality": self.directionality,
@@ -181,7 +182,7 @@ class EnvironmentController(RoomObject):
         value = {
             "name": self.controller_name,
             "sensor": self.source.get_value("name"),
-            "units": self.source.get_value("unit"),
+            "units": "°F" if self.sub_source == "temperature" else "°%",
             "controlled_devices": [device.device for device in self.devices],
         }
         # logging.info(f"EnvironmentController ({self.controller_name}): Info requested ({value})")

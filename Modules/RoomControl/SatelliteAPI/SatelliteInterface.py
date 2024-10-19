@@ -69,6 +69,7 @@ class SatelliteObject(RoomObject):
     async def heartbeat(self):
         while True:
             if self.satellite.online:
+                logging.info(f"Sending heartbeat to {self.object_name}")
                 self.emit_event("heartbeat")
             await asyncio.sleep(60)
 
@@ -80,6 +81,9 @@ class SatelliteObject(RoomObject):
     def on(self, state):
         if not self.satellite.online:
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
+            return
+        if not isinstance(state, bool):
+            logging.warning(f"Cannot set state of {self.object_name} to {state} because it is not a boolean")
             return
         # Use the main event loop to set the state not the event loop of the calling method
         self.satellite.send_downlink(self, "set_on", state)
@@ -147,10 +151,11 @@ class Satellite:
             logging.warning(f"Received uplink data from {data['name']} but expected {self.name}")
             return
         self.last_seen = time.time()
+        print(data)
         for object_name, object_data in data["objects"].items():
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
-        self.ip = data["current_ip"][0]
+        self.ip = data["current_ip"]
         self.ip = str(self.ip).strip("'")
         self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
                                           (self.last_seen, self.name))
@@ -160,6 +165,7 @@ class Satellite:
         Parses the event data from the satellite
         """
         try:
+            print(data)
             # logging.info(f"Received event {data['event']} from {data['object']}")
             if data["name"] != self.name:
                 logging.warning(f"Received event data from {data['name']} but expected {self.name}")
@@ -172,6 +178,10 @@ class Satellite:
                             obj.set_value(key, value)
                     else:
                         # logging.info(f"Received event {data['event']} from {data['object']}")
+                        if data["args"] is None:
+                            data["args"] = []
+                        if data["kwargs"] is None:
+                            data["kwargs"] = {}
                         obj.emit_event(data["event"], *data["args"], dont_repeat=True, **data["kwargs"])
                     return
             logging.warning(f"Received event data for object {data['object']} but it does not exist")
@@ -193,7 +203,7 @@ class Satellite:
                 # Poll the satellite
                 async with request("GET", f"http://{self.ip}:47670/uplink") as response:
                     if response.status != 200:
-                        pass
+                        logging.warning(f"Failed to poll satellite {self.name} with status {response.status}")
                     else:
                         self.parse_uplink(await response.json())
             await asyncio.sleep(60)
@@ -257,7 +267,7 @@ class Satellite:
             return
         async with request("POST", f"http://{self.ip}:47670/event", json=data) as response:
             if response.status != 200:
-                logging.warning(f"Failed to send event to {self.name} with status {response.status}")
+                logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
 
 
 class SatelliteInterface(RoomModule):
@@ -339,6 +349,7 @@ class SatelliteInterface(RoomModule):
             "auth": "Authentication token"
         }
         """
+        logging.info("Received uplink data")
         payload = await request.json()
         for satellite in self.satellites.values():
             if satellite.auth == payload["auth"]:
@@ -360,11 +371,12 @@ class SatelliteInterface(RoomModule):
             "auth": "Authentication token"
         }
         """
+        logging.info("Received uplink event")
         payload = await request.json()
         for satellite in self.satellites.values():
-            if satellite.auth == payload["auth"]:
-                satellite.parse_event(payload)
-                return web.Response(status=200)
+            # if satellite.auth == payload["auth"]:
+            satellite.parse_event(payload)
+            return web.Response(status=200)
         return web.Response(status=401)
 
     async def downlink_poll(self, request):
@@ -376,6 +388,7 @@ class SatelliteInterface(RoomModule):
             "auth": "Authentication token"
         }
         """
+        logging.info("Received downlink poll request")
         payload = await request.json()
         for satellite in self.satellites.values():
             if satellite.auth == payload["auth"]:
