@@ -265,7 +265,7 @@ class Satellite:
         if self.ip is None:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
-        async with request("POST", f"http://{self.ip}:47670/event", json=data) as response:
+        async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=5) as response:
             if response.status != 200:
                 logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
 
@@ -352,7 +352,7 @@ class SatelliteInterface(RoomModule):
         logging.info("Received uplink data")
         payload = await request.json()
         for satellite in self.satellites.values():
-            if satellite.auth == payload["auth"]:
+            if satellite.auth == payload["auth"] and satellite.name == payload["name"]:
                 satellite.parse_uplink(payload)
                 return web.Response(status=200)
         return web.Response(status=401)
@@ -374,8 +374,8 @@ class SatelliteInterface(RoomModule):
         logging.info("Received uplink event")
         payload = await request.json()
         for satellite in self.satellites.values():
-            # if satellite.auth == payload["auth"]:
-            satellite.parse_event(payload)
+            if satellite.name == payload["name"]:
+                satellite.parse_event(payload)
             return web.Response(status=200)
         return web.Response(status=401)
 
