@@ -1,6 +1,8 @@
 import asyncio
 import time
 
+import aiohttp
+
 from Modules.RoomModule import RoomModule
 import netifaces
 from aiohttp import web
@@ -265,7 +267,8 @@ class Satellite:
         if self.ip is None:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
-        async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=5) as response:
+        session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
+        async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=session_timeout) as response:
             if response.status != 200:
                 logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
 
