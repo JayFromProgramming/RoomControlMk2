@@ -40,7 +40,7 @@ class OccupancyDetector(RoomModule):
         self.blue_stalkers.append(self.room_controller.get_object("BlueStalker"))
         self.blue_stalkers.append(self.room_controller.get_object("BlueStalker2"))
         self.motion_detector = self.room_controller.get_object("MotionDetector")
-        self.motion_detector.attach_event_callback(self.motion_detected, "state_change")
+        self.motion_detector.attach_event_callback(self.motion_detected, "motion_detected")
 
         self.periodic_update()
 
