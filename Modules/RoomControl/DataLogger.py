@@ -140,7 +140,6 @@ class DataLogger:
 
     def log(self):
         """Log the current value of the data source"""
-
         if self.attribute is not None:
             if hasattr(self.source, self.attribute):
                 if callable(getattr(self.source, self.attribute)):
@@ -155,6 +154,7 @@ class DataLogger:
             if self.source.get_fault():
                 return  # Don't log if the sensor is faulty
         else:
+            logging.error(f"DataLogger ({self.name}): No attribute or get_value method found")
             return
 
         timestamp = int(time.time())
