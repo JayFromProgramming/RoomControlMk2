@@ -141,7 +141,9 @@ class DataLogger:
     def log(self):
         """Log the current value of the data source"""
         if self.attribute is not None:
-            if hasattr(self.source, self.attribute):
+            if self.attribute.startswith(";"):
+                value = self.source.get_value(self.attribute[1:])
+            elif hasattr(self.source, self.attribute):
                 if callable(getattr(self.source, self.attribute)):
                     value = getattr(self.source, self.attribute)()
                 else:
