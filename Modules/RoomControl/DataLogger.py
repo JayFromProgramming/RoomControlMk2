@@ -152,6 +152,7 @@ class DataLogger:
         elif hasattr(self.source, "get_value"):
             value = self.source.get_value("current_value")
             if self.source.get_fault():
+                logging.error(f"DataLogger ({self.name}): Sensor is faulty")
                 return  # Don't log if the sensor is faulty
         else:
             logging.error(f"DataLogger ({self.name}): No attribute or get_value method found")
