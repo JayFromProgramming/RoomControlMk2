@@ -143,6 +143,9 @@ class DataLogger:
         if self.attribute is not None:
             if self.attribute.startswith(";"):
                 value = self.source.get_value(self.attribute[1:])
+                if value == 0:
+                    logging.error(f"DataLogger ({self.name}): Attribute {self.attribute[1:]} not initialized")
+                    return
             elif hasattr(self.source, self.attribute):
                 if callable(getattr(self.source, self.attribute)):
                     value = getattr(self.source, self.attribute)()
