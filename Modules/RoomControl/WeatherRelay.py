@@ -3,6 +3,9 @@ import os
 import time
 
 from pyowm.owm import OWM
+from openmeteopy import OpenMeteo
+from openmeteopy.hourly import HourlyForecast
+from openmeteopy.options import ForecastOptions
 from threading import Thread
 import geocoder
 
@@ -28,6 +31,7 @@ class WeatherRelay(RoomModule):
         api_key = self.database.get_table("secrets").get_row(secret_name="openweathermap")["secret_value"]
         self.owm = OWM(api_key)
         self.mgr = self.owm.weather_manager()
+
         self.actual_location = None
         self.current_weather = None
         self.current_reference_time = None
@@ -37,6 +41,11 @@ class WeatherRelay(RoomModule):
         self.location_address = geocoder.ip('me').address
         self.location_latlong = geocoder.ip('me').latlng
         logging.info(f"Location: {self.location_address} {self.location_latlong}")
+
+        self.hourly_forecast = HourlyForecast()
+        self.forecast_options = ForecastOptions(self.location_latlong[0], self.location_latlong[1])
+        self.openmeteo = OpenMeteo(self.forecast_options, self.hourly_forecast)
+
         if os.path.exists("Cache/forecast.pkl"):
             with open("Cache/forecast.pkl", "rb") as file:
                 self.forecast = pickle.load(file)
@@ -44,8 +53,8 @@ class WeatherRelay(RoomModule):
                 logging.info(f"Loaded forecast from cache {len(self.forecast.forecast_hourly)}")
         if self.forecast is None:
             # self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
-            self.forecast = self.mgr.one_call(lat=self.location_latlong[0], lon=self.location_latlong[1])
-            logging.info(f"Loaded forecast for {len(self.forecast.forecast_hourly)} hourly forecasts"
+            self.forecast = self.openmeteo.get_pandas()
+            logging.info(f"Loaded forecast for {len(self.forecast)} hourly forecasts"
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
@@ -61,7 +70,7 @@ class WeatherRelay(RoomModule):
             try:
                 if time.time() - getattr(self.forecast, "last_update", 0) > 720:
                     logging.info("Updating forecast")
-                    self.forecast = self.mgr.one_call(lat=self.location_latlong[0], lon=self.location_latlong[1])
+                    self.forecast = self.openmeteo.get_pandas()
                     self.forecast.last_update = time.time()
                     pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
                     # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")

@@ -201,6 +201,8 @@ class Satellite:
             if self.ip is None:
                 await asyncio.sleep(60)
                 continue
+            if self.last_seen is None:
+                self.last_seen = 0
             if self.last_seen < time.time() - 45:
                 logging.info(f"Polling satellite {self.name} at {self.ip} due to a lack of response")
                 # Poll the satellite
