@@ -374,7 +374,7 @@ class SatelliteInterface(RoomModule):
             "auth": "Authentication token"
         }
         """
-        logging.info("Received uplink event")
+        logging.debug("Received uplink event")
         payload = await request.json()
         for satellite in self.satellites.values():
             if satellite.name == payload["name"]:
