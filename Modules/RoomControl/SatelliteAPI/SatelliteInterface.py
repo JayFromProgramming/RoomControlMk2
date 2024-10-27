@@ -95,6 +95,8 @@ class Satellite:
 
     def __init__(self, name, ip, auth, room_controller):
         self.name = name
+        if isinstance(ip, list):
+            ip = ip[0]
         self.ip = str(ip).strip("'")
         self.auth = auth
         self.last_seen = 0
@@ -158,6 +160,8 @@ class Satellite:
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
         self.ip = data["current_ip"]
+        if isinstance(self.ip, list):
+            self.ip = self.ip[0]
         self.ip = str(self.ip).strip("'")
         self.room_controller.database.run("UPDATE satellites SET last_seen = ? WHERE name = ?",
                                           (self.last_seen, self.name))
@@ -173,6 +177,8 @@ class Satellite:
                 logging.warning(f"Received event data from {data['name']} but expected {self.name}")
                 return
             self.ip = data["current_ip"]
+            if isinstance(self.ip, list):
+                self.ip = self.ip[0]
             self.ip = str(self.ip).strip("'")
             self.last_seen = time.time()
             for obj in self.objects:
@@ -277,8 +283,6 @@ class Satellite:
         if self.ip is None:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
-        if isinstance(self.ip, list):
-            self.ip = str(self.ip[0]).strip("'")
         session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
         try:
             async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=session_timeout) as response:
