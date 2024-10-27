@@ -71,7 +71,7 @@ class SatelliteObject(RoomObject):
     async def heartbeat(self):
         while True:
             if self.satellite.online:
-                logging.info(f"Sending heartbeat to {self.object_name}")
+                # logging.info(f"Sending heartbeat to {self.object_name}")
                 self.emit_event("heartbeat")
             await asyncio.sleep(60)
 
@@ -275,9 +275,13 @@ class Satellite:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
         session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
-        async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=session_timeout) as response:
-            if response.status != 200:
-                logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
+        try:
+            async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=session_timeout) as response:
+                if response.status != 200:
+                    logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
+        except Exception as e:
+            logging.error(f"Error sending event to {self.name}: {e}")
+            logging.exception(e)
 
 
 class SatelliteInterface(RoomModule):
