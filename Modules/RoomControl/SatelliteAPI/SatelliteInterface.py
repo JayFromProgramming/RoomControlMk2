@@ -216,9 +216,10 @@ class Satellite:
         Cycle through the downlink queue and send the events to the satellite
         """
         logging.info(f"Starting link cycle for {self.name}")
+        failed_attempts = 0
         while True:
-            if not self.online:
-                await asyncio.sleep(10)
+            if not self.online or failed_attempts > 5:
+                await asyncio.sleep(60)
                 continue
             try:
                 event = await self.downlink_queue.get()
@@ -230,6 +231,11 @@ class Satellite:
             except Exception as e:
                 logging.error(f"Error sending downlink event to {self.name}: {e}")
                 logging.exception(e)
+                failed_attempts += 1
+            else:
+                failed_attempts = 0
+            finally:
+                await asyncio.sleep(15)
 
     def send_downlink(self, object_ref, event_name, *args, **kwargs):
         """
