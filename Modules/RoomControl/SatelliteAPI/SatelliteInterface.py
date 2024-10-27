@@ -69,6 +69,7 @@ class SatelliteObject(RoomObject):
         }
 
     async def heartbeat(self):
+        logging.info(f"Starting heartbeat for {self.object_name}")
         while True:
             if self.satellite.online:
                 # logging.info(f"Sending heartbeat to {self.object_name}")
