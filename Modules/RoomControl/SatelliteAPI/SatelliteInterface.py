@@ -172,6 +172,7 @@ class Satellite:
             if data["name"] != self.name:
                 logging.warning(f"Received event data from {data['name']} but expected {self.name}")
                 return
+            self.ip = data["current_ip"]
             self.last_seen = time.time()
             for obj in self.objects:
                 if obj.object_name == data["object"]:
