@@ -277,6 +277,7 @@ class Satellite:
         if self.ip is None:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
+        self.ip = str(self.ip).strip("'")
         session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
         try:
             async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=session_timeout) as response:
