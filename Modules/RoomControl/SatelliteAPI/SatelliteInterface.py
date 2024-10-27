@@ -104,7 +104,7 @@ class Satellite:
         self.objects = []  # type: list[RoomObject]
         self.subscribed_objects = []  # type: list[RoomObject]  # Objects that this satellite listens to
         self.room_controller = room_controller
-        self.downlink_queue = asyncio.Queue()  # Allow transfer of downlink events from a non-async context
+        self.downlink_queue = asyncio.Queue(maxsize=10)  # Allow transfer of downlink events from a non-async context
         self.uplink_queue = asyncio.Queue()  # Allow transfer of uplink events from a non-async context
 
     @property
@@ -244,8 +244,6 @@ class Satellite:
                 failed_attempts += 1
             else:
                 failed_attempts = 0
-            finally:
-                await asyncio.sleep(15)
 
     def send_downlink(self, object_ref, event_name, *args, **kwargs):
         """
