@@ -153,7 +153,7 @@ class Satellite:
             logging.warning(f"Received uplink data from {data['name']} but expected {self.name}")
             return
         self.last_seen = time.time()
-        print(data)
+        # print(data)
         for object_name, object_data in data["objects"].items():
             if not self.update_object(object_name, object_data):
                 logging.warning(f"Received data for object {object_name} but it does not exist")
@@ -167,7 +167,7 @@ class Satellite:
         Parses the event data from the satellite
         """
         try:
-            print(data)
+            # print(data)
             # logging.info(f"Received event {data['event']} from {data['object']}")
             if data["name"] != self.name:
                 logging.warning(f"Received event data from {data['name']} but expected {self.name}")
