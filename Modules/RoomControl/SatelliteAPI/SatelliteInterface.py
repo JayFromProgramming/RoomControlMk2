@@ -378,6 +378,7 @@ class SatelliteInterface(RoomModule):
             if satellite.name == payload["name"]:
                 satellite.parse_uplink(payload)
                 return web.Response(status=200)
+        logging.warning(f"Received uplink data from {payload['name']} but no satellite found")
         return web.Response(status=401)
 
     async def uplink_event(self, request):
