@@ -56,6 +56,7 @@ class WeatherRelay(RoomModule):
 
     @background
     def update_forecast(self):
+        logging.info("Starting forecast update thread")
         while True:
             try:
                 if time.time() - getattr(self.forecast, "last_update", 0) > 720:
@@ -64,11 +65,12 @@ class WeatherRelay(RoomModule):
                     self.forecast.last_update = time.time()
                     pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
                     # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
-                    logging.info(f"Loaded {len(self.forecast.forecast_hourly)} hourly forecasts")
+                    logging.info(f"Updated {len(self.forecast.forecast_hourly)} hourly forecasts")
                 else:
                     logging.info("Forecast is up to date")
             except Exception as e:
                 logging.exception(e)
+                logging.error("Error updating forecast")
             finally:
                 time.sleep(300)
 
