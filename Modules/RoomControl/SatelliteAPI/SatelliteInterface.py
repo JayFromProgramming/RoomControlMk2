@@ -95,7 +95,7 @@ class Satellite:
 
     def __init__(self, name, ip, auth, room_controller):
         self.name = name
-        self.ip = ip
+        self.ip = str(ip).strip("'")
         self.auth = auth
         self.last_seen = 0
         self.objects = []  # type: list[RoomObject]
@@ -172,7 +172,8 @@ class Satellite:
             if data["name"] != self.name:
                 logging.warning(f"Received event data from {data['name']} but expected {self.name}")
                 return
-            # self.ip = data["current_ip"]
+            self.ip = data["current_ip"]
+            self.ip = str(self.ip).strip("'")
             self.last_seen = time.time()
             for obj in self.objects:
                 if obj.object_name == data["object"]:
@@ -368,7 +369,7 @@ class SatelliteInterface(RoomModule):
         logging.info("Received uplink data")
         payload = await request.json()
         for satellite in self.satellites.values():
-            if satellite.auth == payload["auth"] and satellite.name == payload["name"]:
+            if satellite.name == payload["name"]:
                 satellite.parse_uplink(payload)
                 return web.Response(status=200)
         return web.Response(status=401)
