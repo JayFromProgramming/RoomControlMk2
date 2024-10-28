@@ -657,7 +657,7 @@ class NetAPI(RoomModule):
         #     raise web.HTTPUnauthorized()
         # logging.info("Received WEATHER_FORECAST request")
         data = self.room_controller.get_module("WeatherRelay").get_forecast(request.match_info['time'])
-        msg = APIMessageTX(weather_forecast=data.to_dict())
+        msg = APIMessageTX(weather_forecast=data)
         return web.Response(text=msg.__str__())
 
     async def handle_weather_past(self, request):

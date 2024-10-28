@@ -1,3 +1,4 @@
+import datetime
 import math
 import os
 import time
@@ -41,40 +42,44 @@ class WeatherRelay(RoomModule):
         self.location_address = geocoder.ip('me').address
         self.location_latlong = geocoder.ip('me').latlng
         logging.info(f"Location: {self.location_address} {self.location_latlong}")
-
+        self.last_update = 0
+        self.parsed_forecast = None
         self.hourly_forecast = HourlyForecast()
         self.forecast_options = ForecastOptions(self.location_latlong[0], self.location_latlong[1])
-        self.openmeteo = OpenMeteo(self.forecast_options, self.hourly_forecast)
-
+        self.openmeteo = OpenMeteo(self.forecast_options, self.hourly_forecast.all())
         if os.path.exists("Cache/forecast.pkl"):
             with open("Cache/forecast.pkl", "rb") as file:
                 self.forecast = pickle.load(file)
-                self.forecast.last_update = time.time()
-                logging.info(f"Loaded forecast from cache {len(self.forecast.forecast_hourly)}")
+                self.last_update = time.time()
+                # self.forecast.last_update = time.time()
+                logging.info(f"Loaded forecast from cache {len(self.forecast)}")
         if self.forecast is None:
-            # self.forecast = self.mgr.one_call(lat=47.112878, lon=-88.564697)
-            self.forecast = self.openmeteo.get_pandas()
+            self.openmeteo.get_pandas()
+            self.forecast = self.openmeteo.get_dict()
             logging.info(f"Loaded forecast for {len(self.forecast)} hourly forecasts"
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
-            self.forecast.last_update = time.time()
+            # self.forecast.last_update = time.time()
+
         self.radar_fetch_background()
         self.update_current_weather()
         self.update_forecast()
+        self.parsed_forecast = self.rebuild_forecast()
 
     @background
     def update_forecast(self):
         logging.info("Starting forecast update thread")
         while True:
             try:
-                if time.time() - getattr(self.forecast, "last_update", 0) > 720:
+                if time.time() - self.last_update > 720:
                     logging.info("Updating forecast")
-                    self.forecast = self.openmeteo.get_pandas()
-                    self.forecast.last_update = time.time()
+                    self.openmeteo.get_pandas()
+                    self.forecast = self.openmeteo.get_dict()
+                    self.last_update = time.time()
+                    self.parsed_forecast = self.rebuild_forecast()
                     pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
                     # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
-                    logging.info(f"Updated {len(self.forecast.forecast_hourly)} hourly forecasts")
                 else:
                     logging.info("Forecast is up to date")
             except Exception as e:
@@ -247,14 +252,29 @@ class WeatherRelay(RoomModule):
             logging.error(f"Error saving current weather: {e}")
             logging.exception(e)
 
+    def rebuild_forecast(self):
+        # When received the forecase is formatted as a dictionary of lists with each list containing a datapoint for that
+        # hour. This function will rebuild the forecast into a dictionary of dictionaries with each dictionary containing 1 hour
+        # of forecast data
+        forecast = {}
+        data_lists = []  # list of lists of forecast data
+        for key in self.forecast['hourly']:
+            data_lists.append((key, self.forecast['hourly'][key]))
+        for i in range(len(self.forecast['hourly']['time'])):
+            forecast[self.forecast['hourly']['time'][i]] = {}
+            for data_list in data_lists:
+                forecast[self.forecast['hourly']['time'][i]].update({data_list[0]: data_list[1][i]})
+        return forecast
+
     def get_available_forecast(self):
         """
         Returns the available forecast data
         :return:
         """
         forecasts = []
-        for forecast in self.forecast.forecast_hourly:
-            forecasts.append(forecast.reference_time())
+        for key in self.parsed_forecast:
+            forecasts.append(key)
+            # forecasts.append(int(datetime.datetime.fromisoformat(key).timestamp()))
         return forecasts
 
     def get_forecast(self, forecast_time):
@@ -264,6 +284,10 @@ class WeatherRelay(RoomModule):
         :return: The forecast for the given time
         """
 
-        for forecast in self.forecast.forecast_hourly:
-            if forecast.ref_time == int(forecast_time):
+        for key, forecast in self.parsed_forecast.items():
+            # if forecast_time == int(datetime.datetime.fromisoformat(key).timestamp()):
+            #     return forecast
+            if forecast_time == key:
                 return forecast
+        logging.error(f"Forecast not found for {forecast_time}")
+        return
