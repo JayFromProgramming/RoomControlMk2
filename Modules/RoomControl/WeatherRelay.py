@@ -72,7 +72,7 @@ class WeatherRelay(RoomModule):
         logging.info("Starting forecast update thread")
         while True:
             try:
-                if time.time() - self.last_update > 720:
+                if time.time() - self.last_update > 900:
                     logging.info("Updating forecast")
                     self.openmeteo.get_pandas()
                     self.forecast = self.openmeteo.get_dict()
@@ -272,6 +272,8 @@ class WeatherRelay(RoomModule):
         :return:
         """
         forecasts = []
+        if self.parsed_forecast is None:
+            return forecasts
         for key in self.parsed_forecast:
             forecasts.append(key)
             # forecasts.append(int(datetime.datetime.fromisoformat(key).timestamp()))
