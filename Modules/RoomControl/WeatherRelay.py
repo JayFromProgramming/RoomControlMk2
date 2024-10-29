@@ -56,6 +56,7 @@ class WeatherRelay(RoomModule):
         if self.forecast is None:
             self.openmeteo.get_pandas()
             self.forecast = self.openmeteo.get_dict()
+            self.forecast['acquired'] = time.time()
             logging.info(f"Loaded forecast for {len(self.forecast)} hourly forecasts"
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
@@ -76,6 +77,7 @@ class WeatherRelay(RoomModule):
                     logging.info("Updating forecast")
                     self.openmeteo.get_pandas()
                     self.forecast = self.openmeteo.get_dict()
+                    self.forecast['acquired'] = time.time()
                     self.last_update = time.time()
                     self.parsed_forecast = self.rebuild_forecast()
                     pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
@@ -140,7 +142,7 @@ class WeatherRelay(RoomModule):
             logging.debug(f"Updating nowcast tile {timestamp} {x} {y} {color}")
             # Delete the old tile from the database
             self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
-                                (timestamp, x, y, color))
+                              (timestamp, x, y, color))
         elif result:
             if result[4] is not None:
                 logging.debug(f"Replacing old tile {timestamp} {x} {y} {color}")
@@ -264,7 +266,8 @@ class WeatherRelay(RoomModule):
             forecast[self.forecast['hourly']['time'][i]] = {}
             for data_list in data_lists:
                 forecast[self.forecast['hourly']['time'][i]].update({data_list[0]: data_list[1][i]})
-            forecast[self.forecast['hourly']['time'][i]]['acquisition_time'] = time.time()
+            forecast[self.forecast['hourly']['time'][i]]['acquisition_time'] = \
+                self.forecast['acquired'] if 'acquired' in self.forecast else None
         return forecast
 
     def get_available_forecast(self):
