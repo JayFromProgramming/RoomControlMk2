@@ -72,7 +72,7 @@ class WeatherRelay(RoomModule):
         logging.info("Starting forecast update thread")
         while True:
             try:
-                if time.time() - self.last_update > 900:
+                if time.time() - self.last_update > 1200:
                     logging.info("Updating forecast")
                     self.openmeteo.get_pandas()
                     self.forecast = self.openmeteo.get_dict()
@@ -264,6 +264,7 @@ class WeatherRelay(RoomModule):
             forecast[self.forecast['hourly']['time'][i]] = {}
             for data_list in data_lists:
                 forecast[self.forecast['hourly']['time'][i]].update({data_list[0]: data_list[1][i]})
+            forecast[self.forecast['hourly']['time'][i]]['acquisition_time'] = time.time()
         return forecast
 
     def get_available_forecast(self):
