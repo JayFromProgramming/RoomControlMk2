@@ -136,18 +136,17 @@ function getState(device_json) {
                 state_string += "State: DISABLED";
             }
             break;
-        case "pin_watcher":
-        case "satellite_PinWatcher":
+        case "satellite_MotionDetector":
             if (device_json["health"]["online"] === false) {
                 state_string += "State: DOWN";
             } else if (device_json["health"]["fault"] === true) {
                 state_string += "State: FAULT";
             } else {
                 if (device_json["state"]["triggered"] === 1) {
-                    state_string += "State: Triggered" + " " + device_json["state"]["active_for"].toFixed(2) + "S";
+                    state_string += "State: Triggered"
                 } else {
                     state_string += "State: Armed" + ", ";
-                    const last_active = new Date(device_json["state"]["last_active"] * 1000);
+                    const last_active = new Date(device_json["state"]["last_motion_time"] * 1000);
                     state_string += "Last Active: " + last_active.toLocaleString();
                 }
             }
