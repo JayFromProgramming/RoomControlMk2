@@ -371,7 +371,7 @@ class SatelliteInterface(RoomModule):
             "auth": "Authentication token"
         }
         """
-        logging.info(f"Received uplink data from {request.remote}")
+        # logging.info(f"Received uplink data from {request.remote}")
         payload = await request.json()
         for satellite in self.satellites.values():
             if satellite.name == payload["name"]:
