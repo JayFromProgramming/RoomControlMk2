@@ -278,7 +278,7 @@ class Satellite:
             "kwargs": kwargs,
             "auth": self.auth
         }
-        logging.info(f"Sending event {event_name} to {self.name} @ {self.ip}:47670")
+        # logging.info(f"Sending event {event_name} to {self.name} @ {self.ip}:47670")
         if self.ip is None:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
