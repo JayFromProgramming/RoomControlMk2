@@ -99,7 +99,15 @@ class OccupancyDetector(RoomModule):
         return True
 
     def was_activity_recent(self, seconds=60):
-        return self.last_activity + seconds > time.time()
+        current_motion = self.motion_detector.get_value("motion_detected")
+        last_motion = self.motion_detector.get_value("last_motion_time")
+        last_motion = last_motion if last_motion != 0 else None
+        if current_motion:
+            return True
+        if last_motion is not None:
+            if time.time() - last_motion < seconds:
+                return True
+        return False
 
     def is_here(self, device):
         for source in self.blue_stalkers:
