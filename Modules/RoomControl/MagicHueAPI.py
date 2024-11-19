@@ -1,3 +1,5 @@
+import time
+
 from loguru import logger as logging
 import typing
 
@@ -123,8 +125,14 @@ class MagicHome(RoomModule):
 
     @background
     def refresh_all(self):
-        for device in self.devices:
-            device.fetch_status()
+        while True:
+            try:
+                for device in self.devices:
+                    device.fetch_status()
+            except Exception as e:
+                logging.error(f"MagicHome: Error refreshing devices: {e}")
+            finally:
+                time.sleep(5)
 
 
 class MagicDevice(RoomObject, AbstractRGB):
@@ -351,7 +359,6 @@ class MagicDevice(RoomObject, AbstractRGB):
                 self.online = False
         return None
 
-    @background
     def fetch_status(self):
         if self.online:
             try:

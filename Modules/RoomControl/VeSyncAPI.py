@@ -1,4 +1,5 @@
 import datetime
+import time
 import typing
 
 from pyvesync import VeSync
@@ -63,8 +64,10 @@ class VeSyncAPI(RoomModule):
 
     @background
     def refresh_all(self):
-        for device in self.devices:
-            device.refresh_info()
+        while True:
+            for device in self.devices:
+                device.refresh_info()
+            time.sleep(5)
 
 
 class VeSyncPlug(RoomObject, AbstractToggleDevice):
@@ -113,7 +116,6 @@ class VeSyncPlug(RoomObject, AbstractToggleDevice):
         logging.debug(f"Setting {self.device_name} to {on}")
         self.device.turn_on() if on else self.device.turn_off()
 
-    @background
     def refresh_info(self):
         logging.debug(f"Refreshing {self.device_name} info")
         if self.upper_bounds and self.lower_bounds:

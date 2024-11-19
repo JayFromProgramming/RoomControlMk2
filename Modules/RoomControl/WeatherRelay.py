@@ -18,6 +18,18 @@ from Modules.RoomControl import background
 from Modules.RoomModule import RoomModule
 import pickle
 
+# if not os.path.exists("Cache/map"):
+        #     os.makedirs("Cache/map")
+        # for tile in radar_tiles:
+        #     link = "https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=JgtKARiEDXV810p1nbSH"
+        #     tile_url = link.format(z=6, x=tile[0], y=tile[1])
+        #     logging.info(f"Getting map tile {tile_url}")
+        #     image = requests.get(tile_url).content
+        #     # Save tile image to file
+        #     with open(f"Cache/map/{tile[0]}-{tile[1]}.png", "wb") as file:
+        #         file.write(image)
+        #     logging.info(f"Saved map tile {tile[0]} {tile[1]}")
+
 radar_index_url = "https://api.rainviewer.com/public/weather-maps.json"
 radar_base_url = "{host}/{path}/{size}/6/{x}/{y}/{color}/{options}.png"
 radar_tiles = [(x, y) for x in range(13, 21) for y in range(21, 25)]
@@ -121,6 +133,7 @@ class WeatherRelay(RoomModule):
             "timestamp": "integer", "x": "integer", "y": "integer", "color": "integer", "options": "text",
             "image": "blob"
         }, primary_keys=["timestamp", "x", "y", "color"])
+        self.database.run("CREATE INDEX IF NOT EXISTS radar_timestamp_index ON radar_tiles (timestamp)")
 
     def process_probability(self, probability):
         if probability is None:
@@ -134,6 +147,7 @@ class WeatherRelay(RoomModule):
         # Check if we already have saved this timestamp in the database
         result = self.database.run("SELECT * FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                                    (timestamp, x, y, color)).fetchone()
+        time.sleep(0)  # Force a context switch to prevent starvation of other threads
         if result and is_nowcast:
             # Check if this nowcast was fetched within the last 10 minutes and skip if it was
             if time.time() - float(result[4]) < 600:
@@ -143,9 +157,9 @@ class WeatherRelay(RoomModule):
             # Delete the old tile from the database
             self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                               (timestamp, x, y, color))
-        elif result:
+        elif result:  # Check if we already have this tile
             if result[4] is not None:
-                logging.debug(f"Replacing old tile {timestamp} {x} {y} {color}")
+                logging.info(f"Replacing old tile {timestamp} {x} {y} {color}")
                 self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                                   (timestamp, x, y, color))
             else:
@@ -153,8 +167,11 @@ class WeatherRelay(RoomModule):
         tile_url = radar_base_url.format(host=host, path=path, size=512, x=x, y=y,
                                          color=color, options="0_0")
         tile = requests.get(tile_url).content
+        time.sleep(0)
+        # Add tile saving duplication for debugging a full database
         self.database.run("INSERT INTO radar_tiles (timestamp, x, y, color, image, options) VALUES (?, ?, ?, ?, ?, ?)",
                           (timestamp, x, y, color, tile, time.time() if is_nowcast else None))
+        time.sleep(0.5)
 
     def fetch_radar_imagery(self):
         radar_data = requests.get(radar_index_url).json()
@@ -162,31 +179,24 @@ class WeatherRelay(RoomModule):
         past = radar_data["radar"]["past"]
         nowcast = radar_data["radar"]["nowcast"]
         logging.info(f"Getting radar imagery from {host}")
-        print(radar_tiles)
+        start_time = time.time()
         for tile in radar_tiles:
             for frame in past:
                 self.fetch_radar_tile(frame['time'], host, frame['path'], tile[0], tile[1], 4)
+        logging.info(f"Finished getting past radar imagery: {time.time() - start_time:.2f}s")
+        past_time = time.time()
         for tile in radar_tiles:
             for frame in nowcast:
                 self.fetch_radar_tile(frame['time'], host, frame['path'], tile[0], tile[1], 4, is_nowcast=True)
-        logging.info("Finished getting radar imagery")
-        # if not os.path.exists("Cache/map"):
-        #     os.makedirs("Cache/map")
-        # for tile in radar_tiles:
-        #     link = "https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=JgtKARiEDXV810p1nbSH"
-        #     tile_url = link.format(z=6, x=tile[0], y=tile[1])
-        #     logging.info(f"Getting map tile {tile_url}")
-        #     image = requests.get(tile_url).content
-        #     # Save tile image to file
-        #     with open(f"Cache/map/{tile[0]}-{tile[1]}.png", "wb") as file:
-        #         file.write(image)
-        #     logging.info(f"Saved map tile {tile[0]} {tile[1]}")
-        logging.info("Finished getting past radar imagery")
+        logging.info(f"Finished getting nowcast radar imagery: {time.time() - past_time:.2f}s")
+        logging.info(f"Total time taken: {time.time() - start_time:.2f}s")
+
 
     def prune_radar_cache(self):
         # Clear the radar tiles that are older than 7 days
         size = self.database.run("SELECT SUM(LENGTH((image))) FROM radar_tiles").fetchone()[0]
-        logging.info(f"Current radar tile cache size: {size / 1024 / 1024:.2f}MB")
+        count = self.database.run("SELECT COUNT(*) FROM radar_tiles").fetchone()[0]
+        logging.info(f"Current radar tile cache size: {size / 1024 / 1024:.2f}MB ({count} tiles)")
         results = self.database.run("DELETE FROM radar_tiles WHERE timestamp < ?", (time.time() - 604800,))
         logging.info(f"Deleted {results.rowcount} old radar tiles")
         size = self.database.run("SELECT SUM(LENGTH((image))) FROM radar_tiles").fetchone()[0]
@@ -200,6 +210,7 @@ class WeatherRelay(RoomModule):
                 self.prune_radar_cache()
             except Exception as e:
                 logging.exception(e)
+                logging.warning("Aborting radar fetch, retrying in 10 minutes")
             finally:
                 time.sleep(600)  # 10 minutes
 

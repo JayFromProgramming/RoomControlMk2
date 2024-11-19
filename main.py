@@ -27,6 +27,9 @@ async def main():
     while True:
         await asyncio.sleep(5)
         room_controller.refresh()
+        # Sleep forever
+        while True:
+            await asyncio.sleep(9999)
 
 
 @background
