@@ -19,16 +19,16 @@ from Modules.RoomModule import RoomModule
 import pickle
 
 # if not os.path.exists("Cache/map"):
-        #     os.makedirs("Cache/map")
-        # for tile in radar_tiles:
-        #     link = "https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=JgtKARiEDXV810p1nbSH"
-        #     tile_url = link.format(z=6, x=tile[0], y=tile[1])
-        #     logging.info(f"Getting map tile {tile_url}")
-        #     image = requests.get(tile_url).content
-        #     # Save tile image to file
-        #     with open(f"Cache/map/{tile[0]}-{tile[1]}.png", "wb") as file:
-        #         file.write(image)
-        #     logging.info(f"Saved map tile {tile[0]} {tile[1]}")
+#     os.makedirs("Cache/map")
+# for tile in radar_tiles:
+#     link = "https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}.png?key=JgtKARiEDXV810p1nbSH"
+#     tile_url = link.format(z=6, x=tile[0], y=tile[1])
+#     logging.info(f"Getting map tile {tile_url}")
+#     image = requests.get(tile_url).content
+#     # Save tile image to file
+#     with open(f"Cache/map/{tile[0]}-{tile[1]}.png", "wb") as file:
+#         file.write(image)
+#     logging.info(f"Saved map tile {tile[0]} {tile[1]}")
 
 radar_index_url = "https://api.rainviewer.com/public/weather-maps.json"
 radar_base_url = "{host}/{path}/{size}/6/{x}/{y}/{color}/{options}.png"
@@ -159,7 +159,7 @@ class WeatherRelay(RoomModule):
                               (timestamp, x, y, color))
         elif result:  # Check if we already have this tile
             if result[4] is not None:
-                logging.info(f"Replacing old tile {timestamp} {x} {y} {color}")
+                # logging.info(f"Replacing old tile {timestamp} {x} {y} {color}")
                 self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                                   (timestamp, x, y, color))
             else:
@@ -190,7 +190,6 @@ class WeatherRelay(RoomModule):
                 self.fetch_radar_tile(frame['time'], host, frame['path'], tile[0], tile[1], 4, is_nowcast=True)
         logging.info(f"Finished getting nowcast radar imagery: {time.time() - past_time:.2f}s")
         logging.info(f"Total time taken: {time.time() - start_time:.2f}s")
-
 
     def prune_radar_cache(self):
         # Clear the radar tiles that are older than 7 days
