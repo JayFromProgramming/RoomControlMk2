@@ -97,6 +97,7 @@ function getState(device_json) {
             break;
         case "satellite_Radiator":
             state_string += "State: " + device_json["state"]["state"] + ", Temp: " + device_json["state"]["radiator_temp"] + "°F";
+            break;
         case "light_controller":
             if (device_json["state"]["on"] === true) {
                 switch (device_json["state"]["current_state"]) {
