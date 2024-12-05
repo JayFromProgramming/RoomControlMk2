@@ -66,7 +66,7 @@ class WeatherRelay(RoomModule):
                 # self.forecast.last_update = time.time()
                 logging.info(f"Loaded forecast from cache {len(self.forecast)}")
         if self.forecast is None:
-            self.openmeteo.get_pandas()
+            # self.openmeteo.get_pandas()
             self.forecast = self.openmeteo.get_dict()
             self.forecast['acquired'] = time.time()
             logging.info(f"Loaded forecast for {len(self.forecast)} hourly forecasts"
@@ -87,7 +87,7 @@ class WeatherRelay(RoomModule):
             try:
                 if time.time() - self.last_update > 1200:
                     logging.info("Updating forecast")
-                    self.openmeteo.get_pandas()
+                    # self.openmeteo.get_pandas()
                     self.forecast = self.openmeteo.get_dict()
                     self.forecast['acquired'] = time.time()
                     self.last_update = time.time()
