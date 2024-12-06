@@ -73,7 +73,7 @@ class WeatherRelay(RoomModule):
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
-            # self.forecast.last_update = time.time()
+            self.forecast.last_update = time.time()
 
         self.radar_fetch_background()
         self.update_current_weather()
@@ -95,7 +95,7 @@ class WeatherRelay(RoomModule):
                     pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
                     # logging.info(f"Updated forecast for {self.forecast.reference_time(timeformat='iso')}")
                 else:
-                    logging.info("Forecast is up to date")
+                    logging.info(f"Forecast is up to date: {time.time() - self.last_update:.2f}s")
             except Exception as e:
                 logging.exception(e)
                 logging.error("Error updating forecast")
