@@ -73,7 +73,7 @@ class WeatherRelay(RoomModule):
                          f" from the API")
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
-            self.forecast.last_update = time.time()
+            # self.forecast.last_update = time.time()
 
         self.radar_fetch_background()
         self.update_current_weather()

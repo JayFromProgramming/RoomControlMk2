@@ -70,6 +70,9 @@ class SceneController(RoomModule):
         self.database.update_table("scenes", 1, [
             "ALTER TABLE scenes ADD COLUMN scene_description TEXT;",
         ])
+        self.database.update_table("scenes", 2, [
+            "ALTER TABLE scenes ADD COLUMN scene_parent TEXT;",
+        ])
 
         # self.database.commit()
 
@@ -84,6 +87,7 @@ class SceneController(RoomModule):
                 "name": scene[1],
                 "data": scene[2],
                 "description": scene[3],
+                "parent": scene[4],
             }
 
     def _update_triggers(self, scene_id, triggers):
@@ -123,8 +127,8 @@ class SceneController(RoomModule):
         try:
             logging.info(f"Adding scene with data {json_payload}")
             # Create an empty scene to get a scene_id and then run the update_scene method to populate the scene
-            scene_id = self.database.run("INSERT INTO scenes (scene_id, scene_name, scene_data) VALUES (?, ?, ?)",
-                                         ("temp", "", "")).lastrowid
+            scene_id = self.database.run("INSERT INTO scenes (scene_id, scene_name, scene_data, scene_parent) VALUES (?, ?, ?, ?)",
+                                         ("temp", "", "", "")).lastrowid
             # Replace the temp scene_id with the actual scene_id
             self.database.run("UPDATE scenes SET scene_id=? WHERE scene_id=?", (scene_id, "temp"))
             logging.info(f"Created new scene entry with id {scene_id}, updating with data")
@@ -145,11 +149,14 @@ class SceneController(RoomModule):
             triggers = json_payload.get("triggers", [])  # implement later
             scene_data = json_payload.get("scene_data", "{}")
             scene_name = json_payload.get("scene_name", "")
+            scene_description = json_payload.get("scene_description", "")
+            scene_parent = json_payload.get("scene_parent", "")
             scene_data = APIMessageRX(scene_data).__str__()
             logging.info(f"Updating scene {scene_id} with data {scene_data} and name {scene_name}")
             # Update the scene data
-            self.database.run("UPDATE scenes SET scene_data=?, scene_name=? WHERE scene_id=?",
-                              (scene_data, scene_name, scene_id))
+            self.database.run("UPDATE scenes SET scene_data=?, scene_name=?, scene_description=?, scene_parent=? "
+                              "WHERE scene_id=?",
+                              (scene_data, scene_name, scene_description, scene_parent, scene_id))
             # Update the triggers
             self._update_triggers(scene_id, triggers)
             # Reload the scenes
@@ -197,6 +204,7 @@ class SceneController(RoomModule):
                 "name": scene["name"],
                 "description": scene["description"],
                 "data": scene["data"],
+                "parent": scene["parent"],
                 "action": self.action_to_str(scene_id),
                 "triggers": triggers,
             }
