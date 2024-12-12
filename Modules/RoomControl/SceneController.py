@@ -51,7 +51,7 @@ class SceneController(RoomModule):
 
     def _init_database(self):
         self.database.create_table("scenes", {"scene_id": "TEXT UNIQUE PRIMARY KEY", "scene_name": "TEXT NOT NULL",
-                                              "scene_data": "TEXT"})
+                                              "scene_data": "TEXT", "filler": "TEXT"})
         self.database.create_table("scene_triggers", {"scene_id": "TEXT REFERENCES scenes(scene_id) NOT NULL",
                                                       "trigger_id": "TEXT UNIQUE PRIMARY KEY NOT NULL",
                                                       "trigger_name": "TEXT NOT NULL",
