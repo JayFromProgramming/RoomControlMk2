@@ -86,8 +86,8 @@ class SceneController(RoomModule):
             self.scenes[scene[0]] = {
                 "name": scene[1],
                 "data": scene[2],
-                "description": scene[3],
-                "parent": scene[4],
+                "description": scene[4],
+                "parent": scene[3],
             }
 
     def _update_triggers(self, scene_id, triggers):
@@ -152,7 +152,7 @@ class SceneController(RoomModule):
             scene_description = json_payload.get("scene_description", None)
             scene_parent = json_payload.get("scene_parent", None)
             scene_data = APIMessageRX(scene_data).__str__()
-            logging.info(f"Updating scene {scene_id} with data {scene_data} and name {scene_name}")
+            logging.info(f"Updating scene {scene_id} with data {scene_data} and name {scene_name} in parent {scene_parent}")
             # Update the scene data
             self.database.run("UPDATE scenes SET scene_data=?, scene_name=?, scene_description=?, scene_parent=? "
                               "WHERE scene_id=?",
