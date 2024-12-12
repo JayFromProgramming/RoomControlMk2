@@ -87,7 +87,7 @@ class SceneController(RoomModule):
                 "name": scene[1],
                 "data": scene[2],
                 "description": scene[4],
-                "parent": scene[3],
+                "parent": scene[5],
             }
 
     def _update_triggers(self, scene_id, triggers):
