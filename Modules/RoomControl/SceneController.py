@@ -286,7 +286,7 @@ class SceneController(RoomModule):
                 if value == "false" or value == "False":
                     value = False
                 # Dynamically check if the device supports the action and set the value
-                if hasattr(device, action) and callable(getattr(device, action)):
+                if hasattr(device, action):
                     setattr(device, action, value)
                 else:
                     logging.warning(f"Device {device.name()} does not support action {action}")
