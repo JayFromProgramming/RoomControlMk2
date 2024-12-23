@@ -124,8 +124,8 @@ class AbstractRGB:
         target = args.get("target")
         fade_time = args.get("time")
         if self.fading is True:
-            logging.info("Cancelling fade")
-            self.fade_thread.cancel()
+            self.fading = False
+            self.fade_thread.join()
         self.fading = True
         self.fade_thread = threading.Thread(target=functools.partial(self._fade_process, target, fade_time))
         self.fade_thread.start()

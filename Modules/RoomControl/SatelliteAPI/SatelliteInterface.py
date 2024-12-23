@@ -287,6 +287,8 @@ class Satellite:
             async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=session_timeout) as response:
                 if response.status != 200:
                     logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
+        except asyncio.TimeoutError:
+            logging.warning(f"Failed to send event to {self.name} due to a timeout")
         except Exception as e:
             logging.error(f"Error sending event to {self.name}: {e}")
             logging.exception(e)
