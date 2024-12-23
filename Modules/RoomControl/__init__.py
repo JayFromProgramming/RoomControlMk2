@@ -84,7 +84,7 @@ class RoomController:
         self.room_objects = []
         for room_module in RoomModule.__subclasses__():
             logging.info(f"Creating instance of {room_module.__name__}")
-            # if room_module.__name__ != "WeatherRelay" and room_module.__name__ != "NetAPI":
+            # if room_module.__name__ == "WeatherRelay" or room_module.__name__ == "SatelliteInterface":
             #     continue
             try:
                 room_module(self)

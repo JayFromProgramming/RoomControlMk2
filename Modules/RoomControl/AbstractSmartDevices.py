@@ -1,23 +1,23 @@
 import functools
 import threading
+import time
+
 from loguru import logger as logging
+
 
 class AbstractRGB:
 
     def __init__(self):
         self.online = None
         self.is_auto = False
+        self.fading = False
+        self.fade_thread = None
         self.auto_mode = "Unknown"
         self.offline_reason = "Unknown"
 
     def set_auto(self, auto: bool, mode: str):
         self.is_auto = auto
         self.auto_mode = mode
-        # cursor = self.database.cursor()
-        # cursor.execute(
-        #     "UPDATE auto_lights SET device_id = ?, is_auto = ? WHERE current_mode = ?",
-        #     (auto, mode, self.device_id))
-        # self.database.commit()
 
     def get_type(self):
         return "abstract_rgb"
@@ -37,6 +37,8 @@ class AbstractRGB:
 
     @color.setter
     def color(self, color: tuple):
+        if color is None:
+            return
         self.set_color(color)
 
     def set_brightness(self, brightness: int):
@@ -51,6 +53,10 @@ class AbstractRGB:
 
     @brightness.setter
     def brightness(self, brightness: int):
+        if brightness < 0 or brightness > 255:
+            raise ValueError("Brightness must be between 0 and 255")
+        if brightness is None:
+            return
         self.set_brightness(brightness)
 
     def set_on(self, on: bool):
@@ -65,6 +71,7 @@ class AbstractRGB:
 
     @on.setter
     def on(self, on: bool):
+        self.fading = False
         self.set_on(on)
 
     def set_white(self, white: int):
@@ -81,6 +88,56 @@ class AbstractRGB:
     def white(self, white: int):
         self.set_white(white)
 
+    def _fade_process(self, target: tuple, fade_time: int):
+        """
+        :param target: [red, green, blue, warm_white] if warm_white is not null color is ignored
+        :param fade_time: The time in seconds that the fade should take
+        :return: No return
+        """
+        try:
+            start_color, start_white = self.get_color(), self.get_white() if self.on else 0
+            end_color, end_white = target, target[3] if len(target) == 4 else None
+            # Calculate how many steps will be needed to take to get to the end color
+            color_diff, white_diff = [end_color[i] - start_color[i] for i in range(3)], end_white - start_white
+            step_count = max([max([abs(diff) for diff in color_diff]), abs(white_diff)])
+            # print(f"Step count: {step_count}, color_diff: {start_color} -> {end_color} = {color_diff}, "
+            #       f"white_diff: {start_white} -> {end_white} = {white_diff}")
+            if step_count == 0:
+                return
+            step_time = fade_time / step_count
+            for i in range(step_count):
+                if not self.fading:
+                    logging.info("Fade aborted")
+                    return
+                if white_diff == 0:
+                    color = [start_color[j] + (color_diff[j] / step_count) * i for j in range(3)]
+                    self.color = [int(color[j]) for j in range(3)]
+                else:
+                    white = start_white + (white_diff / step_count) * i
+                    self.white = int(white)
+                time.sleep(step_time)
+        except Exception as e:
+            logging.error(f"Error fading: {e}")
+            logging.exception(e)
+
+    def _fade(self, args: dict):
+        target = args.get("target")
+        fade_time = args.get("time")
+        if self.fading is True:
+            logging.info("Cancelling fade")
+            self.fade_thread.cancel()
+        self.fading = True
+        self.fade_thread = threading.Thread(target=functools.partial(self._fade_process, target, fade_time))
+        self.fade_thread.start()
+
+    @property
+    def fade(self):
+        return LookupError
+
+    @fade.setter
+    def fade(self, args: dict):
+        self._fade(args)
+
     def get_state(self):
         return self.get_status() if self.online else {
             "on": False,
@@ -93,6 +150,7 @@ class AbstractRGB:
             "white": 0,
             "cold_white": 0,
             "white_enabled": False,
+            "fade_active": False,
             "mode": "unknown"
         }
 
@@ -108,11 +166,10 @@ class AbstractRGB:
     def get_status(self):
         return {}
 
-    """
-    :return: Dict of what the auto mode the device is in
-    """
-
     def auto_state(self) -> dict:
+        """
+            :return: Dict of what the auto mode the device is in
+        """
         return {
             "is_auto": self.is_auto,
             "auto_mode": self.auto_mode

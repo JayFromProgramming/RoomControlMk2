@@ -83,11 +83,15 @@ class SceneController(RoomModule):
         table = self.database.run("SELECT * FROM scenes")
         scenes = table.fetchall()
         for scene in scenes:
+            if len(scene) == 5:  # Fix issue with old database schema that didn't upgrade properly
+                offset = -1
+            else:
+                offset = 0
             self.scenes[scene[0]] = {
                 "name": scene[1],
                 "data": scene[2],
-                "description": scene[4],
-                "parent": scene[5],
+                "description": scene[4 + offset],
+                "parent": scene[5 + offset],
             }
 
     def _update_triggers(self, scene_id, triggers):
@@ -275,13 +279,14 @@ class SceneController(RoomModule):
         logging.info(f"Executing scene command for device {device.name()}")
         device_command = getattr(command, device.name())
         for action, value in device_command.items():
+            print(f"Setting {device.name()} {action} to {value}")
             try:
                 if value == "true" or value == "True":
                     value = True
                 if value == "false" or value == "False":
                     value = False
                 # Dynamically check if the device supports the action and set the value
-                if hasattr(device, action):
+                if hasattr(device, action) and callable(getattr(device, action)):
                     setattr(device, action, value)
                 else:
                     logging.warning(f"Device {device.name()} does not support action {action}")
