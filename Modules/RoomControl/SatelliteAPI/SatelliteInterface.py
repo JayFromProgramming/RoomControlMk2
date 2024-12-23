@@ -214,11 +214,14 @@ class Satellite:
             if self.last_seen < time.time() - 45:
                 logging.info(f"Polling satellite {self.name} at {self.ip} due to a lack of response")
                 # Poll the satellite
-                async with request("GET", f"http://{self.ip}:47670/uplink") as response:
-                    if response.status != 200:
-                        logging.warning(f"Failed to poll satellite {self.name} with status {response.status}")
-                    else:
-                        self.parse_uplink(await response.json())
+                try:
+                    async with request("GET", f"http://{self.ip}:47670/uplink") as response:
+                        if response.status != 200:
+                            logging.warning(f"Failed to poll satellite {self.name} with status {response.status}")
+                        else:
+                            self.parse_uplink(await response.json())
+                except aiohttp.client.ClientConnectionError:
+                    logging.warning(f"Failed to poll satellite {self.name} due to a connection error")
             await asyncio.sleep(60)
 
     async def link_cycle(self):
@@ -287,8 +290,8 @@ class Satellite:
             async with request("POST", f"http://{self.ip}:47670/event", json=data, timeout=session_timeout) as response:
                 if response.status != 200:
                     logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
-        except asyncio.TimeoutError:
-            logging.warning(f"Failed to send event to {self.name} due to a timeout")
+        except aiohttp.client.ClientConnectionError:
+            logging.warning(f"Failed to send event to {self.name} due to a connection error")
         except Exception as e:
             logging.error(f"Error sending event to {self.name}: {e}")
             logging.exception(e)
