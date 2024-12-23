@@ -39,6 +39,7 @@ class AbstractRGB:
     def color(self, color: tuple):
         if color is None:
             return
+        self.fading = False
         self.set_color(color)
 
     def set_brightness(self, brightness: int):
@@ -111,10 +112,11 @@ class AbstractRGB:
                     return
                 if white_diff == 0:
                     color = [start_color[j] + (color_diff[j] / step_count) * i for j in range(3)]
-                    self.color = [int(color[j]) for j in range(3)]
+                    color = [int(color[j]) for j in range(3)]
+                    self.set_color(tuple(color))
                 else:
                     white = start_white + (white_diff / step_count) * i
-                    self.white = int(white)
+                    self.set_white(int(white))
                 time.sleep(step_time)
         except Exception as e:
             logging.error(f"Error fading: {e}")
