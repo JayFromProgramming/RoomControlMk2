@@ -25,6 +25,8 @@ class LIFXAPI(RoomModule):
 
 class LIFXDevice(RoomObject, AbstractRGB):
 
+    supported_actions = ["on", "color", "brightness"]
+
     def __init__(self, device, room_controller):
         super().__init__(device.get_mac_addr(), "LIFXDevice")
         logging.info(f"Creating LIFXDevice {device.get_label()}: {device.get_mac_addr()}@{device.get_ip_addr()}")

@@ -138,7 +138,7 @@ class MagicHome(RoomModule):
 class MagicDevice(RoomObject, AbstractRGB):
 
     is_promise = False
-    supported_actions = ["toggleable", "color", "brightness", "white"]
+    supported_actions = ["on", "color", "brightness", "white", "fade"]
 
     def __init__(self, api, macaddr, room_controller, local_ip=None):
         super().__init__(macaddr, "MagicDevice")

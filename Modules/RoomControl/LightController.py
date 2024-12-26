@@ -71,6 +71,7 @@ class LightControllerHost(RoomModule):
 
 class LightController(RoomObject):
     is_promise = False
+    supported_actions = ["on"]
 
     def __init__(self, name, room_controller):
         super().__init__(name, "LightController")

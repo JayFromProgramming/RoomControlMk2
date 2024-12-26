@@ -69,6 +69,8 @@ class EnvironmentControllerHost(RoomModule):
 
 class EnvironmentController(RoomObject):
 
+    supported_actions = ["on", "target_value"]
+
     class DirectionEnums:
         INCREASE = 1
         DECREASE = 2

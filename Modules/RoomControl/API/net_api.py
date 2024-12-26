@@ -308,6 +308,7 @@ class NetAPI(RoomModule):
                 state=device.get_state(),
                 info=device.get_info(),
                 health=device.get_health(),
+                actions=device.supported_actions,
                 type=device.get_type(),
                 auto_state=device.auto_state()
             )
