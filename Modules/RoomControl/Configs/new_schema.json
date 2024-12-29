@@ -81,5 +81,9 @@
   "plug_1": {
     "group": "Bathroom",
     "starred": true
+  },
+  "d0:73:d5:5d:0e:7c": {
+    "group": "Bedroom",
+    "starred": false
   }
 }

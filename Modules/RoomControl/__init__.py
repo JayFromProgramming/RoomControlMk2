@@ -70,6 +70,12 @@ class ObjectPointer:
 
 class RoomController:
 
+    # Debugging variables to exclude or only load certain modules on the test server
+    exclude_modules = []
+    only_modules = ["LIFXAPI"]
+
+    required_modules = ["NetAPI", "SceneController"]
+
     def __init__(self, db_path: str = "room_data.db"):
         self.database = Database(db_path)
         try:
@@ -84,8 +90,14 @@ class RoomController:
         self.room_objects = []
         for room_module in RoomModule.__subclasses__():
             logging.info(f"Creating instance of {room_module.__name__}")
-            # if room_module.__name__ == "WeatherRelay" or room_module.__name__ == "SatelliteInterface":
-            #     continue
+            if sys.platform != "linux":
+                if (len(self.only_modules) > 0 and room_module.__name__ not in self.only_modules
+                        and room_module.__name__ not in self.required_modules):
+                    logging.info(f"Skipping {room_module.__name__}")
+                    continue
+                elif room_module.__name__ in self.exclude_modules:
+                    logging.info(f"Skipping {room_module.__name__}")
+                    continue
             try:
                 room_module(self)
             except Exception as e:
