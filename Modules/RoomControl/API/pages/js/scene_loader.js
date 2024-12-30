@@ -30,7 +30,7 @@ class ActionButton {
 
     onClick() {
        $.ajax({
-          url: "/set_scene/" + this.name,
+          url: "/scene_action/execute_scene/" + this.name,
           type: "get",
           success: function(result) {
 
@@ -59,8 +59,7 @@ function scene_table() {
 
             scene_table.empty();
             for (const scene in scenes) {
-               if (scene.action === "")
-                   continue;
+               if (scene.action === "") continue;
                const scene_data = scenes[scene];
                const scene_row = $('<tr>');
                const name = scene_data['name'];
