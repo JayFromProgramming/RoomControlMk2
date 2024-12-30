@@ -328,7 +328,7 @@ class SceneController(RoomModule):
                 return "{name} color to {value}".format(name=f"[{device.name()}]", value=color)
             case "white":
                 return "{name} white to {value}".format(name=f"[{device.name()}]", value=value)
-            case "setpoint":
+            case "target_value":
                 return "{name} setpoint to {value}".format(name=f"[{device.name()}]", value=value)
             case "dnd":
                 return "{name} DND {value}".format(name=f"[{device.name()}]", value='on' if value else 'off')

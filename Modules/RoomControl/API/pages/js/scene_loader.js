@@ -59,7 +59,7 @@ function scene_table() {
 
             scene_table.empty();
             for (const scene in scenes) {
-               if (scene.data === "{\"folder\": \"\"}")
+               if (scene.action === "")
                    continue;
                const scene_data = scenes[scene];
                const scene_row = $('<tr>');
@@ -118,4 +118,4 @@ $(document).ready(scene_table());
 
 // Make the above code run every 5 seconds without refreshing the page
 
-setInterval(scene_table, 10000);
+// setInterval(scene_table, 10000);
