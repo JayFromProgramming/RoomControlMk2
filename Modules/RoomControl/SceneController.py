@@ -307,6 +307,8 @@ class SceneController(RoomModule):
         command = APIMessageRX(scene_data)
         for target_device in command.__dict__.items():
             try:
+                if target_device[0] == "folder":
+                    continue
                 device = self.room_controller.get_object(target_device[0])
                 for action in target_device[1].items():
                     actions.append(self.action_str(device, action[0], action[1]))

@@ -31,7 +31,7 @@ class ActionButton {
     onClick() {
        $.ajax({
           url: "/scene_action/execute_scene/" + this.name,
-          type: "get",
+          type: "post",
           success: function(result) {
 
           },
