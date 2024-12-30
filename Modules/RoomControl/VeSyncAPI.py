@@ -73,7 +73,7 @@ class VeSyncAPI(RoomModule):
 class VeSyncPlug(RoomObject, AbstractToggleDevice):
 
     is_promise = False
-    supported_actions = ["on"]
+    supported_actions = ["on", "delay"]
 
     def __init__(self, device, room_controller):
         super(VeSyncPlug, self).__init__(device.device_name, "VeSyncPlug")

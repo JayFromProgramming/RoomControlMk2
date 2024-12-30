@@ -183,6 +183,8 @@ class AbstractToggleDevice:
     def __init__(self):
         self.online = None
         self.fault = None
+        self.delaying = False  # This is the toggle device equivalent of fading
+        self.delay_thread = None
         self.offline_reason = "Unknown"
         self._auto = False
 
@@ -201,6 +203,10 @@ class AbstractToggleDevice:
 
     @on.setter
     def on(self, on: bool):
+        if self.delaying:
+            logging.info("Cancelling previous delay")
+            self.delay_thread.cancel()
+            self.delaying = False
         self.set_on(on)
 
     def get_state(self):
@@ -210,6 +216,28 @@ class AbstractToggleDevice:
 
     def set_on(self, on: bool):
         raise NotImplementedError
+
+    def _delay_action(self, state):
+        self.delaying = False
+        self.set_on(state)
+
+    def _delay(self, end_state: bool, delay_time: int):
+        logging.info(f"Delaying action for {delay_time} seconds")
+        if self.delaying is True:
+            logging.info("Cancelling previous delay")
+            self.delay_thread.cancel()
+            self.delaying = False
+        self.delay_thread = threading.Timer(delay_time, self._delay_action, args=(end_state,))
+        self.delay_thread.start()
+        self.delaying = True
+
+    @property
+    def delay(self):
+        return LookupError
+
+    @delay.setter
+    def delay(self, args: dict):
+        self._delay(args.get("state"), args.get("time"))
 
     def get_info(self) -> dict:
         return {

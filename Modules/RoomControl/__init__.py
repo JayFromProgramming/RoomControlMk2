@@ -72,7 +72,7 @@ class RoomController:
 
     # Debugging variables to exclude or only load certain modules on the test server
     exclude_modules = []
-    only_modules = ["LIFXAPI"]
+    only_modules = ["LIFXAPI", "MagicHome", "VeSyncAPI", "VoiceMonkeyAPI", "GoveeAPI"]
 
     required_modules = ["NetAPI", "SceneController"]
 
