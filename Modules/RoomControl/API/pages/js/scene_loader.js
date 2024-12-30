@@ -49,59 +49,53 @@ class ActionButton {
 
 function scene_table() {
     $.ajax({
-        url: "/get_scenes",
+        url: "/scene_get/scenes/null",
         type: "GET",
         dataType: "json",
         success: function (data) {
             let toggle_button;
-            const scenes = data.scenes; // A dictionary of devices and their data
+            const scenes = data.result; // A dictionary of devices and their data
             const scene_table = $('#scene_list_body');
 
             scene_table.empty();
-               for (const scene in scenes) {
-                   const scene_data = scenes[scene];
-                   const scene_row = $('<tr>');
-                   const name = scene_data['trigger_name'];
-                   const scene_name = $('<td class="device_name">').text(name);
+            for (const scene in scenes) {
+               if (scene.data === "{\"folder\": \"\"}")
+                   continue;
+               const scene_data = scenes[scene];
+               const scene_row = $('<tr>');
+               const name = scene_data['name'];
+               const scene_name = $('<td class="device_name">').text(name);
 
-                   const is_active = scene_data['active'];
-                   const trigger_type = scene_data['trigger_type']
-                   const trigger_value = scene_data['trigger_value']
+               const is_active = scene_data['active'];
+               const trigger_type = scene_data['trigger_type']
+               const trigger_value = scene_data['trigger_value']
 
-                   if (trigger_type === "immediate") {
-                        toggle_button = new ActionButton("Execute", scene, true);
-                    } else {
-                        if (is_active) {
-                            toggle_button = new ActionButton("Deactivate", scene, true);
-                        } else {
-                            toggle_button = new ActionButton("Activate", scene, true);
-                        }
+               toggle_button = new ActionButton("Execute", scene, true);
+
+               let scene_action_raw = scene_data['action'];
+               // Format the names out of the action string, e.g "Turns [B4E842D7A9F8] on" -> "Turns Living Room on"
+                let scene_action_text = scene_action_raw.replace(/\[([^\]]+)\]/g,
+                    function(match, contents, offset, input_string) {
+                        return getName(contents);
                     }
+                );
 
-                   let scene_action_raw = scene_data['action'];
-                   // Format the names out of the action string, e.g "Turns [B4E842D7A9F8] on" -> "Turns Living Room on"
-                     let scene_action_text = scene_action_raw.replace(/\[([^\]]+)\]/g,
-                         function(match, contents, offset, input_string) {
-                                return getName(contents);
-                         }
-                        );
-
-                   const scene_command = $('<td>').html(toggle_button.getButton());
-                   const scene_action = $('<td>').text(scene_action_text);
-                   let trigger_text = "";
-                   if (trigger_type === "immediate") {
-                       trigger_text = $('<td>').text("Immediate");
-                   } else {
-                        trigger_text = $('<td>').text(trigger_type + "@" + trigger_value);
-                   }
+               const scene_command = $('<td>').html(toggle_button.getButton());
+               const scene_action = $('<td>').text(scene_action_text);
+               let trigger_text = "";
+               if (trigger_type === "immediate") {
+                   trigger_text = $('<td>').text("Immediate");
+               } else {
+                    trigger_text = $('<td>').text(trigger_type + "@" + trigger_value);
+               }
 
 
-                    scene_row.append(scene_name);
-                    scene_row.append(scene_command);
-                    scene_row.append(scene_action);
-                    scene_row.append(trigger_text);
-                    scene_table.append(scene_row);
-                }
+                scene_row.append(scene_name);
+                scene_row.append(scene_command);
+                scene_row.append(scene_action);
+                scene_row.append(trigger_text);
+                scene_table.append(scene_row);
+            }
                 // Add a footer spans the entire table that shows the last time the page was updated,
                 // set the color to black
             const footer = $('<tr>');
