@@ -205,8 +205,9 @@ class AbstractToggleDevice:
     def on(self, on: bool):
         if self.delaying:
             logging.info("Cancelling previous delay")
-            self.delay_thread.cancel()
             self.delaying = False
+            if self.delay_thread is not None:
+                self.delay_thread.cancel()
         self.set_on(on)
 
     def get_state(self):
