@@ -1,6 +1,5 @@
 import time
 
-import pifx
 from lifxlan import LifxLAN, Light
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
 from Modules.RoomControl.Decorators import background
