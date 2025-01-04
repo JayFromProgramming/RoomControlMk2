@@ -178,7 +178,7 @@ class Satellite:
                 logging.warning(f"Received event data from {data['name']} but expected {self.name}")
                 return
             self.ip = data["current_ip"]
-            if isinstance(self.ip, list):
+            if isinstance(self.ip, list) and len(self.ip) > 0:
                 self.ip = self.ip[0]
             self.ip = str(self.ip).strip("'")
             self.last_seen = time.time()
