@@ -10,6 +10,8 @@ from loguru import logger as logging
 
 class LIFXAPI(RoomModule):
 
+    known_devices = [("D0:73:D5:5D:0E:7D", "192.168.1.14")]
+
     def __init__(self, room_controller):
         super().__init__(room_controller)
         self.database = room_controller.database
@@ -22,18 +24,31 @@ class LIFXAPI(RoomModule):
         # print(self.lifx.list_lights())
         self.lifx = LifxLAN()
         self.room_objects = []
+        try:
+            for device in self.known_devices:
+                if not [x for x in self.room_objects if x.object_name == device[0]]:
+                    self.room_objects.append(LIFXDevice(Light(mac_addr=device[0], ip_addr=device[1]), self.room_controller))
+                    logging.info(f"Found known LIFX device {device[0]}")
+        except Exception as e:
+            logging.error(f"Error adding known LIFX devices: {e}")
+            logging.exception(e)
         self.periodic_device_scan()
 
     @background
     def periodic_device_scan(self):
         while True:
-            self.lifx.discover_devices()
-            api_devices = self.lifx.get_lights()
-            for device in api_devices:
-                if not [x for x in self.room_objects if x.object_name == device.get_mac_addr()]:
-                    self.room_objects.append(LIFXDevice(device, self.room_controller))
-                    logging.info(f"Found new LIFX device {device.get_label()}")
-            time.sleep(60)
+            try:
+                self.lifx.discover_devices()
+                api_devices = self.lifx.get_lights()
+                for device in api_devices:
+                    if not [x for x in self.room_objects if x.object_name == device.get_mac_addr()]:
+                        self.room_objects.append(LIFXDevice(device, self.room_controller))
+                        logging.info(f"Found new LIFX device {device.get_label()}")
+            except Exception as e:
+                logging.error(f"Error scanning for LIFX devices: {e}")
+                logging.exception(e)
+            finally:
+                time.sleep(60)
 
 
 class LIFXDevice(RoomObject, AbstractRGB):
