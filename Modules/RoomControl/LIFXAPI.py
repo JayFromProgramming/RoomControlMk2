@@ -195,15 +195,21 @@ class LIFXDevice(RoomObject, AbstractRGB):
             }
 
     def set_on(self, on: bool):
-        self.device.set_power(on)
+        try:
+            self.device.set_power(on)
+        except Exception as e:
+            logging.error(f"Error setting LIFX device {self.device.get_label()} power: {e}")
 
     def get_on(self) -> bool:
         return self.device.get_power() > 0
 
     def set_white(self, white: int):
-        if white > 0 and not self.get_on():
-            self.set_on(True)
-        self.device.set_color([0, 0, self._brightness_to_lifx(white), self.current_color[3]])
+        try:
+            if white > 0 and not self.get_on():
+                self.set_on(True)
+            self.device.set_color([0, 0, self._brightness_to_lifx(white), self.current_color[3]])
+        except Exception as e:
+            logging.error(f"Error setting LIFX device {self.device.get_label()} white: {e}")
 
     def get_white(self):
         return self._brightness_to_byte(self.current_color[2])
