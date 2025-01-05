@@ -119,6 +119,9 @@ class LIFXDevice(RoomObject, AbstractRGB):
     def name(self):
         return self.object_name
 
+    def get_type(self):
+        return "LIFXDevice"
+
     def set_color(self, color: tuple):
         self.device.set_color(color)
 
