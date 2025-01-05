@@ -8,8 +8,11 @@ from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 from loguru import logger as logging
 
+
 # Patch the lifxlan library to allow for broadcast with response to work correctly
-def patched_broadcast_with_resp(self, msg_type, response_type, payload={}, timeout_secs=DEFAULT_TIMEOUT, max_attempts=DEFAULT_ATTEMPTS):
+def patched_broadcast_with_resp(self, msg_type, response_type, payload=None, timeout_secs=DEFAULT_TIMEOUT, max_attempts=DEFAULT_ATTEMPTS):
+    if payload is None:
+        payload = {}
     self.initialize_socket(timeout_secs)
     if response_type == Acknowledgement:
         msg = msg_type(BROADCAST_MAC, self.source_id, seq_num=0, payload=payload, ack_requested=True, response_requested=False)
@@ -70,7 +73,6 @@ class LIFXAPI(RoomModule):
         super().__init__(room_controller)
         self.database = room_controller.database
         self.name = "LIFXAPI"
-        logging.info("Starting LIFXAPI, searching for devices")
         self.room_controller = room_controller
         self.database = room_controller.database
         # secrets = self.database.get_table("secrets")
@@ -78,12 +80,14 @@ class LIFXAPI(RoomModule):
         # print(self.lifx.list_lights())
         self.lifx = LifxLAN()
         self.room_objects = []
+        logging.info("LIFXAPI Started, starting device scan")
         self.periodic_device_scan()
 
     @background
     def periodic_device_scan(self):
         while True:
             try:
+                logging.info("Scanning for LIFX devices")
                 self.lifx.discover_devices()
                 api_devices = self.lifx.get_lights()
                 for device in api_devices:
@@ -94,6 +98,7 @@ class LIFXAPI(RoomModule):
                 logging.exception(e)
                 logging.error(f"Error scanning for LIFX devices: {e}")
             finally:
+                logging.info("Finished scanning for LIFX devices")
                 time.sleep(60)
 
 
