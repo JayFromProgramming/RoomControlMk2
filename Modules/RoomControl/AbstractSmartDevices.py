@@ -106,7 +106,12 @@ class AbstractRGB:
             if step_count == 0:
                 return
             step_time = fade_time / step_count
+            step_exceedance = 0
             for i in range(step_count):
+                if step_exceedance > step_time:
+                    logging.warning(f"Skipping step {i} due to step time overrun")
+                    step_exceedance = 0
+                    continue
                 step_start = time.time()
                 if not self.fading:
                     logging.info("Fade aborted")
@@ -118,7 +123,11 @@ class AbstractRGB:
                 else:
                     white = start_white + (white_diff / step_count) * i
                     self.set_white(int(white))
-                time.sleep(max([0, step_time - (time.time() - step_start)]))
+                step_remaining = step_time - (time.time() - step_start)
+                if step_remaining > 0:
+                    time.sleep(step_remaining)
+                else:
+                    step_exceedance += abs(step_remaining)
             self.fading = False
             logging.info("Fade complete")
         except Exception as e:
