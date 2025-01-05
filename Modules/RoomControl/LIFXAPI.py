@@ -1,16 +1,70 @@
 import time
-
-from lifxlan import LifxLAN, Light
+from socket import timeout
+from lifxlan import LifxLAN, Light, Acknowledgement, BROADCAST_MAC, DEFAULT_TIMEOUT, DEFAULT_ATTEMPTS, UDP_BROADCAST_IP_ADDRS, UDP_BROADCAST_PORT, \
+    unpack_lifx_message
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
 from Modules.RoomControl.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 from loguru import logger as logging
 
+# Patch the lifxlan library to allow for broadcast with response to work correctly
+def patched_broadcast_with_resp(self, msg_type, response_type, payload={}, timeout_secs=DEFAULT_TIMEOUT, max_attempts=DEFAULT_ATTEMPTS):
+    self.initialize_socket(timeout_secs)
+    if response_type == Acknowledgement:
+        msg = msg_type(BROADCAST_MAC, self.source_id, seq_num=0, payload=payload, ack_requested=True, response_requested=False)
+    else:
+        msg = msg_type(BROADCAST_MAC, self.source_id, seq_num=0, payload=payload, ack_requested=False, response_requested=True)
+    responses = []
+    addr_seen = []
+    num_devices_seen = 0
+    attempts = 0
+    while (self.num_devices == None or num_devices_seen < self.num_devices) and attempts < max_attempts:
+        sent = False
+        start_time = time.time()
+        timedout = False
+        while (self.num_devices == None or num_devices_seen < self.num_devices) and not timedout:
+            if not sent:
+                for ip_addr in UDP_BROADCAST_IP_ADDRS:
+                    try:
+                        self.sock.sendto(msg.packed_message, (ip_addr, UDP_BROADCAST_PORT))
+                    except OSError as e:
+                        # sendto will fail for interfaces that do not support multicast or are not up.
+                        # An example of the first case is a wireguard vpn interface.
+                        # In either case just log as debug and ignore the error.
+                        if self.verbose:
+                            print("OSError: Interface for %s does not support multicast or is not UP. ip_addr: ",
+                                  ip_addr)
+                sent = True
+                if self.verbose:
+                    print("SEND: " + str(msg))
+            try:
+                data, (ip_addr, port) = self.sock.recvfrom(1024)
+                response = unpack_lifx_message(data)
+                response.ip_addr = ip_addr
+                if self.verbose:
+                    print("RECV: " + str(response))
+                if type(response) == response_type and response.source_id == self.source_id:
+                    if response.target_addr not in addr_seen and response.target_addr != BROADCAST_MAC:
+                        addr_seen.append(response.target_addr)
+                        num_devices_seen += 1
+                        responses.append(response)
+            except timeout:
+                pass
+            except OSError as e:
+                if self.verbose:
+                    print("OSError: %s" % e)
+            elapsed_time = time.time() - start_time
+            timedout = True if elapsed_time > timeout_secs else False
+        attempts += 1
+    self.close_socket()
+    return responses
+
+
+LifxLAN.broadcast_with_resp = patched_broadcast_with_resp
+
 
 class LIFXAPI(RoomModule):
-
-    known_devices = [("D0:73:D5:5D:0E:7D", "192.168.1.14")]
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
@@ -24,14 +78,6 @@ class LIFXAPI(RoomModule):
         # print(self.lifx.list_lights())
         self.lifx = LifxLAN()
         self.room_objects = []
-        try:
-            for device in self.known_devices:
-                if not [x for x in self.room_objects if x.object_name == device[0]]:
-                    self.room_objects.append(LIFXDevice(Light(mac_addr=device[0], ip_addr=device[1]), self.room_controller))
-                    logging.info(f"Found known LIFX device {device[0]}")
-        except Exception as e:
-            logging.error(f"Error adding known LIFX devices: {e}")
-            logging.exception(e)
         self.periodic_device_scan()
 
     @background
@@ -45,8 +91,8 @@ class LIFXAPI(RoomModule):
                         self.room_objects.append(LIFXDevice(device, self.room_controller))
                         logging.info(f"Found new LIFX device {device.get_label()}")
             except Exception as e:
-                logging.error(f"Error scanning for LIFX devices: {e}")
                 logging.exception(e)
+                logging.error(f"Error scanning for LIFX devices: {e}")
             finally:
                 time.sleep(60)
 
