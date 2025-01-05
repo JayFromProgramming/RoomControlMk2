@@ -108,11 +108,11 @@ class LIFXDevice(RoomObject, AbstractRGB):
 
     def __init__(self, device, room_controller):
         super().__init__(device.get_mac_addr(), "LIFXDevice")
+        self.fault = None
         logging.info(f"Creating LIFXDevice {device.get_label()}: {device.get_mac_addr()}@{device.get_ip_addr()}")
         self.device = device
         self.current_power = 0
         self.current_color = None
-
         self.info_refresh()
         room_controller.attach_object(self)
 
@@ -212,12 +212,15 @@ class LIFXDevice(RoomObject, AbstractRGB):
     def info_refresh(self):
         while True:
             self.online = True
+            self.fault = False
             try:
                 self.device.get_time()
                 self.current_power = self.device.get_power()
                 self.current_color = self.device.get_color()
             except Exception as e:
                 self.online = False
+                self.fault = True
                 self.offline_reason = "No Device Response"
                 logging.error(f"Error refreshing LIFX device {self.device.get_label()}: {e}")
-            time.sleep(5)
+            finally:
+                time.sleep(5)
