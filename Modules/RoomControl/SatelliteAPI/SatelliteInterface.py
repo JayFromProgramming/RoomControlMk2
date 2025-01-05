@@ -282,7 +282,7 @@ class Satellite:
             "auth": self.auth
         }
         # logging.info(f"Sending event {event_name} to {self.name} @ {self.ip}:47670")
-        if self.ip is None:
+        if self.ip is None or self.ip == "" or self.ip == []:
             logging.warning(f"Cannot send event to {self.name} because it does not have an IP address")
             return
         session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=5, sock_read=5)
