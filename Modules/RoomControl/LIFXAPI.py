@@ -171,8 +171,8 @@ class LIFXDevice(RoomObject, AbstractRGB):
             "cold_white": 0,
             "warm_white": self.get_white(),
             "white_enabled": True,
-            "mode": "NORMAL" if not self.fading else "FADING",
-            "control_type": "AUTO-FADE" if not self.fading else "MANUAL"
+            "mode": "NORMAL" if self.fading is False else "FADING",
+            "control_type": "AUTO-FADE" if self.fading is False else "MANUAL"
         }
 
     def get_info(self) -> dict:
