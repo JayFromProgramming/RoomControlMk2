@@ -100,9 +100,10 @@ class AbstractRGB:
             end_color, end_white = target, target[3] if len(target) == 4 else None
             # Calculate how many steps will be needed to take to get to the end color
             color_diff, white_diff = [end_color[i] - start_color[i] for i in range(3)], end_white - start_white
-            step_count = max([max([abs(diff) for diff in color_diff]), abs(white_diff)])
-            print(f"Step count: {step_count}, color_diff: {start_color} -> {end_color} = {color_diff}, "
-                  f"white_diff: {start_white} -> {end_white} = {white_diff}")
+            color_steps, white_steps = max([abs(color_diff[i]) for i in range(3)]), abs(white_diff)
+            step_count = white_steps if white_diff != 0 else color_steps
+            # print(f"Step count: {step_count}, color_diff: {start_color} -> {end_color} = {color_diff}, "
+            #       f"white_diff: {start_white} -> {end_white} = {white_diff}")
             if step_count == 0:
                 return
             step_time = fade_time / step_count
