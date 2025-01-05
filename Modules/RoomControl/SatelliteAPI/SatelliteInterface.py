@@ -292,6 +292,8 @@ class Satellite:
                     logging.warning(f"Failed to send event to {self.name} with status {response.status}: {await response.text()}")
         except aiohttp.client.ClientConnectionError:
             logging.warning(f"Failed to send event to {self.name} due to a connection error")
+        except aiohttp.client.InvalidURL:
+            logging.warning(f"Failed to send event to {self.name} due to an invalid URL")
         except Exception as e:
             logging.error(f"Error sending event to {self.name}: {e}")
             logging.exception(e)
