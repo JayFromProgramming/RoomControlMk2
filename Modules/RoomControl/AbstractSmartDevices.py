@@ -118,6 +118,8 @@ class AbstractRGB:
                     white = start_white + (white_diff / step_count) * i
                     self.set_white(int(white))
                 time.sleep(step_time)
+            self.fading = False
+            logging.info("Fade complete")
         except Exception as e:
             logging.error(f"Error fading: {e}")
             logging.exception(e)
