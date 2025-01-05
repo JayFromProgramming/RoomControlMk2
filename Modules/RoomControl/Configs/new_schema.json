@@ -36,7 +36,7 @@
   },
   "exhaust": {
     "group": "Bedroom",
-    "starred": true
+    "starred": false
   },
   "plug_2": {
     "group": "Kitchen",
@@ -84,6 +84,6 @@
   },
   "d0:73:d5:5d:0e:7c": {
     "group": "Bedroom",
-    "starred": false
+    "starred": true
   }
 }
