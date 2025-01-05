@@ -107,6 +107,7 @@ class AbstractRGB:
                 return
             step_time = fade_time / step_count
             for i in range(step_count):
+                step_start = time.time()
                 if not self.fading:
                     logging.info("Fade aborted")
                     return
@@ -117,7 +118,7 @@ class AbstractRGB:
                 else:
                     white = start_white + (white_diff / step_count) * i
                     self.set_white(int(white))
-                time.sleep(step_time)
+                time.sleep(max([0, step_time - (time.time() - step_start)]))
             self.fading = False
             logging.info("Fade complete")
         except Exception as e:
