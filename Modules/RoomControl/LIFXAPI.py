@@ -113,6 +113,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         self.device = device
         self.current_power = 0
         self.current_color = None
+        self.current_ip = None
         self.info_refresh()
         room_controller.attach_object(self)
 
@@ -123,7 +124,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         return "LIFXDevice"
 
     def set_color(self, color: tuple):
-        self.device.set_color(color)
+        self.device.set_color(color, rapid=True)
 
     def get_color(self) -> list:
         return self.device.get_color()
@@ -181,10 +182,10 @@ class LIFXDevice(RoomObject, AbstractRGB):
     def get_info(self) -> dict:
         try:
             return {
-                "ip": self.device.get_ip_addr(),
-                "firmware": self.device.get_host_firmware_version(),
-                "wifi": self.device.get_wifi_info_tuple(),
-                "misc": self.device.get_info_tuple()
+                "ip": self.current_ip,
+                # "firmware": self.device.get_host_firmware_version(),
+                # "wifi": self.device.get_wifi_info_tuple(),
+                # "misc": self.device.get_info_tuple()
             }
         except Exception:
             return {
@@ -207,7 +208,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         try:
             if white > 0 and not self.get_on():
                 self.set_on(True)
-            self.device.set_color([0, 0, self._brightness_to_lifx(white), self.current_color[3]])
+            self.device.set_color([0, 0, self._brightness_to_lifx(white), self.current_color[3]], rapid=True)
         except Exception as e:
             logging.error(f"Error setting LIFX device {self.device.get_label()} white: {e}")
 
@@ -220,9 +221,10 @@ class LIFXDevice(RoomObject, AbstractRGB):
             self.online = True
             self.fault = False
             try:
-                self.device.get_time()
+                # self.device.get_time()
                 self.current_power = self.device.get_power()
                 self.current_color = self.device.get_color()
+                self.current_ip = self.device.get_ip_addr()
             except Exception as e:
                 self.online = False
                 self.fault = True
