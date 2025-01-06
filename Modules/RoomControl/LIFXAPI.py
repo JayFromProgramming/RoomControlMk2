@@ -87,7 +87,7 @@ class LIFXAPI(RoomModule):
     def periodic_device_scan(self):
         while True:
             try:
-                logging.info("Scanning for LIFX devices")
+                # logging.info("Scanning for LIFX devices")
                 self.lifx.discover_devices()
                 api_devices = self.lifx.get_lights()
                 for device in api_devices:
@@ -98,7 +98,7 @@ class LIFXAPI(RoomModule):
                 logging.exception(e)
                 logging.error(f"Error scanning for LIFX devices: {e}")
             finally:
-                logging.info("Finished scanning for LIFX devices")
+                # logging.info("Finished scanning for LIFX devices")
                 time.sleep(60)
 
 
@@ -123,8 +123,9 @@ class LIFXDevice(RoomObject, AbstractRGB):
     def get_type(self):
         return "LIFXDevice"
 
-    def set_color(self, color: tuple):
+    def set_color(self, color: list):
         self.device.set_color(color, rapid=True)
+        self.current_color = color
 
     def get_color(self) -> list:
         return self.device.get_color()
@@ -198,6 +199,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
     def set_on(self, on: bool):
         try:
             self.device.set_power(on)
+            self.current_power = 65535 if on else 0
         except Exception as e:
             logging.error(f"Error setting LIFX device {self.device.get_label()} power: {e}")
 
@@ -208,7 +210,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         try:
             if white > 0 and not self.get_on():
                 self.set_on(True)
-            self.device.set_color([0, 0, self._brightness_to_lifx(white), self.current_color[3]], rapid=True)
+            self.set_color([0, 0, self._brightness_to_lifx(white), self.current_color[3]])
         except Exception as e:
             logging.error(f"Error setting LIFX device {self.device.get_label()} white: {e}")
 
@@ -227,7 +229,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
                 self.online = False
                 self.fault = True
                 self.offline_reason = "No Device Response"
-                logging.error(f"Error refreshing LIFX device {self.device.get_label()}: {e}")
+                logging.error(f"Error refreshing LIFX device {self.name()}: {e}")
             else:
                 self.offline_reason = "Unknown"
                 self.online = True
