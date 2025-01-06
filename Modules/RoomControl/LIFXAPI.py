@@ -218,8 +218,6 @@ class LIFXDevice(RoomObject, AbstractRGB):
     @background
     def info_refresh(self):
         while True:
-            self.online = True
-            self.fault = False
             try:
                 # self.device.get_time()
                 self.current_power = self.device.get_power()
@@ -230,5 +228,9 @@ class LIFXDevice(RoomObject, AbstractRGB):
                 self.fault = True
                 self.offline_reason = "No Device Response"
                 logging.error(f"Error refreshing LIFX device {self.device.get_label()}: {e}")
+            else:
+                self.offline_reason = "Unknown"
+                self.online = True
+                self.fault = False
             finally:
                 time.sleep(5)
