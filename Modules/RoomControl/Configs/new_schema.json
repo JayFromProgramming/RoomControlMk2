@@ -23,6 +23,11 @@
   },
   "big_humid": {
     "group": "Living Room",
+    "starred": false,
+    "priority": 1
+  },
+  "50:91:e3:fd:f1:6a": {
+    "group": "Living Room",
     "starred": true,
     "priority": 1
   },

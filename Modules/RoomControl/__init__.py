@@ -72,7 +72,7 @@ class RoomController:
 
     # Debugging variables to exclude or only load certain modules on the test server
     exclude_modules = []
-    only_modules = ["LIFXAPI", "MagicHome", "VoiceMonkeyAPI", "GoveeAPI"]
+    only_modules = ["LIFXAPI", "MagicHome", "VoiceMonkeyAPI", "GoveeAPI", "TPLinkAPI"]
 
     required_modules = ["NetAPI", "SceneController"]
 
@@ -93,10 +93,10 @@ class RoomController:
             if sys.platform != "linux":
                 if (len(self.only_modules) > 0 and room_module.__name__ not in self.only_modules
                         and room_module.__name__ not in self.required_modules):
-                    logging.info(f"Skipping {room_module.__name__}")
+                    logging.info(f"Skipping {room_module.__name__} because it is not in only_modules")
                     continue
                 elif room_module.__name__ in self.exclude_modules:
-                    logging.info(f"Skipping {room_module.__name__}")
+                    logging.info(f"Skipping {room_module.__name__} because it is in exclude_modules")
                     continue
             try:
                 room_module(self)
@@ -114,7 +114,6 @@ class RoomController:
 
     def refresh(self):
         # logging.info("Refreshing devices")
-
         for controller in self.controllers:
             if hasattr(controller, "refresh_all"):
                 controller.refresh_all()

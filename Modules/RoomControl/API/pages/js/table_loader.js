@@ -60,6 +60,8 @@ function toggleDeviceState(device_json) {
 function getState(device_json) {
     var state_string = "";
     switch (device_json["type"]) {
+        case "TPLinkDevice":
+        case "LIFXDevice":
         case "abstract_rgb":
             if (device_json["state"]["on"] === true) {
                 state_string += "ON,  ";
