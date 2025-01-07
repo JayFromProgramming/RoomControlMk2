@@ -61,7 +61,7 @@ class TPLinkDevice(RoomObject, AbstractRGB):
         super().__init__(device.mac, "TPLinkDevice")
         self.device = device
         self.device_name = device.alias
-        self.device_id = device.device_id
+        self.device_id = device.mac
         self.device_type = "TPLinkDevice"
         logging.info(f"Creating TPLinkDevice {self.device_name}: {self.device_id}@{self.device.host}")
 
@@ -117,7 +117,7 @@ class TPLinkDevice(RoomObject, AbstractRGB):
                 logging.exception(e)
 
     def name(self):
-        return self.device_name
+        return self.device_id
 
     def get_type(self):
         return self.device_type
