@@ -25,6 +25,7 @@ class TPLinkAPI(RoomModule):
     async def discover_devices(self):
         logging.info("Starting TPLinkAPI, starting device scan")
         try:
+            # TODO: Remove hardcoded IP and implement a proper device discovery
             device = await Device.connect(host="192.168.1.18")
             self.devices.append(TPLinkDevice(device, self.room_controller))
         except Exception as e:
