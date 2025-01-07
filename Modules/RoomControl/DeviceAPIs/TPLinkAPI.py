@@ -135,7 +135,7 @@ class TPLinkDevice(RoomObject, AbstractRGB):
         return self.device_state_cache.get("brightness", 0)
 
     def set_white(self, white: int):
-        self.device_command_queue.put_nowait(("set_white", white))
+        self.set_brightness(white)
 
     def get_white(self) -> int:
         return self.device_state_cache.get("white", 0)
