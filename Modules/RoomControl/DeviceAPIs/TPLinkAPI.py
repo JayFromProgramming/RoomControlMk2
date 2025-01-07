@@ -75,7 +75,7 @@ class TPLinkDevice(RoomObject, AbstractRGB):
             await self.device.update()
         except Exception as e:
             logging.error(f"Error refreshing TPLink device {self.device_name}: {e}")
-            logging.exception(e)
+            # logging.exception(e)
             self.device_state_cache = {
                 "on": False,
                 "brightness": 0,
@@ -114,7 +114,7 @@ class TPLinkDevice(RoomObject, AbstractRGB):
                         await self.device.set_state(command[1])
             except Exception as e:
                 logging.error(f"Error sending command to TPLink device {self.device_name}: {e}")
-                logging.exception(e)
+                # logging.exception(e)
 
     def name(self):
         return self.device_id
