@@ -122,6 +122,7 @@ class TPLinkDevice(RoomObject, AbstractRGB):
                         self.last_brightness_command = command[1]
                     case "set_white":
                         await self.device.set_brightness(command[1])
+                        self.last_brightness_command = command[1]
                     case "set_on":
                         await self.device.set_state(command[1])
             except Exception as e:
