@@ -68,6 +68,8 @@ class TPLinkDevice(RoomObject, AbstractRGB):
         self.device_command_queue = asyncio.Queue()
         self.device_state_cache = {}
 
+        self.last_brightness_command = -1
+
         room_controller.attach_object(self)
 
     async def refresh_info(self):
@@ -88,6 +90,15 @@ class TPLinkDevice(RoomObject, AbstractRGB):
             return
         on = self.device.is_on
         brightness = self.device.brightness / 100 * 255
+        # Because the kasa brightness is 0-100 and the RoomControl brightness is 0-255,
+        # we scale the brightness to 0-255 and then look for the last brightness command
+        # so we can return the exact commanded brightness if the device is still within the range
+        if self.last_brightness_command != -1:
+            # Check if the current brightness is within 5 of the last commanded brightness
+            if abs(brightness - self.last_brightness_command) < 5:
+                brightness = self.last_brightness_command
+            else:
+                self.last_brightness_command = -1
         rssi = self.device.rssi
         self.device_state_cache = {
             "on": on,
@@ -108,6 +119,7 @@ class TPLinkDevice(RoomObject, AbstractRGB):
                         await self.device.set_color(command[1])
                     case "set_brightness":
                         await self.device.set_brightness(command[1])
+                        self.last_brightness_command = command[1]
                     case "set_white":
                         await self.device.set_brightness(command[1])
                     case "set_on":
