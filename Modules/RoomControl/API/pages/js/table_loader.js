@@ -15,10 +15,6 @@ var first_load = true;
 var device_table_objects = {};
 var footer;
 
-// function button(actionLink, displayName) {
-//     return '<a href="' + actionLink + '" class="button">' + displayName + '</a>';
-// }
-
 function getName(id) {
     // Use localStorage to cache device names
     let name = id;
@@ -294,17 +290,17 @@ function update_table(data) {
             let device_object = device_table.find("#" + device);
             if (device_object.length === 0) {
                 if (devices[device]["type"] !== last_type) {
-                last_type = devices[device]["type"];
-                let type_row = document.createElement("tr");
-                let type_cell = document.createElement("td");
-                type_cell.colSpan = 4;
-                type_cell.innerHTML = last_type;
-                type_cell.style.textAlign = "center";
-                // Set the font size to 0.5em
-                type_cell.style.fontSize = "0.5em";
-                type_row.appendChild(type_cell);
-                device_table.append(type_row);
-            }
+                    last_type = devices[device]["type"];
+                    let type_row = document.createElement("tr");
+                    let type_cell = document.createElement("td");
+                    type_cell.colSpan = 4;
+                    type_cell.innerHTML = last_type;
+                    type_cell.style.textAlign = "center";
+                    // Set the font size to 0.5em
+                    type_cell.style.fontSize = "0.5em";
+                    type_row.appendChild(type_cell);
+                    device_table.append(type_row);
+                }
                 // Create a new device object
                 let device_object = new DeviceObject(device, devices[device]);
                 // Add the device to the table

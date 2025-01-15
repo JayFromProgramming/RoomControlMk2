@@ -29,31 +29,15 @@ class EnvironmentControllerHost(RoomModule):
             self.room_controller.attach_object(self.enviv_controllers[controller['name']])
 
     def database_init(self):
-        # cursor = self.database.cursor()
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS
-        #                 enviv_controllers (
-        #                 name text,
-        #                 current_set_point integer,
-        #                 source_name text,
-        #                 enabled boolean
-        #                 )""")
         self.database.create_table("enviv_controllers", {"name": "TEXT", "current_set_point": "INTEGER",
                                                          "source_name": "TEXT", "enabled": "BOOLEAN"},
                                    primary_keys=["name"])
-        # cursor.execute("""CREATE TABLE IF NOT EXISTS
-        #                 enviv_control_devices (
-        #                 device_id text,
-        #                 lower_delta float,
-        #                 upper_delta float,
-        #                 action_direction integer,
-        #                 control_source text
-        #                 )""")
         self.database.create_table("enviv_control_devices", {"device_id": "TEXT", "lower_delta": "FLOAT",
                                                              "upper_delta": "FLOAT", "action_direction": "INTEGER",
                                                              "control_source": "TEXT"},
                                    primary_keys=["device_id", "control_source"])
-        # cursor.close()
-        # self.database.commit()
+        self.database.update_table("enviv_controllers", 1,
+                                   ["ALTER TABLE enviv_controllers ADD COLUMN directionality INTEGER DEFAULT 0"])
 
     def refresh_all(self):
         pass
@@ -93,7 +77,7 @@ class EnvironmentController(RoomObject):
         self.sub_source = self.controller_entry['source_name'].split(";")[1]
         self.enabled = (False if self.controller_entry['enabled'] == 0 else True)
 
-        self._directionality = self.DirectionEnums.BOTH
+        self._directionality = self.controller_entry['directionality']
 
         self.devices = []
         table = self.database.get_table("enviv_control_devices")
@@ -287,6 +271,7 @@ class EnvironmentController(RoomObject):
     def directionality(self, value):
         if value in [self.DirectionEnums.INCREASE, self.DirectionEnums.DECREASE, self.DirectionEnums.BOTH]:
             self._directionality = value
+            self.controller_entry.set(directionality=value)
 
 
 class ControlledDevice:
