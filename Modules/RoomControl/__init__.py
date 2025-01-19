@@ -121,7 +121,7 @@ class RoomController:
             if table == "sqlite_sequence":
                 target.execute(f"INSERT INTO {table} SELECT * FROM disk.{table}")
             else:
-                target.execute(f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM source.{table}")
+                target.execute(f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM disk.{table}")
         target.commit()
 
     @background
