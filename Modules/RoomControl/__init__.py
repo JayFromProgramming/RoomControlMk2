@@ -39,16 +39,19 @@ for module in os.listdir("Modules/RoomControl"):
 
 logging.info("Imports complete")
 
+
 def get_local_ip():
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     raise NotImplementedError
 
+
 def database_backup(status, remaining, total):
+    percent = (total - remaining) / total * 100
     if remaining == 0:
         logging.info(f"Database backup complete, {total} pages backed up")
     else:
-        logging.info(f"Database backup {status}, {remaining} pages remaining")
+        logging.info(f"Database backup {status}, {remaining} pages remaining, {percent:.2f}% complete")
 
 
 class ObjectPointer:
@@ -70,7 +73,6 @@ class ObjectPointer:
 
 
 class RoomController:
-
     # Debugging variables to exclude or only load certain modules on the test server
     exclude_modules = []
     only_modules = ["LIFXAPI", "MagicHome", "VoiceMonkeyAPI", "GoveeAPI", "TPLinkAPI", "EnvironmentControllerHost"]
@@ -110,7 +112,7 @@ class RoomController:
         try:
             logging.info(f"Creating backup database at {db_path}.bak")
             backup_database = sqlite3.connect(f"{db_path}.bak")
-            self.database.backup(target=backup_database, pages=100,
+            self.database.backup(target=backup_database, pages=1000,
                                  progress=database_backup)
         except sqlite3.OperationalError:
             logging.warning("Backup database is already in use, skipping backup")
