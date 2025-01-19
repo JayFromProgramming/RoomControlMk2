@@ -79,17 +79,17 @@ class RoomController:
 
     def __init__(self, db_path: str = "room_data.db"):
         logging.info("Starting RoomController")
-        self.database = Database(":memory:")
-        self.disk_database = sqlite3.connect(db_path)
+        self.database = Database(db_path)
+        # self.disk_database = sqlite3.connect(db_path)
         try:
             logging.info(f"Creating backup database at {db_path}.bak")
             self.backup_database = sqlite3.connect(f"{db_path}.bak")
-            self.disk_database.backup(target=self.backup_database, progress=database_backup)
+            # self.disk_database.backup(target=self.backup_database, progress=database_backup)
         except sqlite3.OperationalError:
             logging.warning("Backup database is already in use, skipping backup")
-        self.load_database(self.database, db_path)
+        # self.load_database(self.database, db_path)
         self.init_database()
-        self.background_database_sync()
+        # self.background_database_sync()
 
         # Find all subclasses of RoomModule and create an instance of them
         self.controllers = []
