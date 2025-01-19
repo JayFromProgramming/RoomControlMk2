@@ -37,11 +37,12 @@ for module in os.listdir("Modules/RoomControl"):
                 logging.info(f"Importing {module_name} from {module}")
                 __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
 
+logging.info("Imports complete")
+
 def get_local_ip():
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     raise NotImplementedError
-
 
 def database_backup(status, remaining, total):
     if remaining == 0:
@@ -77,13 +78,18 @@ class RoomController:
     required_modules = ["NetAPI", "SceneController"]
 
     def __init__(self, db_path: str = "room_data.db"):
-        self.database = Database(db_path)
+        logging.info("Starting RoomController")
+        self.database = Database(":memory:")
+        self.disk_database = sqlite3.connect(db_path)
         try:
+            logging.info(f"Creating backup database at {db_path}.bak")
             self.backup_database = sqlite3.connect(f"{db_path}.bak")
-            self.database.backup(target=self.backup_database, progress=database_backup)
+            self.disk_database.backup(target=self.backup_database, progress=database_backup)
         except sqlite3.OperationalError:
             logging.warning("Backup database is already in use, skipping backup")
+        self.load_database(self.database, db_path)
         self.init_database()
+        self.background_database_sync()
 
         # Find all subclasses of RoomModule and create an instance of them
         self.controllers = []
@@ -103,6 +109,40 @@ class RoomController:
             except Exception as e:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)
+
+    def load_database(self, target, source: str):
+        logging.info(f"Loading database from {source}")
+        target_cursor = target.cursor()
+        target_cursor.execute("ATTACH DATABASE ? AS disk", (source,))
+        target_cursor.execute("SELECT name FROM disk.sqlite_master WHERE type='table'")
+        tables = target_cursor.fetchall()
+        for table in tables:
+            table = table[0]
+            if table == "sqlite_sequence":
+                target.execute(f"INSERT INTO {table} SELECT * FROM disk.{table}")
+            else:
+                target.execute(f"CREATE TABLE IF NOT EXISTS {table} AS SELECT * FROM source.{table}")
+        target.commit()
+
+    @background
+    def background_database_sync(self):
+        """
+        Copy the memory database to the disk database every minute
+        :return:
+        """
+        logging.info("Starting background database sync")
+        time.sleep(60)
+        while True:
+            try:
+                logging.info("Syncing database")
+                self.database.backup(target=self.disk_database, progress=database_backup)
+            except Exception as e:
+                logging.error(f"Error syncing database: {e}")
+                logging.exception(e)
+            else:
+                logging.info("Database sync complete")
+            finally:
+                time.sleep(60)
 
     def init_database(self):
         # cursor = self.database.cursor()
