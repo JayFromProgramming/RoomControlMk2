@@ -51,6 +51,8 @@ last_backup_percent = 0
 
 def database_backup(status, remaining, total):
     global last_backup_percent
+    if total == 0:
+        return
     percent = (total - remaining) / total * 100
     if percent - last_backup_percent > 10:
         last_backup_percent = percent
