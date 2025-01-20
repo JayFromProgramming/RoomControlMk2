@@ -89,7 +89,7 @@ class RoomController:
     def __init__(self, db_path: str = "room_data.db"):
         logging.info("Starting RoomController")
         self.database = Database(db_path)
-        self.backup_database(db_path)
+        # self.backup_database(db_path)
         # Enable WAL mode
         self.database.execute("PRAGMA journal_mode=WAL")
         # self.load_database(self.database, db_path)
