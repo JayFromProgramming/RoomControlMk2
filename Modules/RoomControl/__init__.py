@@ -46,12 +46,17 @@ def get_local_ip():
     raise NotImplementedError
 
 
+last_backup_percent = 0
+
+
 def database_backup(status, remaining, total):
+    global last_backup_percent
     percent = (total - remaining) / total * 100
+    if percent - last_backup_percent > 10:
+        last_backup_percent = percent
+        logging.info(f"Database backup {status}, {remaining} pages remaining, {percent:.2f}% complete")
     if remaining == 0:
         logging.info(f"Database backup complete, {total} pages backed up")
-    else:
-        logging.info(f"Database backup {status}, {remaining} pages remaining, {percent:.2f}% complete")
 
 
 class ObjectPointer:
@@ -112,6 +117,7 @@ class RoomController:
         try:
             logging.info(f"Creating backup database at {db_path}.bak")
             backup_database = sqlite3.connect(f"{db_path}.bak")
+            last_backup_percent = 0
             self.database.backup(target=backup_database, pages=1000,
                                  progress=database_backup)
         except sqlite3.OperationalError:
