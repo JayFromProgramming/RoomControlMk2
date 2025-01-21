@@ -1,4 +1,6 @@
 import json
+import multiprocessing
+import re
 import socket
 import subprocess
 import sys
@@ -87,6 +89,13 @@ class RoomController:
     required_modules = ["NetAPI", "SceneController"]
 
     def __init__(self, db_path: str = "room_data.db"):
+        self.is_not_main = False
+        # Validate that this is the main process, if not abort
+        logging.info(f"Current process: {multiprocessing.current_process().name}")
+        if multiprocessing.current_process().name != "MainProcess":
+            logging.info("Not the main process, aborting")
+            self.is_not_main = True
+            return
         logging.info("Starting RoomController")
         self.database = Database(db_path)
         # self.backup_database(db_path)
@@ -170,7 +179,8 @@ class RoomController:
         # self.database.commit()
 
     def refresh(self):
-        # logging.info("Refreshing devices")
+        if self.is_not_main:
+            return
         for controller in self.controllers:
             if hasattr(controller, "refresh_all"):
                 controller.refresh_all()
