@@ -51,6 +51,7 @@ class BlueStalkerMk3Object(RoomObject):
         for target in targets.get_all():
             self.target_addresses.append(target["address"])
             self.targets.update({target["uuid"]: {"address": target["address"], "name": target["name"]}})
+        self.set_value("targets", self.targets)
 
     def get_target_by_address(self, address):
         for target in self.targets:
