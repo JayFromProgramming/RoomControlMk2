@@ -82,7 +82,7 @@ class ObjectPointer:
 class RoomController:
     # Debugging variables to exclude or only load certain modules on the test server
     exclude_modules = []
-    only_modules = ["LIFXAPI", "MagicHome", "VoiceMonkeyAPI", "GoveeAPI", "TPLinkAPI", "EnvironmentControllerHost"]
+    only_modules = ["BlueStalkerMk3", "OccupancyDetector"]
 
     required_modules = ["NetAPI", "SceneController"]
 
@@ -110,6 +110,8 @@ class RoomController:
                     continue
             try:
                 room_module(self)
+            except RuntimeError as e:
+                logging.warning(f"Likely multiprocessing error, this can be safely ignored: {e}")
             except Exception as e:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)

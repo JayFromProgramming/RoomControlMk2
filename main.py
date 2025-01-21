@@ -1,3 +1,5 @@
+import multiprocessing
+
 from loguru import logger as logging
 import sys
 import os
@@ -77,5 +79,6 @@ async def webserver_runner():
         await asyncio.sleep(9999)
 
 
-# room_controller.web_server.run()
-asyncio.run(webserver_runner())
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    asyncio.run(webserver_runner())

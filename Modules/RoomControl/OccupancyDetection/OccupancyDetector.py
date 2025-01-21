@@ -37,8 +37,9 @@ class OccupancyDetector(RoomModule):
             enabled_sources[name] = True if enabled == 1 else False
 
         self.blue_stalkers = []
-        self.blue_stalkers.append(self.room_controller.get_object("BlueStalker"))
-        self.blue_stalkers.append(self.room_controller.get_object("BlueStalker2"))
+        # self.blue_stalkers.append(self.room_controller.get_object("BlueStalker"))
+        self.blue_stalkers.append(self.room_controller.get_object("BlueStalkerMk2"))
+        self.blue_stalkers.append(self.room_controller.get_object("BlueStalkerMk3"))
         self.motion_detector = self.room_controller.get_object("MotionDetector")
         self.motion_detector.attach_event_callback(self.motion_detected, "motion_detected")
 
