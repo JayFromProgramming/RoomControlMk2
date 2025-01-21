@@ -128,6 +128,7 @@ class OccupancyDetector(RoomModule):
                     return source.get_value("targets")[device]["name"]
             except Exception as e:
                 logging.error(f"Error getting device name: {e}")
+                logging.exception(e)
         return "Unknown"
 
     def get_all_devices(self):

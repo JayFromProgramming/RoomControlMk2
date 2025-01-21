@@ -43,6 +43,7 @@ class BlueStalkerMk3Object(RoomObject):
         self.data_reader()
         self.set_value("occupants", self.occupants)
         self.set_value("targets", self.targets)
+        self.set_value("occupied", None)
         room_controller.attach_object(self)
 
     def get_targets_from_db(self):
@@ -68,6 +69,10 @@ class BlueStalkerMk3Object(RoomObject):
         elif data["missed_scans"] > 3:
             self.occupants.pop(target, None)
         self.set_value("occupants", self.occupants)
+        if len(self.occupants) > 0:
+            self.set_value("occupied", True)
+        else:
+            self.set_value("occupied", False)
 
     @background
     def data_reader(self):
