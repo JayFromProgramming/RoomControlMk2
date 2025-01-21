@@ -235,7 +235,7 @@ class LightController(RoomObject):
             try:
                 # Update current state in the database
                 self.database.execute(f"UPDATE light_controllers SET current_state = {self.current_state} "
-                                      f"WHERE name = '{self.controller_name}'", commit=True)
+                                      f"WHERE name = '{self.controller_name}'")
             except Exception as e:
                 logging.error(f"LightController: {self.controller_name} failed to update database due to {e}")
 
