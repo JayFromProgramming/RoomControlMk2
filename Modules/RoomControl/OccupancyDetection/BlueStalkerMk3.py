@@ -66,7 +66,7 @@ class BlueStalkerMk3Object(RoomObject):
             return
         if data["found"]:
             self.occupants.update({target: self.targets[target]})
-        elif data["missed_scans"] > 3:
+        elif data["missed_scans"] > 15:
             self.occupants.pop(target, None)
         self.set_value("occupants", self.occupants)
         if len(self.occupants) > 0:
