@@ -123,7 +123,7 @@ class OccupancyDetector(RoomModule):
 
     def get_name(self, device):
         for source in self.blue_stalkers:
-            if source is None:
+            if source is None or source.get_value("targets") is None:
                 continue
             try:
                 if device in source.get_value("targets").keys():
