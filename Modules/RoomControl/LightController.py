@@ -232,12 +232,12 @@ class LightController(RoomObject):
         finally:
             self.changing_state = False
             self.attempts = 0
-            try:
-                # Update current state in the database
-                self.database.execute(f"UPDATE light_controllers SET current_state = {self.current_state} "
-                                      f"WHERE name = '{self.controller_name}'")
-            except Exception as e:
-                logging.error(f"LightController: {self.controller_name} failed to update database due to {e}")
+            # try:
+            #     # Update current state in the database
+            #     self.database.execute(f"UPDATE light_controllers SET current_state = {self.current_state} "
+            #                           f"WHERE name = '{self.controller_name}'")
+            # except Exception as e:
+            #     logging.error(f"LightController: {self.controller_name} failed to update database due to {e}")
 
     def get_state(self):
         return {
