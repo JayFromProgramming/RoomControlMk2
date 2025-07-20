@@ -670,6 +670,8 @@ class NetAPI(RoomModule):
         return web.Response(text=msg.__str__())
 
     async def handle_radar_list(self, request):
+        if self.room_controller.get_module("WeatherRelay") is None:
+            return web.Response(text="Weather module not found", status=503)
         data = self.room_controller.get_module("WeatherRelay").get_available_radar()
         msg = APIMessageTX(weather_radar_list=data)
         return web.Response(text=msg.__str__())

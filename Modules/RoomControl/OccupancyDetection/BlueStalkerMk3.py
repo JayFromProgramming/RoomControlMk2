@@ -1,5 +1,6 @@
 import time
 
+import bleak
 from loguru import logger as logging
 from Modules.RoomControl.Decorators import background
 from Modules.RoomModule import RoomModule
@@ -123,6 +124,10 @@ class BlueStalkerMk3Process(multiprocessing.Process):
                 else:
                     self.target_last_seen[target] += 1
                     self.ipc_queue.put({"address": target, "found": False, "missed_scans": self.target_last_seen[target]})
+            except bleak.BleakError as e:
+                if str(e) == "Failed to start scanner. Is Bluetooth turned on?":
+                    logging.error("Controller does not support Bluetooth, aborting bluestalker process")
+                    self.running = False
             except Exception as e:
                 logging.error(f"Error scanning for device: {e}")
                 logging.exception(e)
@@ -130,5 +135,5 @@ class BlueStalkerMk3Process(multiprocessing.Process):
     async def main(self):
         logging.info("BlueStalkerMk3 async main started")
         while self.running:
-            await self.scan()
+            # await self.scan()
             await asyncio.sleep(5)

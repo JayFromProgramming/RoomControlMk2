@@ -21,6 +21,6 @@ ConcurrentDatabase==0.0.10
 pyowm~=3.3.0
 lifxlan~=1.2.8
 geocoder~=1.38.1
-openmeteopy~=0.1.0
 bleak~=0.22.2
 python-kasa==0.7.7
+open-meteo~=0.2.1
