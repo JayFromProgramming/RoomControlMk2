@@ -6,12 +6,18 @@ from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 import multiprocessing
 import asyncio
-
+bluetooth_avail = True
 try:
     from bleak import BleakScanner, BleakClient
 except ImportError:
     logging.error("Failed to import bleak, please run 'pip install bleak' to install it")
     BleakScanner = None
+
+try:
+    import bluetooth
+except ImportError:
+    logging.error("Bluetooth not available")
+    bluetooth_avail = False
 
 multiprocessing.set_start_method("spawn", force=True)
 
@@ -23,6 +29,9 @@ class BlueStalkerMk3(RoomModule):
         super().__init__(room_controller)
         if BleakScanner is None:
             logging.error("Aborting BluestalkerMk3 module initialization, bleak is not installed")
+            return
+        if not bluetooth_avail:
+            logging.error("Aborting BluestalkerMk3 module initialization, bluetooth is not available")
             return
         self.room_controller = room_controller
         self.blue_stalker = BlueStalkerMk3Object(self.room_controller)
@@ -106,6 +115,7 @@ class BlueStalkerMk3Process(multiprocessing.Process):
         self.scanner = BleakScanner()
         self.targets = targets
         self.target_last_seen = {}
+        self.scan_failures = 0
         for target in self.targets:
             self.target_last_seen[target] = 0
         self.running = True
@@ -125,10 +135,17 @@ class BlueStalkerMk3Process(multiprocessing.Process):
                     self.ipc_queue.put({"address": target, "found": False, "missed_scans": self.target_last_seen[target]})
             except Exception as e:
                 logging.error(f"Error scanning for device: {e}")
-                logging.exception(e)
+                if self.scan_failures == 0:
+                    logging.exception(e)
+                self.scan_failures += 1
+            else:
+                self.scan_failures = 0
 
     async def main(self):
         logging.info("BlueStalkerMk3 async main started")
         while self.running:
+            if self.scan_failures > 5:
+                logging.error("Too many scan failures, halting scanning")
+                await asyncio.sleep(99999)
             await self.scan()
             await asyncio.sleep(5)
