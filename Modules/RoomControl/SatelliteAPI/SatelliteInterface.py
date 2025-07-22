@@ -1,10 +1,12 @@
 import json
 
+from urllib3 import connection_from_url
+
 from Modules.RoomControl.SatelliteAPI.SatelliteDevice import SatelliteDevice
+from Modules.RoomControl.SatelliteAPI.SatelliteHandler import SatelliteHandler
 from Modules.RoomModule import RoomModule
 import netifaces
-from aiohttp import web, WSCloseCode
-from aiohttp import request
+import asyncio
 from loguru import logger as logging
 
 def get_host_names():
@@ -24,63 +26,62 @@ def get_host_names():
     return interfaces
 
 class SatelliteInterface(RoomModule):
-    is_webserver = True
+    is_webserver = False
+    requires_async = True
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
         logging.info("Initializing Satellite Interface")
         self.room_controller = room_controller
+        self.server = None
+        self.server_address = get_host_names()
+        self.server_port = 47670
+        self.satellite_handlers = []
 
-        self.app = web.Application()
-        # Note: Uplink is from the perspective of the satellite to the server (e.g. sending data, events, etc.)
-        # Downlink is from the perspective of the server to the satellite (e.g. sending commands, updates, etc.)
-        self.app.add_routes([
-            web.get("/sat_datalink", self.datalink_connection_handler)
-        ])
-        # Satellites will host their own webserver to receive commands from the server they will have these routes:
-        # POST - /downlink - To receive commands from the server
-        # GET  - /uplink   - For the server to poll the satellite for data
-        # POST - /event    - For the server to send events to the satellite
+    async def start(self):
+        self.server = await asyncio.start_server(
+            self.datalink_connection_handler,
+            host=self.server_address,
+            port=self.server_port
+        )
+        logging.info(f"Starting satellite interface server on {self.server_address}:{self.server_port}")
+        async with self.server:
+            await self.server.serve_forever()
 
-        self.runner = web.AppRunner(self.app, access_log=None)
-        self.webserver_address = get_host_names()
-        self.webserver_port = 47670
-
-        self.satellite_devices = []
-        logging.info(f"Satellite Interface initialized with webserver on {self.webserver_address}:{self.webserver_port}")
-
-
-    async def datalink_connection_handler(self, inbound_request):
+    async def datalink_connection_handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         """
-        Handle setting up the persistent websocket connection the satellite device
+        Handle setting up the persistent socket connection to the satellite device.
         """
-        logging.info(f"Received connection request from satellite: {inbound_request.remote}")
-        ws = web.WebSocketResponse()
-        await ws.prepare(inbound_request)
-        logging.info(f"Satellite connected: {inbound_request.remote}")
-        # Receive the first message from the satellite to get the device information
-        msg = await ws.receive()
-        if msg.type == web.WSMsgType.TEXT:
-            msg_data = json.loads(msg.data)
+        try:
+            logging.info("New connection request received from satellite device")
+            incoming_connection = writer.get_extra_info('peername')
+            logging.info(f"Connection request from {incoming_connection}")
+            # Get the amount of data in the reader buffer
+            data = await reader.readuntil(b'\0')  # Read until null byte, excluding it
+            data = data[:-1]  # Remove the null byte
+            print(f"Data received from satellite: {data}")
+            msg_data = json.loads(data.decode('utf-8').strip())
             msg_type = msg_data.get("msg_type", "unknown")
-            if msg_type != "connection_info":
+            if msg_type != "device_info":
                 logging.error(f"Unexpected message type from satellite: {msg_type}")
-                await ws.close(code=WSCloseCode.PROTOCOL_ERROR, message=b"Unexpected message type")
-                return ws
-            logging.info(f"Received initial message from satellite: {msg.data}")
-            # Look through the list of satellite devices to see if this one already exists and if so replace it's connection handler
-            existing_device = next((device for device in self.satellite_devices if device.device_id == msg_data["device_id"]), None)
-            if existing_device:
-                logging.info(f"Satellite {msg_data['device_id']} reconnected")
-                await existing_device.new_connection(ws)
-                return ws
-            # Create a new SatelliteDevice instance
-            satellite_device = SatelliteDevice(self.room_controller, msg_data)
-            await satellite_device.begin_handler(ws)
-            self.satellite_devices.append(satellite_device)
-            logging.info(f"New satellite device connected: {satellite_device.device_id}")
-        else:
-            logging.error("Failed to receive initial message from satellite")
-            await ws.close(code=WSCloseCode.PROTOCOL_ERROR, message=b"Failed to receive initial message from satellite")
-        return ws
 
+            logging.info(f"Received initial message from satellite: {msg_data}")
+            # Look through the list of satellite devices to see if this one already exists and if so replace it's connection handler
+            existing_device = next((device for device in self.satellite_handlers if device.satellite_id == msg_data["name"]), None)
+            if existing_device:
+                logging.info(f"Satellite {msg_data['name']} reconnected")
+                await existing_device.new_connection(reader, writer)
+                return
+            # Create a new SatelliteDevice instance
+            satellite_device = SatelliteHandler(self.room_controller, msg_data)
+            await satellite_device.begin_handler(reader, writer)
+            self.satellite_handlers.append(satellite_device)
+            logging.info(f"New satellite device connected: {satellite_device.satellite_id}")
+        except Exception as e:
+            logging.error(f"Error handling satellite connection: {e}")
+            logging.exception(e)
+            if writer:
+                logging.info("Closing writer due to error")
+                writer.close()
+                await writer.wait_closed()
+                logging.info("Writer closed")

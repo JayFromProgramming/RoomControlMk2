@@ -21,8 +21,8 @@ class SatelliteDevice(RoomObject):
         """
         super().__init__(device_id, device_type)
         self.satellite_handler = satellite_handler
-        self.device_id = device_id
-
+        self.device_id = f"{satellite_handler.satellite_id}.{device_id}"
+        asyncio.create_task(self.heartbeat())
         self.satellite_handler.room_controller.attach_object(self)
 
     def get_state(self):
@@ -58,7 +58,7 @@ class SatelliteDevice(RoomObject):
         logging.info(f"Starting heartbeat for {self.object_name}")
         while True:
             if self.satellite_handler.online:
-                # logging.info(f"Sending heartbeat to {self.object_name}")
+                logging.info(f"Sending heartbeat to {self.object_name}")
                 self.emit_event("heartbeat")
             await asyncio.sleep(60)
 

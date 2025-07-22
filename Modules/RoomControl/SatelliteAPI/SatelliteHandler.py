@@ -1,4 +1,5 @@
 import json
+import asyncio
 from typing import Optional
 from loguru import logger as logging
 from Modules.RoomControl.SatelliteAPI.SatelliteDevice import SatelliteDevice
@@ -19,44 +20,38 @@ class SatelliteHandler:
         :param room_controller: The room controller instance managing this device.
         :param device_id: A unique identifier for the satellite device.
         """
-        satellite_id = connect_info.get("device_id", "unknown_device")
+        satellite_id = connect_info.get("name", "unknown_satellite")
         self.room_controller = room_controller
         self.satellite_id = satellite_id
         self.connection_handler: Optional[SatelliteLinkHandler] = None
 
         self.sub_devices = [] # List of sub-devices managed by this satellite handler
-        for device in connect_info.get("sub_devices", []):
-            device_id = device.get("device_id", "unknown_satellite_device")
-            device_type = device.get("device_type", "unknown_device_type")
-            satellite_device = SatelliteDevice(self, device_id, device_type)
+        for device_name, device_type in connect_info.get("sub_devices", {}).items():
+            satellite_device = SatelliteDevice(self, device_name, device_type)
             self.sub_devices.append(satellite_device)
+            self.room_controller.attach_object(satellite_device)
 
-    async def begin_handler(self, websocket_connection):
+    async def begin_handler(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
         """
         Begin handling the connection to the satellite device.
         This method sets up the connection handler for the satellite device.
-
-        :param websocket_connection: The websocket connection to the satellite device.
         """
-        self.connection_handler = SatelliteLinkHandler(websocket_connection)
-        await self.connection_handler.begin_handler()
-        self.room_controller.attach_object(self)
+        self.connection_handler = SatelliteLinkHandler(socket_reader, socket_writer)
+        await self.connection_handler.begin_handler(downlink_handler=self.on_downlink)
         return self.connection_handler
 
-    async def new_connection(self, websocket_connection):
+    async def new_connection(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
         """
         Handle a new connection to the satellite device.
 
-        :param websocket_connection: The websocket connection to the satellite device.
         """
         if self.connection_handler is not None:
-            if self.connection_handler.connection_alive():
-                logging.warning(f"Satellite {self.satellite_id} already has an active connection.")
-                return self.connection_handler
+            logging.info(f"Closing existing connection for satellite {self.satellite_id}")
             await self.connection_handler.destroy()
-            self.connection_handler = SatelliteLinkHandler(websocket_connection)
-            await self.connection_handler.begin_handler()
-            return self.connection_handler
+        if socket_reader and socket_writer:
+            self.connection_handler = SatelliteLinkHandler(socket_reader, socket_writer)
+            await self.connection_handler.begin_handler(downlink_handler=self.on_downlink)
+            logging.info(f"New connection established with satellite {self.satellite_id}")
         return None
 
     def send_uplink(self, device: RoomObject, event_name: str, *args, **kwargs):
@@ -70,22 +65,29 @@ class SatelliteHandler:
         """
         if self.connection_handler and self.connection_handler.connection_alive():
             message = {
-                "device_id": device.object_id,
+                "sub_device_id": device.device_id,
                 "event_name": event_name,
                 "args": args,
                 "kwargs": kwargs
             }
             self.connection_handler.send_uplink(message)
 
-    def on_downlink(self, message):
+    async def on_downlink(self, message):
         """
         Handle a downlink message from the satellite device.
 
         :param message: The message received from the satellite device.
         """
         data = json.loads(message)
+        message_type = data.get("event", "unknown")
         devices = data.get("devices", {})
-
+        for device_id, device_data in devices.items():
+            # Find the corresponding sub-device
+            sub_device = next((d for d in self.sub_devices if d.device_id == device_id), None)
+            if sub_device:
+                logging.info(f"Updated state for {sub_device.object_name}: {device_data}")
+            else:
+                logging.warning(f"Received data for unknown device ID: {device_id}")
 
     def online(self):
         """
