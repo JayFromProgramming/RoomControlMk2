@@ -19,11 +19,21 @@ class SatelliteDevice(RoomObject):
         :param satellite_handler: The satellite handler instance managing communication with this device.
         :param device_id: A unique identifier for the satellite device.
         """
-        super().__init__(device_id, device_type)
-        self.satellite_handler = satellite_handler
         self.device_id = f"{satellite_handler.satellite_id}.{device_id}"
+        self.satellite_handler = satellite_handler
         asyncio.create_task(self.heartbeat())
+        super().__init__(self.device_id, device_type)
         self.satellite_handler.room_controller.attach_object(self)
+
+    def set_value(self, key, value):
+        """
+        Set a value for the satellite device and emit an event if the value has changed.
+        :param key: The key of the value to set.
+        :param value: The value to set.
+        """
+        if self._values.get(key, None) != value:
+            self.emit_event(f"on_{key}_update", value, dont_repeat=True)
+        self._values[key] = value
 
     def get_state(self):
         return self.get_values()
@@ -58,7 +68,7 @@ class SatelliteDevice(RoomObject):
         logging.info(f"Starting heartbeat for {self.object_name}")
         while True:
             if self.satellite_handler.online:
-                logging.info(f"Sending heartbeat to {self.object_name}")
+                # logging.info(f"Sending heartbeat to {self.object_name}")
                 self.emit_event("heartbeat")
             await asyncio.sleep(60)
 

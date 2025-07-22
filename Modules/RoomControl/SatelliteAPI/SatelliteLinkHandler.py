@@ -23,7 +23,7 @@ class SatelliteLinkHandler:
         self.downlink_handler = None
         self.closed = False
 
-    async def begin_handler(self, downlink_handler=None):
+    async def begin_handler(self, downlink_handler):
         """
         Begin handling the connection. This method should be called to start the connection handling process.
         """
@@ -39,41 +39,47 @@ class SatelliteLinkHandler:
         """
         Handle the connection to the satellite. This method should keep the connection alive and process messages.
         """
-        try:
-            while True:
+        self.socket_reader._limit = 1024
+        logging.info(f"Starting downlink handler for satellite connection [{self.socket_writer.get_extra_info('peername')}]")
+        while True:
+            try:
                 # Read data from the socket
-                data = await self.socket_reader.readuntil(b'\0')  # Read until null byte
+                data = await self.socket_reader.readuntil(b'\0')
                 data = data[:-1]  # Remove the null byte
                 if not data:
                     logging.info("Connection closed by satellite")
                     break
                 message = data.decode('utf-8').strip()
-                logging.debug(f"Received message from satellite: {message}")
+                logging.info(f"Received data from satellite: {data}")
                 # Process the message
                 if self.downlink_handler is not None:
                     await self.downlink_handler(message)
-        except asyncio.IncompleteReadError:
-            # Handle the case where the connection is closed unexpectedly
-            logging.warning("Connection closed unexpectedly by satellite")
-        except json.JSONDecodeError as e:
-            # Handle JSON decoding errors
-            logging.error(f"Failed to decode JSON message from satellite: {e}")
-            logging.exception(e)
-        except OSError as e:
-            # Handle connection reset errors
-            logging.warning(f"OSError: {e}")
-        except Exception as e:
-            # Handle exceptions, such as connection loss
-            logging.error(f"Connection error: {e}")
-            logging.exception(e)
-        except asyncio.CancelledError:
-            # Handle cancellation of the task
-            logging.info("Downlink handler task cancelled")
-            return
-        finally:
-            if self.closed:
+                else:
+                    logging.warning("No downlink handler set, cannot process message")
+            except asyncio.IncompleteReadError:
+                # Handle the case where the connection is closed unexpectedly
+                logging.warning("Buffer overflow or connection closed unexpectedly")
+            except json.JSONDecodeError as e:
+                # Handle JSON decoding errors
+                logging.error(f"Failed to decode JSON message from satellite: {e}")
+                logging.exception(e)
+            except OSError as e:
+                # Handle connection reset errors
+                logging.warning(f"OSError: {e}")
+                break
+            except Exception as e:
+                # Handle exceptions, such as connection loss
+                logging.error(f"Connection error: {e}")
+                logging.exception(e)
+                break
+            except asyncio.CancelledError:
+                # Handle cancellation of the task
+                logging.info("Downlink handler task cancelled")
                 return
-            await self.destroy()
+        if self.closed:
+            return
+        await self.destroy()
+
 
     async def handle_uplink(self):
         """
@@ -86,6 +92,10 @@ class SatelliteLinkHandler:
                 # Send the message to the satellite
                 terminated_message = json.dumps(message) + '\0'  # Add null byte to terminate the message
                 self.socket_writer.write(terminated_message.encode('utf-8'))
+                # Validate that the downlink task is still running
+                if self.downlink_task is None or self.downlink_task.done():
+                    logging.warning("Downlink task has failed, terminating connection")
+                    break
         except Exception as e:
             logging.error(f"Error sending message to satellite : {e}")
             logging.exception(e)

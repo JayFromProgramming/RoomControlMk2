@@ -18,7 +18,7 @@ class SatelliteHandler:
         Initialize the satellite device with the room controller and a unique device ID.
 
         :param room_controller: The room controller instance managing this device.
-        :param device_id: A unique identifier for the satellite device.
+        :param connect_info: A dictionary containing connection information for the satellite device.
         """
         satellite_id = connect_info.get("name", "unknown_satellite")
         self.room_controller = room_controller
@@ -29,7 +29,6 @@ class SatelliteHandler:
         for device_name, device_type in connect_info.get("sub_devices", {}).items():
             satellite_device = SatelliteDevice(self, device_name, device_type)
             self.sub_devices.append(satellite_device)
-            self.room_controller.attach_object(satellite_device)
 
     async def begin_handler(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
         """
@@ -37,7 +36,7 @@ class SatelliteHandler:
         This method sets up the connection handler for the satellite device.
         """
         self.connection_handler = SatelliteLinkHandler(socket_reader, socket_writer)
-        await self.connection_handler.begin_handler(downlink_handler=self.on_downlink)
+        await self.connection_handler.begin_handler(self.on_downlink)
         return self.connection_handler
 
     async def new_connection(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
@@ -50,7 +49,7 @@ class SatelliteHandler:
             await self.connection_handler.destroy()
         if socket_reader and socket_writer:
             self.connection_handler = SatelliteLinkHandler(socket_reader, socket_writer)
-            await self.connection_handler.begin_handler(downlink_handler=self.on_downlink)
+            await self.connection_handler.begin_handler(self.on_downlink)
             logging.info(f"New connection established with satellite {self.satellite_id}")
         return None
 
@@ -65,7 +64,7 @@ class SatelliteHandler:
         """
         if self.connection_handler and self.connection_handler.connection_alive():
             message = {
-                "sub_device_id": device.device_id,
+                "sub_device_id": device.device_id.split(".")[-1],  # Get the sub-device ID from the full device ID
                 "event_name": event_name,
                 "args": args,
                 "kwargs": kwargs
@@ -78,16 +77,49 @@ class SatelliteHandler:
 
         :param message: The message received from the satellite device.
         """
+        # Determine if the message is a downlink or an event
+        # This is indicated by the first byte of the message either being 'D' for downlink or 'E' for event
         data = json.loads(message)
-        message_type = data.get("event", "unknown")
-        devices = data.get("devices", {})
-        for device_id, device_data in devices.items():
+        msg_type = data.get("msg_type", "unknown")
+        if msg_type == "state_update":
+            await self.parse_downlink(data)
+        elif msg_type == "event":
+            await self.parse_event(data)
+        else:
+            logging.warning(f"Received unknown message type: {msg_type}")
+
+    async def parse_downlink(self, data):
+        try:
+            devices = data.get("objects", {})
+            for device_id, device_data in devices.items():
+                # Find the corresponding sub-device
+                sub_device = next((d for d in self.sub_devices if d.device_id.split(".")[-1] == device_id), None)
+                if sub_device:
+                    for key, value in device_data.items():
+                        sub_device.set_value(key, value)
+                else:
+                    logging.warning(f"Received data for unknown device ID: {device_id}")
+        except Exception as e:
+            logging.error(f"Error processing downlink message: {e}")
+            logging.exception(e)
+
+    async def parse_event(self, data):
+        try:
+            event_name = data.get("event_name", "unknown")
+            args = data.get("args", [])
+            kwargs = data.get("kwargs", {})
+            sub_device_id = data.get("sub_device_id", None)
+            logging.info(f"Received event {event_name} for sub-device {sub_device_id} with args: {args}, kwargs: {kwargs}")
+
             # Find the corresponding sub-device
-            sub_device = next((d for d in self.sub_devices if d.device_id == device_id), None)
+            sub_device = next((d for d in self.sub_devices if d.device_id.split(".")[-1] == sub_device_id), None)
             if sub_device:
-                logging.info(f"Updated state for {sub_device.object_name}: {device_data}")
+                sub_device.emit_event(event_name, *args, **kwargs)
             else:
-                logging.warning(f"Received data for unknown device ID: {device_id}")
+                logging.warning(f"Received event for unknown device ID: {sub_device_id}")
+        except Exception as e:
+            logging.error(f"Error processing event message: {e}")
+            logging.exception(e)
 
     def online(self):
         """
