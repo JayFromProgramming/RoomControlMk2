@@ -55,9 +55,10 @@ class SatelliteDevice(RoomObject):
         super().emit_event(event_name, *args, **kwargs)
 
     def get_health(self):
-        online = self.satellite_handler.online and self._health.get("online", False)
+        online = self.satellite_handler.online() and self._health.get("online", False)
         fault = self._health.get("fault", False)
-        reason = self._health.get("reason", "") if self.satellite_handler.online else "Satellite Host Offline"
+        reason = self._health.get("reason", "") if self.satellite_handler.online() else\
+            f"Satellite [{self.satellite_handler.satellite_id}] is offline"
         return {
             "online": online,
             "fault": fault,
@@ -67,7 +68,7 @@ class SatelliteDevice(RoomObject):
     async def heartbeat(self):
         logging.info(f"Starting heartbeat for {self.object_name}")
         while True:
-            if self.satellite_handler.online:
+            if self.satellite_handler.online():
                 # logging.info(f"Sending heartbeat to {self.object_name}")
                 self.emit_event("heartbeat")
             await asyncio.sleep(60)
@@ -78,7 +79,7 @@ class SatelliteDevice(RoomObject):
 
     @on.setter
     def on(self, state):
-        if not self.satellite_handler.online:
+        if not self.satellite_handler.online():
             logging.warning(f"Cannot set state of {self.object_name} because the satellite is offline")
             return
         if not isinstance(state, bool):

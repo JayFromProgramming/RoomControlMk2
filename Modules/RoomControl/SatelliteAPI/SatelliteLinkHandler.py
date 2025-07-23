@@ -39,7 +39,7 @@ class SatelliteLinkHandler:
         """
         Handle the connection to the satellite. This method should keep the connection alive and process messages.
         """
-        self.socket_reader._limit = 1024
+        self.socket_reader._limit = 4096
         logging.info(f"Starting downlink handler for satellite connection [{self.socket_writer.get_extra_info('peername')}]")
         while True:
             try:
@@ -50,7 +50,7 @@ class SatelliteLinkHandler:
                     logging.info("Connection closed by satellite")
                     break
                 message = data.decode('utf-8').strip()
-                logging.info(f"Received data from satellite: {data}")
+                # logging.info(f"Received data from satellite: {data}")
                 # Process the message
                 if self.downlink_handler is not None:
                     await self.downlink_handler(message)
@@ -74,7 +74,7 @@ class SatelliteLinkHandler:
                 break
             except asyncio.CancelledError:
                 # Handle cancellation of the task
-                logging.info("Downlink handler task cancelled")
+                logging.debug("Downlink handler task cancelled")
                 return
         if self.closed:
             return
@@ -143,7 +143,6 @@ class SatelliteLinkHandler:
             self.socket_reader.feed_eof()
         if self.socket_writer:
             self.socket_writer.close()
-            await self.socket_writer.wait_closed()
         self.socket_writer = None
         self.socket_reader = None
         logging.info("Satellite connection handler destroyed")

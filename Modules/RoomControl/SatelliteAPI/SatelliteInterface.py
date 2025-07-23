@@ -53,20 +53,15 @@ class SatelliteInterface(RoomModule):
         Handle setting up the persistent socket connection to the satellite device.
         """
         try:
-            logging.info("New connection request received from satellite device")
             incoming_connection = writer.get_extra_info('peername')
-            logging.info(f"Connection request from {incoming_connection}")
+            logging.info(f"Incoming connection from {incoming_connection[0]}:{incoming_connection[1]}")
             # Get the amount of data in the reader buffer
             data = await reader.readuntil(b'\0')  # Read until null byte, excluding it
             data = data[:-1]  # Remove the null byte
-            print(f"Data received from satellite: {data}")
             msg_data = json.loads(data.decode('utf-8').strip())
             msg_type = msg_data.get("msg_type", "unknown")
             if msg_type != "device_info":
                 logging.error(f"Unexpected message type from satellite: {msg_type}")
-
-            logging.info(f"Received initial message from satellite: {msg_data}")
-            # Look through the list of satellite devices to see if this one already exists and if so replace it's connection handler
             existing_device = next((device for device in self.satellite_handlers if device.satellite_id == msg_data["name"]), None)
             if existing_device:
                 logging.info(f"Satellite {msg_data['name']} reconnected")

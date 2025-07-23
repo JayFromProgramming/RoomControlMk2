@@ -45,12 +45,12 @@ class SatelliteHandler:
 
         """
         if self.connection_handler is not None:
-            logging.info(f"Closing existing connection for satellite {self.satellite_id}")
             await self.connection_handler.destroy()
         if socket_reader and socket_writer:
             self.connection_handler = SatelliteLinkHandler(socket_reader, socket_writer)
             await self.connection_handler.begin_handler(self.on_downlink)
-            logging.info(f"New connection established with satellite {self.satellite_id}")
+            return True
+        logging.error("Failed to create new connection handler: socket_reader or socket_writer is None")
         return None
 
     def send_uplink(self, device: RoomObject, event_name: str, *args, **kwargs):
@@ -95,8 +95,15 @@ class SatelliteHandler:
                 # Find the corresponding sub-device
                 sub_device = next((d for d in self.sub_devices if d.device_id.split(".")[-1] == device_id), None)
                 if sub_device:
+                    # logging.info(f"Updating sub-device {sub_device.device_id} with data: {device_data}")
                     for key, value in device_data.items():
-                        sub_device.set_value(key, value)
+                        if key == "state":
+                            for state_key, state_value in value.items():
+                                sub_device.set_value(state_key, state_value)
+                        elif key == "health":
+                            sub_device._health = value
+                        elif key == "actions":
+                            sub_device.supported_actions = value
                 else:
                     logging.warning(f"Received data for unknown device ID: {device_id}")
         except Exception as e:
