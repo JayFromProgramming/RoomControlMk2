@@ -1,4 +1,5 @@
 import asyncio
+import random
 from typing import Optional
 from loguru import logger as logging
 from Modules.RoomObject import RoomObject
@@ -71,7 +72,8 @@ class SatelliteDevice(RoomObject):
             if self.satellite_handler.online():
                 # logging.info(f"Sending heartbeat to {self.object_name}")
                 self.emit_event("heartbeat")
-            await asyncio.sleep(60)
+            variable_delay = 60 + random.randint(0, 30)  # Random delay between 60 and 90 seconds
+            await asyncio.sleep(variable_delay)
 
     @property
     def on(self):

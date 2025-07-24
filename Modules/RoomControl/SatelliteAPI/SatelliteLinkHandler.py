@@ -59,6 +59,7 @@ class SatelliteLinkHandler:
             except asyncio.IncompleteReadError:
                 # Handle the case where the connection is closed unexpectedly
                 logging.warning("Buffer overflow or connection closed unexpectedly")
+                break
             except json.JSONDecodeError as e:
                 # Handle JSON decoding errors
                 logging.error(f"Failed to decode JSON message from satellite: {e}")

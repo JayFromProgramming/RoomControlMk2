@@ -23,12 +23,18 @@ class SatelliteHandler:
         satellite_id = connect_info.get("name", "unknown_satellite")
         self.room_controller = room_controller
         self.satellite_id = satellite_id
+        self.satellite_uptime = 0
+        self.satellite_free_heap = 0
+        self.satellite_mcu_temp = 0
+        self.satellite_firmware_version = connect_info.get("version", "unknown")
+        self.satellite_firmware_branch = connect_info.get("branch", "unknown")
         self.connection_handler: Optional[SatelliteLinkHandler] = None
 
         self.sub_devices = [] # List of sub-devices managed by this satellite handler
         for device_name, device_type in connect_info.get("sub_devices", {}).items():
             satellite_device = SatelliteDevice(self, device_name, device_type)
             self.sub_devices.append(satellite_device)
+        logging.info(f"Initialized satellite handler for {self.satellite_id} with {len(self.sub_devices)} sub-devices running version {self.satellite_firmware_version} [{self.satellite_firmware_branch}]")
 
     async def begin_handler(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
         """
@@ -106,6 +112,10 @@ class SatelliteHandler:
                             sub_device.supported_actions = value
                 else:
                     logging.warning(f"Received data for unknown device ID: {device_id}")
+            # Update satellite handler state
+            self.satellite_uptime = data.get("uptime", 0)
+            self.satellite_free_heap = data.get("free_heap", 0)
+            self.satellite_mcu_temp = data.get("mcu_temp", 0)
         except Exception as e:
             logging.error(f"Error processing downlink message: {e}")
             logging.exception(e)
