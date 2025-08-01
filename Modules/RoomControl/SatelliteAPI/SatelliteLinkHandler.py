@@ -11,6 +11,38 @@ class SatelliteLinkHandler:
     Handles the connection to the satellite API.
     """
 
+    NULL_TERM_ESCAPE  = 0x08  # Escape character for null termination in uplink messages
+    NULL_TERM_REPLACE = 0x01  # Replacement character for null termination in uplink messages
+    NULL_TERM_ESCAPE_REPLACE = 0x02  # Replacement character for escaped null termination in uplink messages
+
+    def remove_null_bytes(self, message: bytes) -> bytes:
+        """
+        Remove null termination from the message.
+        This method replaces the null termination character a different character to prevent premature termination
+
+        :param message: The message to process.
+        :return: The processed message without any null bytes.
+        """
+        if not message:
+            return message
+        filtered_message = bytearray()
+        for byte in message:
+            if byte == 0x00:
+                # Replace the escape character with the replacement character
+                filtered_message.append(self.NULL_TERM_ESCAPE)
+                filtered_message.append(self.NULL_TERM_REPLACE)
+            elif byte == self.NULL_TERM_ESCAPE:
+                # Replace the escaped null termination character with the replacement character
+                filtered_message.append(self.NULL_TERM_ESCAPE)
+                filtered_message.append(self.NULL_TERM_ESCAPE_REPLACE)
+            else:
+                filtered_message.append(byte)
+        # Validate that the message does contain any null bytes
+        if b'\0' in filtered_message:
+            logging.warning("Message contains null bytes, which should not happen")
+        return filtered_message
+
+
     def __init__(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
         """
         Initialize the connection handler with the websocket connection and room controller.
@@ -20,6 +52,7 @@ class SatelliteLinkHandler:
         self.uplink_task: Optional[asyncio.Task] = None
         self.downlink_task: Optional[asyncio.Task] = None
         self.uplink_queue: asyncio.Queue = asyncio.Queue()
+        self.uplink_lock: asyncio.Lock = asyncio.Lock()
         self.downlink_handler = None
         self.closed = False
 
@@ -81,7 +114,6 @@ class SatelliteLinkHandler:
             return
         await self.destroy()
 
-
     async def handle_uplink(self):
         """
         Handle asynchronous uplink communication with the satellite by sending messages that are in the uplink queue.
@@ -89,10 +121,13 @@ class SatelliteLinkHandler:
         try:
             while True:
                 message = await self.uplink_queue.get()
+                await self.uplink_lock.acquire()
                 logging.debug(f"Sending message to satellite: {message}")
                 # Send the message to the satellite
-                terminated_message = json.dumps(message) + '\0'  # Add null byte to terminate the message
+                terminated_message = '\b' + json.dumps(message) + '\0'  # Add null byte to terminate the message
                 self.socket_writer.write(terminated_message.encode('utf-8'))
+                await self.socket_writer.drain()  # Ensure the message is sent
+                self.uplink_lock.release()
                 # Validate that the downlink task is still running
                 if self.downlink_task is None or self.downlink_task.done():
                     logging.warning("Downlink task has failed, terminating connection")
@@ -109,6 +144,41 @@ class SatelliteLinkHandler:
                 return
             await self.destroy()
             self.uplink_queue.task_done()
+
+    async def uplink_new_firmware(self, firmware_file):
+        """
+        Send a new firmware file to the satellite for updating.
+
+        :param firmware_file: The path to the firmware file to send.
+        """
+        try:
+            with open(firmware_file, 'rb') as f:
+                firmware_data = f.read()
+            firmware_len = len(firmware_data)
+            await self.uplink_lock.acquire()
+            logging.info(f"Sending firmware update start message to satellite")
+            # Send firmware length as an unsigned 32-bit integer
+            message = firmware_len.to_bytes(4, 'little')
+            chunk = self.remove_null_bytes(message)  # Remove null bytes from the chunk
+            message = b"\t" + chunk + b'\0'
+            self.socket_writer.write(message)
+            await self.socket_writer.drain()  # Ensure the message is sent
+            logging.info(f"Sending firmware data to satellite, length: {firmware_len} bytes")
+            self.uplink_lock.release()
+            # Send the firmware data in 1024-byte chunks
+            for i in range(0, firmware_len, 1024):
+                chunk = firmware_data[i:i + 1024]
+                if not chunk:
+                    break
+                chunk = self.remove_null_bytes(chunk)  # Remove null bytes from the chunk
+                message = b"\t" + chunk + b'\0'  # Add null byte to terminate the message
+                await self.uplink_lock.acquire()
+                self.socket_writer.write(message)
+                await self.socket_writer.drain()  # Ensure the message is sent
+                self.uplink_lock.release()
+            logging.info("Firmware update sent successfully")
+        except Exception as e:
+            logging.error(f"Failed to send firmware update: {e}")
 
     def send_uplink(self, message):
         """

@@ -64,9 +64,15 @@ class SatelliteInterface(RoomModule):
                 logging.error(f"Unexpected message type from satellite: {msg_type}")
             existing_device = next((device for device in self.satellite_handlers if device.satellite_id == msg_data["name"]), None)
             if existing_device:
-                logging.info(f"Satellite {msg_data['name']} reconnected")
-                await existing_device.new_connection(reader, writer)
-                return
+                # Check if the existing device has the same branch and firmware version
+                if (existing_device.satellite_firmware_branch == msg_data["branch"]
+                        and existing_device.satellite_firmware_version == msg_data["version"]):
+                    logging.info(f"Satellite {msg_data['name']} reconnected")
+                    await existing_device.new_connection(reader, writer)
+                    return
+                logging.warning(f"Satellite {msg_data['name']} already connected with different firmware version or branch. Closing connection.")
+                # Delete the existing device
+                del self.satellite_handlers[self.satellite_handlers.index(existing_device)]
             # Create a new SatelliteDevice instance
             satellite_device = SatelliteHandler(self.room_controller, msg_data)
             await satellite_device.begin_handler(reader, writer)

@@ -35,6 +35,16 @@ class SatelliteHandler:
             satellite_device = SatelliteDevice(self, device_name, device_type)
             self.sub_devices.append(satellite_device)
         logging.info(f"Initialized satellite handler for {self.satellite_id} with {len(self.sub_devices)} sub-devices running version {self.satellite_firmware_version} [{self.satellite_firmware_branch}]")
+        # asyncio.create_task(self.test_firmware_update())
+
+    async def test_firmware_update(self):
+        logging.info("Waiting 10 seconds before starting firmware update test")
+        await asyncio.sleep(10)  # Delay to let connection stabilize
+        logging.info(f"Starting firmware update test for {self.satellite_id} in 1 second")
+        await asyncio.sleep(1)  # Additional delay before starting the firmware update
+        logging.info(f"Firmware update test for {self.satellite_id} started")
+        await self.connection_handler.uplink_new_firmware("SatelliteFirmware/firmware.bin")
+        logging.info(f"Firmware update test for {self.satellite_id} completed")
 
     async def begin_handler(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
         """
