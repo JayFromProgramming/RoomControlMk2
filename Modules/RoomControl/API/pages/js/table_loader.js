@@ -287,7 +287,7 @@ function update_table(data) {
     for (let device in devices) {
         try {
             // Strip any periods from the device name
-            let device_object = device_table.find("#" + device.replace(/\./g, "_"));
+            let device_object = device_table.find("#" + CSS.escape(device.replace(/\./g, "_")));
             if (device_object.length === 0) {
                 if (devices[device]["type"] !== last_type) {
                     last_type = devices[device]["type"];

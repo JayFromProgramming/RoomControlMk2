@@ -22,22 +22,7 @@ from Modules.RoomControl.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 
-for module in os.listdir("Modules/RoomControl"):
-    if module.endswith(".py") and module != "__init__.py":
-        module_name = module.replace(".py", "")
-        logging.info(f"Importing {module_name}")
-        try:
-            __import__(f"Modules.RoomControl.{module_name}", fromlist=[module_name])
-        except Exception as e:
-            logging.error(f"Error importing {module_name}: {e}")
-            logging.exception(e)
-    if os.path.isdir(f"Modules/RoomControl/{module}"):
-        logging.info(f"Importing {module}")
-        for module_file in os.listdir(f"Modules/RoomControl/{module}"):
-            if module_file.endswith(".py") and module_file != "__init__.py":
-                module_name = module_file.replace(".py", "")
-                logging.info(f"Importing {module_name} from {module}")
-                __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
+
 
 logging.info("Imports complete")
 
@@ -84,18 +69,37 @@ class ObjectPointer:
 class RoomController:
     # Debugging variables to exclude or only load certain modules on the test server
     exclude_modules = []
-    only_modules = ["SatelliteInterface"]
+    only_modules = ["SatelliteInterface", "GoveeAPI"]
 
     required_modules = ["NetAPI", "SceneController"]
 
     def __init__(self, db_path: str = "room_data.db"):
         self.is_not_main = False
+
         # Validate that this is the main process, if not abort
         logging.info(f"Current process: {multiprocessing.current_process().name}")
         if multiprocessing.current_process().name != "MainProcess":
             logging.info("Not the main process, aborting")
             self.is_not_main = True
             return
+
+        for module in os.listdir("Modules/RoomControl"):
+            if module.endswith(".py") and module != "__init__.py":
+                module_name = module.replace(".py", "")
+                logging.info(f"Importing {module_name}")
+                try:
+                    __import__(f"Modules.RoomControl.{module_name}", fromlist=[module_name])
+                except Exception as e:
+                    logging.error(f"Error importing {module_name}: {e}")
+                    logging.exception(e)
+            if os.path.isdir(f"Modules/RoomControl/{module}"):
+                logging.info(f"Importing {module}")
+                for module_file in os.listdir(f"Modules/RoomControl/{module}"):
+                    if module_file.endswith(".py") and module_file != "__init__.py":
+                        module_name = module_file.replace(".py", "")
+                        logging.info(f"Importing {module_name} from {module}")
+                        __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
+
         logging.info("Starting RoomController")
         self.database = Database(db_path)
         # self.backup_database(db_path)

@@ -8,7 +8,7 @@ function device_table() {
         success: function (data) {
             sys_temp = data["sys_temp"];
             // Check if the temperature data has more dict data
-            if (typeof sys_temp === 'object') {
+            if (typeof sys_temp === 'object' && sys_temp !== null && Object.keys(sys_temp).length > 0) {
                 sys_temp = sys_temp["coretemp"][0][1]
             }
             sys_cpu = data["sys_load"];
