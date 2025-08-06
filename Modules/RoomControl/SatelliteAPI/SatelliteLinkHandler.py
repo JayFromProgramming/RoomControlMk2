@@ -145,7 +145,7 @@ class SatelliteLinkHandler:
             await self.destroy()
             self.uplink_queue.task_done()
 
-    async def uplink_new_firmware(self, firmware_file):
+    async def uplink_new_firmware(self, firmware_file) -> bool:
         """
         Send a new firmware file to the satellite for updating.
 
@@ -177,8 +177,11 @@ class SatelliteLinkHandler:
                 await self.socket_writer.drain()  # Ensure the message is sent
                 self.uplink_lock.release()
             logging.info("Firmware update sent successfully")
+            return True
         except Exception as e:
             logging.error(f"Failed to send firmware update: {e}")
+            logging.exception(e)
+            return False
 
     def send_uplink(self, message):
         """
@@ -214,6 +217,9 @@ class SatelliteLinkHandler:
             self.socket_reader.feed_eof()
         if self.socket_writer:
             self.socket_writer.close()
+        # release any locks
+        if self.uplink_lock.locked():
+            self.uplink_lock.release()
         self.socket_writer = None
         self.socket_reader = None
         logging.info("Satellite connection handler destroyed")
