@@ -2,8 +2,8 @@ import asyncio
 import random
 from typing import Optional
 from loguru import logger as logging
-from Modules.RoomObject import RoomObject
 
+from Modules.RoomObject import RoomObject
 
 class SatelliteDevice(RoomObject):
     is_promise = False
@@ -22,9 +22,10 @@ class SatelliteDevice(RoomObject):
         """
         self.device_id = f"{satellite_handler.satellite_id}.{device_id}"
         self.satellite_handler = satellite_handler
+        self.room_controller = satellite_handler.room_controller
         asyncio.create_task(self.heartbeat())
         super().__init__(self.device_id, device_type)
-        self.satellite_handler.room_controller.attach_object(self)
+        self.room_controller.attach_object(self)
 
     def set_value(self, key, value):
         """

@@ -698,7 +698,8 @@ class NetAPI(RoomModule):
         # logging.info("Received SYSTEM_MONITORS request")
         # Get all room objects of type "SystemMonitor" or "satellite_SystemMonitor"
         monitors = self.room_controller.get_type("SystemMonitor")
-        print(monitors)
+        satellite_monitors = self.room_controller.get_type("SatelliteMonitor")
+        monitors.extend(satellite_monitors)
         # List all the monitor names and nothing more
         data = [monitor.object_name for monitor in monitors]
         msg = APIMessageTX(system_monitors=data)

@@ -72,7 +72,8 @@ class SatelliteInterface(RoomModule):
                     return
                 logging.warning(f"Satellite {msg_data['name']} already connected with different firmware version or branch. Closing connection.")
                 # Delete the existing device
-                del self.satellite_handlers[self.satellite_handlers.index(existing_device)]
+                existing_device.rebuild_device(msg_data)
+                return
             # Create a new SatelliteDevice instance
             satellite_device = SatelliteHandler(self.room_controller, msg_data)
             await satellite_device.begin_handler(reader, writer)

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from typing import Optional
 
 from Modules.RoomControl.SatelliteAPI.SatelliteDevice import SatelliteDevice
@@ -53,6 +54,7 @@ class SatelliteLinkHandler:
         self.downlink_task: Optional[asyncio.Task] = None
         self.uplink_queue: asyncio.Queue = asyncio.Queue()
         self.uplink_lock: asyncio.Lock = asyncio.Lock()
+        self.link_create_time = time.time()
         self.downlink_handler = None
         self.closed = False
 
@@ -224,3 +226,22 @@ class SatelliteLinkHandler:
         self.socket_reader = None
         logging.info("Satellite connection handler destroyed")
 
+    @property
+    def uptime(self) -> float:
+        """
+        Get the uptime of the connection handler.
+
+        :return: The uptime in seconds.
+        """
+        return round(time.time() - self.link_create_time, 2)
+
+    @property
+    def address(self) -> str:
+        """
+        Get the address of the satellite connection.
+
+        :return: The address of the satellite connection.
+        """
+        if self.socket_writer and self.socket_writer.get_extra_info('peername'):
+            return self.socket_writer.get_extra_info('peername')[0]
+        return "Unknown"

@@ -3,6 +3,7 @@ import asyncio
 from typing import Optional
 from loguru import logger as logging
 from Modules.RoomControl.SatelliteAPI.SatelliteDevice import SatelliteDevice
+from Modules.RoomControl.SatelliteAPI.SatelliteMonitor import SatelliteMonitor
 from Modules.RoomObject import RoomObject
 from Modules.RoomControl.SatelliteAPI.SatelliteLinkHandler import SatelliteLinkHandler
 
@@ -23,19 +24,40 @@ class SatelliteHandler:
         satellite_id = connect_info.get("name", "unknown_satellite")
         self.room_controller = room_controller
         self.satellite_id = satellite_id
+        self.satellite_cpu_usage = 0
         self.satellite_uptime = 0
         self.satellite_free_heap = 0
         self.satellite_mcu_temp = 0
+        self.satellite_firmware_version = "unknown"
+        self.satellite_firmware_branch = "unknown"
+        self.satellite_partition = "unknown"
+        self.connection_handler: Optional[SatelliteLinkHandler] = None
+        self.satellite_monitor = SatelliteMonitor(self, self.room_controller)
+        self.sub_devices = [] # List of sub-devices managed by this satellite handler
+        self._build(connect_info)
+
+    def _build(self, connect_info):
         self.satellite_firmware_version = connect_info.get("version", "unknown")
         self.satellite_firmware_branch = connect_info.get("branch", "unknown")
-        self.connection_handler: Optional[SatelliteLinkHandler] = None
-
-        self.sub_devices = [] # List of sub-devices managed by this satellite handler
+        self.satellite_partition = connect_info.get("partition", "unknown")
+        self.sub_devices = []  # List of sub-devices managed by this satellite handler
         for device_name, device_type in connect_info.get("sub_devices", {}).items():
             satellite_device = SatelliteDevice(self, device_name, device_type)
             self.sub_devices.append(satellite_device)
         logging.info(f"Initialized satellite handler for {self.satellite_id} with {len(self.sub_devices)} "
                      f"sub-devices running version {self.satellite_firmware_version} [{self.satellite_firmware_branch}]")
+
+    def rebuild_device(self, connect_info):
+        """
+        Check if the satellite device is connected with new firmware.
+        This method is intended to be called after the connection has been established.
+        """
+        logging.info(f"Rebuilding satellite handler for {self.satellite_id} with new firmware version {connect_info.get('version', 'unknown')}")
+        # Delete all sub-device objects
+        for sub_device in self.sub_devices:
+            self.room_controller.detach_object(sub_device)
+        self.sub_devices.clear()
+        self._build(connect_info)
 
     async def preform_firmware_update(self, firmware_path: str):
         """
@@ -121,7 +143,8 @@ class SatelliteHandler:
                 else:
                     logging.warning(f"Received data for unknown device ID: {device_id}")
             # Update satellite handler state
-            self.satellite_uptime = data.get("uptime", 0)
+            self.satellite_cpu_usage = data.get("cpu_idle", 0)
+            self.satellite_uptime = data.get("mcu_uptime", 0)
             self.satellite_free_heap = data.get("free_heap", 0)
             self.satellite_mcu_temp = data.get("mcu_temp", 0)
         except Exception as e:
