@@ -153,6 +153,12 @@ class SatelliteLinkHandler:
 
         :param firmware_file: The path to the firmware file to send.
         """
+        if not firmware_file:
+            logging.error("Firmware file path is empty")
+            return False
+        if not self.connection_alive():
+            logging.error("Cannot send firmware update, connection to satellite is not alive")
+            return False
         try:
             with open(firmware_file, 'rb') as f:
                 firmware_data = f.read()

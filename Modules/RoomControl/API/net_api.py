@@ -736,6 +736,11 @@ class NetAPI(RoomModule):
 
         # Update the satellite device with the new firmware
         result = await satellite_device.preform_firmware_update(firmware_path)
+        # Delete the firmware file after upload
+        try:
+            os.remove(firmware_path)
+        except OSError as e:
+            logging.error(f"Error deleting firmware file {firmware_path}: {e}")
         if not result:
             return web.Response(text="Firmware upload failed", status=500)
 

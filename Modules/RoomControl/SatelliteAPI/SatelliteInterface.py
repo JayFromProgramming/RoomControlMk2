@@ -70,7 +70,8 @@ class SatelliteInterface(RoomModule):
                     logging.info(f"Satellite {msg_data['name']} reconnected")
                     await existing_device.new_connection(reader, writer)
                     return
-                logging.warning(f"Satellite {msg_data['name']} already connected with different firmware version or branch. Closing connection.")
+                logging.warning(f"Satellite {msg_data['name']} already connected with different firmware version or branch, "
+                                f"rebuilding device objects")
                 # Delete the existing device
                 existing_device.rebuild_device(msg_data)
                 return

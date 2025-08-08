@@ -28,6 +28,7 @@ class SatelliteHandler:
         self.satellite_uptime = 0
         self.satellite_free_heap = 0
         self.satellite_mcu_temp = 0
+        self.satellite_signal_strength = 0
         self.satellite_firmware_version = "unknown"
         self.satellite_firmware_branch = "unknown"
         self.satellite_partition = "unknown"
@@ -55,7 +56,10 @@ class SatelliteHandler:
         logging.info(f"Rebuilding satellite handler for {self.satellite_id} with new firmware version {connect_info.get('version', 'unknown')}")
         # Delete all sub-device objects
         for sub_device in self.sub_devices:
-            self.room_controller.detach_object(sub_device)
+            try:
+                self.room_controller.detach_object(sub_device)
+            except ValueError:
+                pass
         self.sub_devices.clear()
         self._build(connect_info)
 
@@ -143,10 +147,11 @@ class SatelliteHandler:
                 else:
                     logging.warning(f"Received data for unknown device ID: {device_id}")
             # Update satellite handler state
-            self.satellite_cpu_usage = data.get("cpu_idle", 0)
+            self.satellite_cpu_usage = data.get("mcu_load", 0)
             self.satellite_uptime = data.get("mcu_uptime", 0)
             self.satellite_free_heap = data.get("free_heap", 0)
             self.satellite_mcu_temp = data.get("mcu_temp", 0)
+            self.satellite_signal_strength = data.get("sig_strength", 0)
         except Exception as e:
             logging.error(f"Error processing downlink message: {e}")
             logging.exception(e)

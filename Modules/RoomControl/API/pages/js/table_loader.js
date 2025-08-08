@@ -151,6 +151,24 @@ function getState(device_json) {
                 }
             }
             break;
+        case "SystemMonitor":
+            if (device_json["health"]["online"] === true) {
+                state_string += "CPU: " + device_json["state"]["cpu_usage"] + "%, ";
+                state_string += "MEM: " + device_json["state"]["memory_usage"] + "%";
+
+            } else {
+                state_string += "System Offline";
+            }
+            break;
+        case "SatelliteMonitor":
+            if (device_json["health"]["online"] === true) {
+                state_string += "MCU: " + device_json["state"]["cpu_usage"] + "%, ";
+                state_string += "MEM: " + device_json["state"]["memory_usage"] + "B, ";
+                state_string += "SIG: " + device_json["state"]["signal_strength"] + "dBm";
+            } else {
+                state_string += "Satellite Offline";
+            }
+            break;
         case null:
             state_string += "Unknown Device Type";
             break;
