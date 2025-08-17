@@ -90,5 +90,9 @@
   "d0:73:d5:5d:0e:7c": {
     "group": "Bedroom",
     "starred": true
+  },
+  "3c:52:a1:4c:fc:d0": {
+    "group": "The Pitt",
+    "starred": false
   }
 }
