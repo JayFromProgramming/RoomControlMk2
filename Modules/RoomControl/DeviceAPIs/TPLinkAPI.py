@@ -28,6 +28,8 @@ class TPLinkAPI(RoomModule):
             # TODO: Remove hardcoded IP and implement a proper device discovery
             device = await Device.connect(host="192.168.1.11")
             self.devices.append(TPLinkDevice(device, self.room_controller))
+            device2 = await Device.connect(host="192.168.1.21")
+            self.devices.append(TPLinkDevice(device2, self.room_controller))
         except Exception as e:
             logging.error(f"Error scanning for TPLink devices: {e}")
             logging.exception(e)
