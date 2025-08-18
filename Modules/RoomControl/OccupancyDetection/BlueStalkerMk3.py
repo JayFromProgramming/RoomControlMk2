@@ -13,11 +13,11 @@ except ImportError:
     logging.error("Failed to import bleak, please run 'pip install bleak' to install it")
     BleakScanner = None
 
-try:
-    import bluetooth
-except ImportError:
-    logging.error("Bluetooth not available")
-    bluetooth_avail = False
+# try:
+#     import bluetooth
+# except ImportError:
+#     logging.error("Bluetooth not available")
+#     bluetooth_avail = False
 
 multiprocessing.set_start_method("spawn", force=True)
 
@@ -30,9 +30,9 @@ class BlueStalkerMk3(RoomModule):
         if BleakScanner is None:
             logging.error("Aborting BluestalkerMk3 module initialization, bleak is not installed")
             return
-        if not bluetooth_avail:
-            logging.error("Aborting BluestalkerMk3 module initialization, bluetooth is not available")
-            return
+        # if not bluetooth_avail:
+        #     logging.error("Aborting BluestalkerMk3 module initialization, bluetooth is not available")
+        #     return
         self.room_controller = room_controller
         self.blue_stalker = BlueStalkerMk3Object(self.room_controller)
 
