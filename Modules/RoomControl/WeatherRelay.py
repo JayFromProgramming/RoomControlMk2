@@ -141,7 +141,7 @@ class WeatherRelay(RoomModule):
         if "1h" in probability:
             return probability["1h"]
         else:
-            return
+            return None
 
     def fetch_radar_tile(self, timestamp, host, path, x, y, color, is_nowcast=False):
         # Check if we already have saved this timestamp in the database
@@ -224,7 +224,7 @@ class WeatherRelay(RoomModule):
                                    (timestamp, x, y, color)).fetchone()
         # Check if something was returned
         if not result:
-            return
+            return None
         return result[0]
 
     def save_current_weather(self):
@@ -306,4 +306,4 @@ class WeatherRelay(RoomModule):
             if forecast_time == key:
                 return forecast
         logging.error(f"Forecast not found for {forecast_time}")
-        return
+        return None

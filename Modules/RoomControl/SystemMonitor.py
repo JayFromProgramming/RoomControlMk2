@@ -22,7 +22,7 @@ class SystemMonitor(RoomModule):
         self.system_status = None
         self.monitors = []
         self.monitors.append(SystemMonitorLocal(room_controller))
-        self.monitors.append(SystemMonitorRemote(room_controller, "WOPR"))
+        # self.monitors.append(SystemMonitorRemote(room_controller, "WOPR"))
 
         for monitor in self.monitors:
             self.room_controller.attach_object(monitor)

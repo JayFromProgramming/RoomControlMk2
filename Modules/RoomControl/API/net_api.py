@@ -23,6 +23,7 @@ from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
 
+# I really want too break this module up into smaller modules, but I just haven't had the time yet.
 
 def login_redirect():
     return web.HTTPFound("/login")
@@ -106,10 +107,7 @@ class NetAPI(RoomModule):
             + [web.get('/get_type/{name}', self.handle_get_type)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
             + [web.get('/get_all', self.handle_get_all)]
-            # + [web.get('/occupancy', self.handle_occupancy)]
-            # + [web.get('/set_auto/{mode}', self.handle_auto)]
             + [web.get('/get_schema', self.handle_schema)]
-            # + [web.get('/vm_add/{dev_name}/{on_monkey}/{off_monkey}', self.monkey_adder)]
             + [web.get('/scene_get/{value}/{target}', self.handle_get_scenes)]
             + [web.post('/scene_action/{action}/{scene_id}', self.handle_scene_command)]
             + [web.get('/run_command/{name}', self.handle_run_command)]
@@ -130,6 +128,7 @@ class NetAPI(RoomModule):
             + [web.get('/weather/past/{from_time}/{to_time}', self.handle_weather_past)]
             + [web.get('/weather/available_radars', self.handle_radar_list)]
             + [web.get('/weather/radar/{timestamp}/{x}/{y}/{color}', self.handle_radar)]
+            + [web.post('/satellite_firmware_upload', self.handle_satellite_firmware_upload)]
         )
 
         # Set webserver address and port
@@ -701,8 +700,51 @@ class NetAPI(RoomModule):
         # logging.info("Received SYSTEM_MONITORS request")
         # Get all room objects of type "SystemMonitor" or "satellite_SystemMonitor"
         monitors = self.room_controller.get_type("SystemMonitor")
-        print(monitors)
+        satellite_monitors = self.room_controller.get_type("SatelliteMonitor")
+        monitors.extend(satellite_monitors)
         # List all the monitor names and nothing more
         data = [monitor.object_name for monitor in monitors]
         msg = APIMessageTX(system_monitors=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_satellite_firmware_upload(self, request):
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
+        # logging.info("Received SATELLITE_FIRMWARE_UPLOAD request")
+        branch = request.query.get('branch', 'unknown')
+        version = request.query.get('version', 'unknown')
+        data = await request.post()
+        firmware_file = data['file']
+
+        satellite_interface = self.room_controller.get_module("SatelliteInterface")
+        if satellite_interface is None:
+            return web.Response(text="Satellite interface not found", status=503)
+
+        satellite_handlers = satellite_interface.satellite_handlers
+
+        # Find the satellite device with the given name
+        satellite_device = next((device for device in satellite_handlers if device.satellite_firmware_branch == branch), None)
+        if satellite_device is None:
+            return web.Response(text=f"Satellite device with name [{branch}] not found", status=404)
+
+        # Save the firmware file to the correct location
+        if not os.path.exists(os.path.join(os.getcwd(), "Cache", "SatelliteFirmware")):
+            os.makedirs(os.path.join(os.getcwd(), 'Cache', 'SatelliteFirmware'))
+        if not os.path.exists(os.path.join(os.getcwd(), "Cache", "SatelliteFirmware", branch)):
+            os.makedirs(os.path.join(os.getcwd(), 'Cache', 'SatelliteFirmware', branch))
+        firmware_path = os.path.join(os.getcwd(), "Cache", "SatelliteFirmware", branch, f"{version}.bin")
+        with open(firmware_path, 'wb') as f:
+            f.write(firmware_file.file.read())
+
+        # Update the satellite device with the new firmware
+        result = await satellite_device.preform_firmware_update(firmware_path)
+        # Delete the firmware file after upload
+        try:
+            os.remove(firmware_path)
+        except OSError as e:
+            logging.error(f"Error deleting firmware file {firmware_path}: {e}")
+        if not result:
+            return web.Response(text="Firmware upload failed", status=500)
+
+        msg = APIMessageTX(result=f"Firmware for satellite {satellite_device.satellite_id} uploaded successfully")
         return web.Response(text=msg.__str__())

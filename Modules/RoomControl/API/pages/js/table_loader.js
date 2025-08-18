@@ -93,7 +93,7 @@ function getState(device_json) {
                 state_string += ", Disabled";
             }
             break;
-        case "satellite_Radiator":
+        case "Radiator":
             state_string += "State: " + device_json["state"]["state"] + ", Temp: " + device_json["state"]["radiator_temp"] + "°F";
             break;
         case "light_controller":
@@ -122,7 +122,6 @@ function getState(device_json) {
             }
             break;
         case "BlueStalker":
-        case "satellite_BlueStalker":
             if (device_json["state"]["on"] === true || true) {
                 if (device_json["health"]["fault"] === true) {
                     state_string += "State: FAULT";
@@ -137,7 +136,7 @@ function getState(device_json) {
                 state_string += "State: DISABLED";
             }
             break;
-        case "satellite_MotionDetector":
+        case "MotionDetector":
             if (device_json["health"]["online"] === false) {
                 state_string += "State: DOWN";
             } else if (device_json["health"]["fault"] === true) {
@@ -150,6 +149,24 @@ function getState(device_json) {
                     const last_active = new Date(device_json["state"]["last_motion_time"] * 1000);
                     state_string += "Last Active: " + last_active.toLocaleString();
                 }
+            }
+            break;
+        case "SystemMonitor":
+            if (device_json["health"]["online"] === true) {
+                state_string += "CPU: " + device_json["state"]["cpu_usage"] + "%, ";
+                state_string += "MEM: " + device_json["state"]["memory_usage"] + "%";
+
+            } else {
+                state_string += "System Offline";
+            }
+            break;
+        case "SatelliteMonitor":
+            if (device_json["health"]["online"] === true) {
+                state_string += "MCU: " + device_json["state"]["cpu_usage"] + "%, ";
+                state_string += "MEM: " + device_json["state"]["memory_usage"] + "B, ";
+                state_string += "SIG: " + device_json["state"]["signal_strength"] + "dBm";
+            } else {
+                state_string += "Satellite Offline";
             }
             break;
         case null:
@@ -207,7 +224,7 @@ class DeviceObject {
         this.name = getName(device);
         this.row = document.createElement("tr");
         this.button = document.createElement("td");
-        this.row.id = this.id;
+        this.row.id = device.replace(/\./g, "_");
         this.row.className = "device_row";
         if (device_json["state"] === null) device_json["state"] = {"on": null};
         if (device_json["health"] === null) device_json["health"] = {"online": false, "fault": false};
@@ -287,7 +304,8 @@ function update_table(data) {
     let last_type = "";
     for (let device in devices) {
         try {
-            let device_object = device_table.find("#" + device);
+            // Strip any periods from the device name
+            let device_object = device_table.find("#" + device.replace(/\./g, "_"));
             if (device_object.length === 0) {
                 if (devices[device]["type"] !== last_type) {
                     last_type = devices[device]["type"];
