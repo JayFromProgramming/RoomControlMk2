@@ -6,8 +6,11 @@ from Modules.RoomControl import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 
-from nut2 import PyNUTClient, PyNUTError
-
+try:
+    from nut2 import PyNUTClient, PyNUTError
+except ImportError:
+    logging.error("PyNUTClient not found, please install the nut2 package to use PyNutAPI")
+    nut2 = None
 
 status_lookup = {
     "ALARM": "ALARM",
@@ -30,7 +33,6 @@ status_lookup = {
 }
 
 
-
 class PyNutAPI(RoomModule):
     """
     PyNutAPI is a module for interacting with PyNut devices.
@@ -42,6 +44,9 @@ class PyNutAPI(RoomModule):
         self.room_controller = room_controller
         self.database = room_controller.database
         self.init_database()
+        if nut2 is None:
+            logging.error("PyNUTClient not found, please install the nut2 package to use PyNutAPI")
+            return
 
         self.nut_clients = {}
         for row in self.database.get_table("nut_servers").get_all():
@@ -62,7 +67,6 @@ class PyNutAPI(RoomModule):
             else:
                 logging.warning(f"NUT server {row['ups_server']} not found for device {row['ups_name']}")
 
-
     def init_database(self):
         """
         Initialize the database for PyNutAPI.
@@ -82,6 +86,7 @@ class PyNutAPI(RoomModule):
 
     def wait_for_ready(self):
         pass
+
 
 class PyNutServer:
 
@@ -116,6 +121,7 @@ class PyNutServer:
                 except EOFError:
                     self._connect()
                     continue
+
         return wrapper
 
     @nut_func
@@ -160,7 +166,6 @@ class PyNutServer:
 
 
 class PyNutDevice(RoomObject):
-
     """
     Represents a PyNut device in the room control system.
     This class is used to manage the PyNut device's state and interactions.
