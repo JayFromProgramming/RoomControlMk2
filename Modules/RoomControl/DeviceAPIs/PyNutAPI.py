@@ -21,9 +21,9 @@ status_lookup = {
     "ALARM": "ALARM",
     "BOOST": "Boosting",
     "BYPASS": "Bypass Active",
-    "CAL": "Runtime Calibration",
+    "CAL": "Calibrating",
     "CHRG": "Charging",
-    "COMM": "Communications Active",
+    "COMM": "Communication?",
     "DISCHRG": "Discharging",
     "FSD": "Forced Shutdown",
     "LB": "Low Battery",
@@ -31,8 +31,8 @@ status_lookup = {
     "OB": "On Battery",
     "OFF": "Offline",
     "OL": "Online",
-    "OVER": "Overloaded",
-    "RB": "Battery Needs Replaced",
+    "OVER": "OVERLOAD",
+    "RB": "Replace Battery",
     "TEST": "Under Test",
     "TRIM": "Trim Active"
 }
@@ -185,6 +185,9 @@ class PyNutServer:
     def get_runtime_left(self, ups):
         return float(self.get_ups_data(ups).get("battery.runtime", 0))
 
+    def get_beeper_status(self, ups):
+        return self.get_ups_data(ups).get("ups.beeper.status", "unknown")
+
     def get_test_result(self, ups):
         return self.get_ups_data(ups).get("ups.test.result", "No test result available")
 
@@ -277,7 +280,8 @@ class PyNutDevice(RoomObject):
                 "battery_nominal": self.nut_server.get_battery_nominal(self.ups_name),
                 "runtime_remaining": self.nut_server.get_runtime_left(self.ups_name),
                 "max_output": self.nut_server.get_max_output(self.ups_name),
-                "test_result": self.nut_server.get_test_result(self.ups_name)
+                "test_result": self.nut_server.get_test_result(self.ups_name),
+                "beeper_status": self.nut_server.get_beeper_status(self.ups_name)
             }
 
     def get_state(self):
@@ -291,7 +295,8 @@ class PyNutDevice(RoomObject):
             "battery_charge": self.device_info["battery_charge"],
             "runtime_remaining": self.device_info["runtime_remaining"],
             "battery_voltage": self.device_info["battery_voltage"],
-            "test_result": self.device_info["test_result"]
+            "test_result": self.device_info["test_result"],
+            "beeper_status": self.device_info["beeper_status"]
         }
 
     def get_info(self):
