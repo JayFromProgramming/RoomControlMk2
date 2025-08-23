@@ -1,3 +1,4 @@
+import sys
 import time
 
 from loguru import logger as logging
@@ -9,7 +10,9 @@ from Modules.RoomObject import RoomObject
 try:
     from nut2 import PyNUTClient, PyNUTError
 except ImportError:
-    logging.error("PyNUT library not found")
+    # Print the directory of the current python interpreter to determine where it's looking for packages
+    pypath = sys.executable
+    logging.error(f"PyNUT library not found in {pypath}, PyNutAPI will not function")
     PyNUTClient = None
     PyNUTError = None
 
