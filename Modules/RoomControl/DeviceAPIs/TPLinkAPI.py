@@ -34,11 +34,10 @@ class TPLinkAPI(RoomModule):
             logging.exception(e)
 
         try:
-            device2 = await Device.connect(host="192.168.1.21")
+            device2 = await Device.connect(host="192.168.1.9")
             self.devices.append(TPLinkDevice(device2, self.room_controller))
         except Exception as e:
             logging.error(f"Error connecting to TPLink device at")
-
 
         try:
             device3 = await Device.connect(host="192.168.1.23")
