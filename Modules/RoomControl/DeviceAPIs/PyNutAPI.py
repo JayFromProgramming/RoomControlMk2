@@ -6,7 +6,12 @@ from Modules.RoomControl import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 
-from nut2 import PyNUTClient, PyNUTError
+try:
+    from nut2 import PyNUTClient, PyNUTError
+except ImportError:
+    logging.error("PyNUT library not found")
+    PyNUTClient = None
+    PyNUTError = None
 
 
 status_lookup = {
@@ -40,6 +45,9 @@ class PyNutAPI(RoomModule):
         self.room_controller = room_controller
         self.database = room_controller.database
         self.init_database()
+        if PyNUTClient is None:
+            logging.error("PyNUT library not found, PyNutAPI will not function")
+            return
 
         self.nut_clients = {}
         for row in self.database.get_table("nut_servers").get_all():
