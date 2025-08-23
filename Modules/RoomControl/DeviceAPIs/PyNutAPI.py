@@ -163,7 +163,7 @@ class PyNutServer:
         return float(self.get_ups_data(ups).get("input.voltage.nominal", 0))
 
     def get_battery_charge(self, ups):
-        return float(self.get_ups_data(ups).get("battery.charge", 0))
+        return int(self.get_ups_data(ups).get("battery.charge", 0))
 
     def get_battery_voltage(self, ups):
         return float(self.get_ups_data(ups).get("battery.voltage", 0))
@@ -173,6 +173,17 @@ class PyNutServer:
 
     def get_runtime_left(self, ups):
         return float(self.get_ups_data(ups).get("battery.runtime", 0))
+
+    def get_test_result(self, ups):
+        return self.get_ups_data(ups).get("ups.test.result", "No test result available")
+
+    @nut_func
+    def execute_command(self, ups, command):
+        return self.client.run_command(ups, command)
+
+    @nut_func
+    def force_shutdown(self, ups):
+        return self.client.fsd(ups)
 
     def nut_online(self):
         """
@@ -196,7 +207,7 @@ class PyNutServer:
 
 class PyNutDevice(RoomObject):
 
-    supported_actions = ["self_test_quick", "self_test_extended", "shutdown"]
+    supported_actions = ["self_test_quick", "self_test_extended", "shutdown", "silence_alarm"]
 
     """
     Represents a PyNut device in the room control system.
@@ -242,19 +253,6 @@ class PyNutDevice(RoomObject):
     def update_device_info(self):
         self.nut_server.update_ups(self.ups_name)
         if not self.nut_server.nut_online() or not self.nut_server.ups_online(self.ups_name):
-            self.device_info = {
-                "status": "OFFLINE",
-                "output_watts": 0,
-                "output_voltage": 0,
-                "input_voltage": 0,
-                "input_nominal": 0,
-                "battery_charge": 0,
-                "runtime_remaining": 0,
-                "nominal_output": 0,
-                "battery_voltage": 0,
-                "battery_nominal": 0,
-                "max_output": 0,
-            }
             return
         else:
             self.device_info = {
@@ -268,6 +266,7 @@ class PyNutDevice(RoomObject):
                 "battery_nominal": self.nut_server.get_battery_nominal(self.ups_name),
                 "runtime_remaining": self.nut_server.get_runtime_left(self.ups_name),
                 "max_output": self.nut_server.get_max_output(self.ups_name),
+                "test_result": self.nut_server.get_test_result(self.ups_name)
             }
 
     def get_state(self):
@@ -281,6 +280,7 @@ class PyNutDevice(RoomObject):
             "battery_charge": self.device_info["battery_charge"],
             "runtime_remaining": self.device_info["runtime_remaining"],
             "battery_voltage": self.device_info["battery_voltage"],
+            "test_result": self.device_info["test_result"]
         }
 
     def get_info(self):
@@ -294,3 +294,24 @@ class PyNutDevice(RoomObject):
 
     def get_type(self):
         return "UPSDevice"
+
+    @property
+    def preform_action(self):
+        return None
+
+    @preform_action.setter
+    def preform_action(self, action):
+        if action not in self.supported_actions:
+            logging.warning(f"Unsupported action '{action}' for device {self.device_name}")
+            return
+        logging.info(f"Preforming action '{action}' on device {self.device_name}")
+        match action:
+            case "self_test_quick":
+                self.nut_server.execute_command(self.ups_name, "test.battery.start.quick")
+            case "self_test_extended":
+                self.nut_server.execute_command(self.ups_name, "test.battery.start.deep")
+            case "shutdown":
+                self.nut_server.execute_command(self.ups_name, "shutdown.return")
+            case "silence_alarm":
+                self.nut_server.execute_command(self.ups_name, "beeper.mute")
+        logging.info(f"Action '{action}' completed on device {self.device_name}")
