@@ -83,8 +83,9 @@ class ObjectPointer:
 
 class RoomController:
     # Debugging variables to exclude or only load certain modules on the test server
-    exclude_modules = []
-    only_modules = ["BlueStalkerMk3", "OccupancyDetector"]
+    exclude_modules = ["VoiceMonkeyAPI"]
+    only_modules = ["SatelliteInterface", "SystemMonitor", "PyNutAPI"]
+    # only_modules = []
 
     required_modules = ["NetAPI", "SceneController"]
 
@@ -213,6 +214,18 @@ class RoomController:
                 return
         logging.info(f"Attaching object {device.object_name} to room controller")
         self.room_objects.append(device)
+
+    def detach_object(self, device: RoomObject):
+        if not issubclass(type(device), RoomObject):
+            raise TypeError(f"Device {device} is not a subclass of RoomObject")
+        # Detach the object from the room controller, this will remove it from the list of
+        # room objects and any references to it will be removed
+        if device in self.room_objects:
+            logging.info(f"Detaching object {device.object_name} from room controller")
+            self.room_objects[self.room_objects.index(device)] = self._create_promise_object(device.object_name)
+        else:
+            logging.warning(f"Object {device.object_name} not found in room controller, cannot detach")
+            raise ValueError(f"Object {device.object_name} not found in room controller")
 
     def get_all_devices(self):
         return self.room_objects

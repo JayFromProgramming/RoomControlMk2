@@ -74,7 +74,7 @@ class EnvironmentController(RoomObject):
         self.controller_entry = table.get_row(name=self.controller_name)
         self.current_setpoint = self.controller_entry['current_set_point']
         self.source = self.room_controller.get_object(self.controller_entry['source_name'].split(";")[0])
-        self.sub_source = self.controller_entry['source_name'].split(";")[1]
+        self.sub_source = self.controller_entry['source_name'].split(";")[1] if ";" in self.controller_entry['source_name'] else "current_value"
         self.enabled = (False if self.controller_entry['enabled'] == 0 else True)
 
         self._directionality = self.controller_entry['directionality']

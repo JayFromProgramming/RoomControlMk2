@@ -7,7 +7,7 @@
     "group": null,
     "starred": false
   },
-  "Radiator": {
+  "Radiator-Controller.Radiator": {
     "group": "Living Room",
     "starred": true,
     "priority": 1
@@ -41,6 +41,10 @@
   },
   "exhaust": {
     "group": "Bedroom",
+    "starred": false
+  },
+  "central_nut.netups": {
+    "group": "The Pitt",
     "starred": false
   },
   "plug_2": {
@@ -88,7 +92,15 @@
     "starred": true
   },
   "d0:73:d5:5d:0e:7c": {
-    "group": "Bedroom",
+    "group": "Entryway",
     "starred": true
+  },
+  "3c:52:a1:4c:fc:d0": {
+    "group": "The Pitt",
+    "starred": false
+  },
+  "3c:52:a1:4c:f9:03": {
+    "group": null,
+    "starred": false
   }
 }
