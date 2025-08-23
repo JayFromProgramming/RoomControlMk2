@@ -11,15 +11,15 @@ from nut2 import PyNUTClient, PyNUTError
 
 status_lookup = {
     "ALARM": "ALARM",
-    "BOOST": "Voltage Boost Active",
+    "BOOST": "Boosting",
     "BYPASS": "Bypass Active",
     "CAL": "Runtime Calibration",
-    "CHRG": "Battery Charging",
+    "CHRG": "Charging",
     "COMM": "Communications Active",
-    "DISCHRG": "Battery Discharging",
+    "DISCHRG": "Discharging",
     "FSD": "Forced Shutdown",
     "LB": "Low Battery",
-    "NOCOMM": "Communications Lost",
+    "NOCOMM": "Comms Lost",
     "OB": "On Battery",
     "OFF": "Offline",
     "OL": "Online",
@@ -28,8 +28,6 @@ status_lookup = {
     "TEST": "Under Test",
     "TRIM": "Voltage Trim Active"
 }
-
-
 
 class PyNutAPI(RoomModule):
     """
@@ -94,6 +92,9 @@ class PyNutServer:
         self.client = None
         self._connect()
         logging.info(f"Initialized NUT server {self.server_name} at {self.server_host}:{self.server_port}")
+        self.available_ups = self.get_available_ups_list()
+
+        self.ups_data = {}
 
     def _connect(self):
         try:
@@ -104,6 +105,9 @@ class PyNutServer:
         except PyNUTError as e:
             logging.error(f"Error connecting to NUT server {self.server_name}: {e}")
             self.client = None
+
+    def get_available_ups_list(self):
+        return self.client.list_ups()
 
     @staticmethod
     def nut_func(func):
@@ -116,35 +120,66 @@ class PyNutServer:
                 except EOFError:
                     self._connect()
                     continue
+                except PyNUTError as e:
+                    if "BEGIN LIST UPS" in str(e):
+                        self._connect()
+                        continue
         return wrapper
 
     @nut_func
+    def update_ups(self, ups):
+        self.ups_data[ups] = self.client.list_vars(ups)
+
+    def get_ups_data(self, ups):
+        return self.ups_data.get(ups, {})
+
+    def get_status(self, ups):
+        status_list = self.get_ups_data(ups).get("ups.status", "UNKNOWN").split()
+        if not status_list:
+            return "UNKNOWN"
+        final_status = ""
+        for status in status_list:
+            final_status += status_lookup.get(status, status) + ", "
+        return final_status[:-2]  # Remove trailing comma and space
+
+
+    def get_max_output(self, ups):
+        return int(self.get_ups_data(ups).get("ups.realpower.nominal", 0))
+
     def get_output_watts(self, ups):
-        max_watts = int(self.client.get(ups, "ups.realpower.nominal"))
-        return max_watts * (int(self.client.get(ups, "ups.load")) / 100.0)
+        max_watts = self.get_max_output(ups)
+        load = int(self.get_ups_data(ups).get("ups.load", 0))
+        if max_watts == 0 or load == 0:
+            return 0
+        return max_watts * (load / 100)
 
-    @nut_func
     def get_output_voltage(self, ups):
-        return float(self.client.get(ups, "output.voltage"))
+        return float(self.get_ups_data(ups).get("output.voltage", 0))
 
-    @nut_func
     def get_input_voltage(self, ups):
-        return float(self.client.get(ups, "input.voltage"))
+        return float(self.get_ups_data(ups).get("input.voltage", 0))
 
-    @nut_func
+    def get_input_nominal(self, ups):
+        return float(self.get_ups_data(ups).get("input.voltage.nominal", 0))
+
     def get_battery_charge(self, ups):
-        return float(self.client.get(ups, "battery.charge"))
+        return float(self.get_ups_data(ups).get("battery.charge", 0))
 
-    @nut_func
+    def get_battery_voltage(self, ups):
+        return float(self.get_ups_data(ups).get("battery.voltage", 0))
+
+    def get_battery_nominal(self, ups):
+        return float(self.get_ups_data(ups).get("battery.voltage.nominal", 0))
+
     def get_runtime_left(self, ups):
-        return float(self.client.get(ups, "battery.runtime"))
+        return float(self.get_ups_data(ups).get("battery.runtime", 0))
 
     def nut_online(self):
         """
         Check if the NUT server is online.
         :return: True if the server is online, False otherwise.
         """
-        return self.client is not None and self.client.is_connected()
+        return self.client is not None
 
     def ups_online(self, ups):
         """
@@ -160,6 +195,8 @@ class PyNutServer:
 
 
 class PyNutDevice(RoomObject):
+
+    supported_actions = ["self_test_quick", "self_test_extended", "shutdown"]
 
     """
     Represents a PyNut device in the room control system.
@@ -182,8 +219,11 @@ class PyNutDevice(RoomObject):
             try:
                 self.update_device_info()
             except Exception as e:
+                logging.exception(e)
                 logging.error(f"Error updating device info for {self.device_name}: {e}")
-                time.sleep(60)
+                time.sleep(30)
+            finally:
+                time.sleep(5)
 
     def get_health(self):
         online = self.nut_server.nut_online() and self.nut_server.ups_online(self.ups_name)
@@ -200,28 +240,57 @@ class PyNutDevice(RoomObject):
         }
 
     def update_device_info(self):
+        self.nut_server.update_ups(self.ups_name)
         if not self.nut_server.nut_online() or not self.nut_server.ups_online(self.ups_name):
             self.device_info = {
                 "status": "OFFLINE",
                 "output_watts": 0,
                 "output_voltage": 0,
                 "input_voltage": 0,
+                "input_nominal": 0,
                 "battery_charge": 0,
-                "runtime_left": 0,
+                "runtime_remaining": 0,
+                "nominal_output": 0,
+                "battery_voltage": 0,
+                "battery_nominal": 0,
+                "max_output": 0,
             }
             return
         else:
             self.device_info = {
-                "status": self.nut_server.client.get(self.ups_name, "ups.status"),
+                "status": self.nut_server.get_status(self.ups_name),
                 "output_watts": self.nut_server.get_output_watts(self.ups_name),
                 "output_voltage": self.nut_server.get_output_voltage(self.ups_name),
                 "input_voltage": self.nut_server.get_input_voltage(self.ups_name),
+                "input_nominal": self.nut_server.get_input_nominal(self.ups_name),
                 "battery_charge": self.nut_server.get_battery_charge(self.ups_name),
-                "runtime_left": self.nut_server.get_runtime_left(self.ups_name),
+                "battery_voltage": self.nut_server.get_battery_voltage(self.ups_name),
+                "battery_nominal": self.nut_server.get_battery_nominal(self.ups_name),
+                "runtime_remaining": self.nut_server.get_runtime_left(self.ups_name),
+                "max_output": self.nut_server.get_max_output(self.ups_name),
             }
-            self.set_value("status", status_lookup.get(self.device_info["status"], "Unknown"))
-            self.set_value("output_watts", self.device_info["output_watts"])
-            self.set_value("output_voltage", self.device_info["output_voltage"])
-            self.set_value("input_voltage", self.device_info["input_voltage"])
-            self.set_value("battery_charge", self.device_info["battery_charge"])
-            self.set_value("runtime_left", self.device_info["runtime_left"])
+
+    def get_state(self):
+        if not self.device_info:
+            return {}
+        return {
+            "status": self.device_info["status"],
+            "output_watts": self.device_info["output_watts"],
+            "output_voltage": self.device_info["output_voltage"],
+            "input_voltage": self.device_info["input_voltage"],
+            "battery_charge": self.device_info["battery_charge"],
+            "runtime_remaining": self.device_info["runtime_remaining"],
+            "battery_voltage": self.device_info["battery_voltage"],
+        }
+
+    def get_info(self):
+        if not self.device_info:
+            return {}
+        return {
+            "battery_nominal": self.device_info["battery_nominal"],
+            "max_output": self.device_info["max_output"],
+            "input_nominal": self.device_info["input_nominal"],
+        }
+
+    def get_type(self):
+        return "UPSDevice"

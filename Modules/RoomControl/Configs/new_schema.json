@@ -43,6 +43,10 @@
     "group": "Bedroom",
     "starred": false
   },
+  "central_nut.netups": {
+    "group": "The Pitt",
+    "starred": false
+  },
   "plug_2": {
     "group": "Kitchen",
     "starred": true
@@ -88,7 +92,7 @@
     "starred": true
   },
   "d0:73:d5:5d:0e:7c": {
-    "group": "Bedroom",
+    "group": "Entryway",
     "starred": true
   },
   "3c:52:a1:4c:fc:d0": {
@@ -96,7 +100,7 @@
     "starred": false
   },
   "3c:52:a1:4c:f9:03": {
-    "group": "Entryway",
+    "group": null,
     "starred": false
   }
 }

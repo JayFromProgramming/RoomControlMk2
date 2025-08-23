@@ -9,7 +9,7 @@ class SchemaBuilder:
         self.room_controller = room_controller
         self.database = room_controller.database
         self.init_database()
-        self.import_from_old_schema("testing")
+        # self.import_from_old_schema("testing")
         self._routes = [web.get('/get_schema', self.handle_get_schema)]
 
     def get_routes(self):
