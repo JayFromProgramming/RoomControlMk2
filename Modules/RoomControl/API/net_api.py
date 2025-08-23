@@ -111,7 +111,7 @@ class NetAPI(RoomModule):
             + [web.get('/get_type/{name}', self.handle_get_type)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
             + [web.get('/get_all', self.handle_get_all)]
-            # + [web.get('/get_schema', self.handle_schema)]
+            + [web.get('/get_schema', self.handle_schema)]
             + [web.get('/scene_get/{value}/{target}', self.handle_get_scenes)]
             + [web.post('/scene_action/{action}/{scene_id}', self.handle_scene_command)]
             + [web.get('/run_command/{name}', self.handle_run_command)]
@@ -133,7 +133,7 @@ class NetAPI(RoomModule):
             + [web.get('/weather/available_radars', self.handle_radar_list)]
             + [web.get('/weather/radar/{timestamp}/{x}/{y}/{color}', self.handle_radar)]
             + [web.post('/satellite_firmware_upload', self.handle_satellite_firmware_upload)]
-            + self.schema_builder.get_routes()
+            # + self.schema_builder.get_routes()
         )
 
         # Set webserver address and port
