@@ -34,7 +34,7 @@ status_lookup = {
     "OVER": "Overloaded",
     "RB": "Battery Needs Replaced",
     "TEST": "Under Test",
-    "TRIM": "Voltage Trim Active"
+    "TRIM": "Trim Active"
 }
 
 class PyNutAPI(RoomModule):
@@ -321,6 +321,8 @@ class PyNutDevice(RoomObject):
                 self.nut_server.execute_command(self.ups_name, "test.battery.start.quick")
             case "self_test_extended":
                 self.nut_server.execute_command(self.ups_name, "test.battery.start.deep")
+            case "self_test_cancel":
+                self.nut_server.execute_command(self.ups_name, "test.battery.stop")
             case "shutdown":
                 self.nut_server.execute_command(self.ups_name, "shutdown.return")
             case "silence_alarm":
