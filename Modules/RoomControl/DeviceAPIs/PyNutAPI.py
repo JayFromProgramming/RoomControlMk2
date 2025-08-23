@@ -221,7 +221,7 @@ class PyNutServer:
 
 class PyNutDevice(RoomObject):
 
-    supported_actions = ["self_test_quick", "self_test_extended", "shutdown", "silence_alarm"]
+    supported_actions = ["self_test_quick", "self_test_extended", "self_test_cancel", "shutdown", "silence_alarm"]
 
     """
     Represents a PyNut device in the room control system.
