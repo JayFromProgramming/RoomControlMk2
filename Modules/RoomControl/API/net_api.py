@@ -19,6 +19,8 @@ from Modules.RoomControl.API.name_handler import NameHandler
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
 from Modules.RoomControl.Decorators import background
 
+from Modules.RoomControl.API.SchemaBuilder import SchemaBuilder
+
 from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
@@ -54,7 +56,7 @@ lock = asyncio.Lock()
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
         # await lock.acquire()
-        await asyncio.sleep(random.random() * 0.5)  # Add variable delay to response to show off lazy loading
+        # await asyncio.sleep(random.random() * 0.5)  # Add variable delay to response to show off lazy loading
         for ip in IP_BLACKLIST:
             if request.remote.startswith(ip):
                 logging.debug(f"Blacklisted IP {request.remote} attempted to access the API")
@@ -83,9 +85,11 @@ class NetAPI(RoomModule):
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
+        self.runner = None
         self.room_controller = room_controller
         self.database = room_controller.database
         self.occupancy_detector = room_controller.get_module("OccupancyDetector")
+        self.schema_builder = SchemaBuilder(room_controller)
 
         self.scene_controller = room_controller.get_module("SceneController")
         self.command_controller = room_controller.get_module("CommandController")
@@ -107,7 +111,7 @@ class NetAPI(RoomModule):
             + [web.get('/get_type/{name}', self.handle_get_type)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
             + [web.get('/get_all', self.handle_get_all)]
-            + [web.get('/get_schema', self.handle_schema)]
+            # + [web.get('/get_schema', self.handle_schema)]
             + [web.get('/scene_get/{value}/{target}', self.handle_get_scenes)]
             + [web.post('/scene_action/{action}/{scene_id}', self.handle_scene_command)]
             + [web.get('/run_command/{name}', self.handle_run_command)]
@@ -129,6 +133,7 @@ class NetAPI(RoomModule):
             + [web.get('/weather/available_radars', self.handle_radar_list)]
             + [web.get('/weather/radar/{timestamp}/{x}/{y}/{color}', self.handle_radar)]
             + [web.post('/satellite_firmware_upload', self.handle_satellite_firmware_upload)]
+            + self.schema_builder.get_routes()
         )
 
         # Set webserver address and port
@@ -155,6 +160,9 @@ class NetAPI(RoomModule):
         logging.info("Created runner")
 
     async def get_site(self):
+        if self.runner is None:
+            logging.warning("NetAPI has not finished initializing yet")
+            await asyncio.sleep(15)
         await self.runner.setup()
         site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
         return site
