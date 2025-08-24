@@ -35,6 +35,17 @@ function getName(id) {
     return name;
 }
 
+function secondsToHHMMSS(seconds) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return [
+        hrs.toString().padStart(2, '0'),
+        mins.toString().padStart(2, '0'),
+        secs.toString().padStart(2, '0')
+    ].join(':');
+}
+
 function toggleDeviceState(device_json) {
     if (device_json["health"]["fault"] === true) {
         return "State: FAULT";
@@ -167,6 +178,16 @@ function getState(device_json) {
                 state_string += "SIG: " + device_json["state"]["signal_strength"] + "dBm";
             } else {
                 state_string += "Satellite Offline";
+            }
+            break;
+        case "UPSDevice":
+            if (device_json["health"]["online"] === true) {
+                let runtime_string = secondsToHHMMSS(device_json["state"]["runtime_remaining"]);
+                state_string += device_json["state"]["status"] + ": ";
+                state_string += device_json["state"]["battery_charge"] + "% [" + runtime_string + "] - Output: ";
+                state_string += device_json["state"]["output_watts"] + "W@" + device_json["state"]["output_voltage"] + "V";
+            } else {
+                state_string += "UPS Offline";
             }
             break;
         case null:
