@@ -158,11 +158,11 @@ class SatelliteHandler:
 
     async def parse_event(self, data):
         try:
-            event_name = data.get("event_name", "unknown")
+            event_name = data.get("event", "unknown")
             args = data.get("args", [])
             kwargs = data.get("kwargs", {})
-            sub_device_id = data.get("sub_device_id", None)
-            logging.info(f"Received event {event_name} for sub-device {sub_device_id} with args: {args}, kwargs: {kwargs}")
+            sub_device_id = data.get("object", None)
+            # logging.info(f"Received event {event_name} for sub-device {sub_device_id} with args: {args}, kwargs: {kwargs}")
 
             # Find the corresponding sub-device
             sub_device = next((d for d in self.sub_devices if d.device_id.split(".")[-1] == sub_device_id), None)
