@@ -53,8 +53,6 @@ class TPLinkAPI(RoomModule):
                 except Exception as e:
                     logging.error(f"Error refreshing TPLink device {device.device_name}: {e}")
                     logging.exception(e)
-                finally:
-                    await asyncio.sleep(1)
             await asyncio.sleep(1)
 
 
