@@ -161,6 +161,8 @@ class SatelliteHandler:
             event_name = data.get("event", "unknown")
             args = data.get("args", [])
             kwargs = data.get("kwargs", {})
+            if kwargs is None:
+                kwargs = {}
             sub_device_id = data.get("object", None)
             # logging.info(f"Received event {event_name} for sub-device {sub_device_id} with args: {args}, kwargs: {kwargs}")
 
