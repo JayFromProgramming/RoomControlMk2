@@ -1,3 +1,4 @@
+import asyncio
 import multiprocessing
 import sys
 
@@ -93,7 +94,6 @@ class RoomController:
             self.is_not_main = True
             return
         aiodebug.log_slow_callbacks.enable(1.5, on_slow_callback=self.slow_callback)
-        aiodebug.hang_inspection.start('/debug', interval=1)
 
         logging.info("Starting RoomController")
         self.database = Database(db_path)
