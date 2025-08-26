@@ -1,5 +1,6 @@
 import asyncio
 from kasa import Discover, Device
+from pycparser.c_ast import While
 
 from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
 from Modules.RoomControl.Decorators import background
@@ -22,28 +23,26 @@ class TPLinkAPI(RoomModule):
         await self.start_device_command_queue_handlers()
         await self.refresh_device_data()
 
+    async def begin_device_discovery(self):
+        while True:
+            await self.discover_devices()
+            await asyncio.sleep(300)
+
     async def discover_devices(self):
-        logging.info("Starting TPLinkAPI, starting device scan")
         try:
-            # TODO: Remove hardcoded IP and implement a proper device discovery
-            device = await Device.connect(host="192.168.1.11")
-            self.devices.append(TPLinkDevice(device, self.room_controller))
-
+            logging.info("Starting discovery for TPLink devices")
+            devices = await Discover.discover()
+            already_discovered = 0
+            for addr, dev in devices.items():
+                if not any(d.device_id == dev.mac for d in self.devices):
+                    self.devices.append(TPLinkDevice(dev, self.room_controller))
+                else:
+                    already_discovered += 1
+            logging.info(f"Discovered {len(devices) - already_discovered} new TPLink devices,"
+                         f" {already_discovered} already known")
         except Exception as e:
-            logging.error(f"Error scanning for TPLink devices: {e}")
+            logging.error(f"Error discovering TPLink devices: {e}")
             logging.exception(e)
-
-        try:
-            device2 = await Device.connect(host="192.168.1.9")
-            self.devices.append(TPLinkDevice(device2, self.room_controller))
-        except Exception as e:
-            logging.error(f"Error connecting to TPLink device at")
-
-        try:
-            device3 = await Device.connect(host="192.168.1.23")
-            self.devices.append(TPLinkDevice(device3, self.room_controller))
-        except Exception as e:
-            logging.error(f"Error connecting to TPLink device at")
 
     async def start_device_command_queue_handlers(self):
         """

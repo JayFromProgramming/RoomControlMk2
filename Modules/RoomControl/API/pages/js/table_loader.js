@@ -35,6 +35,10 @@ function getName(id) {
     return name;
 }
 
+function device_id_html_safe(id) {
+    return id.replace(/\./g, "_").replace(/:/g, "_");
+}
+
 function secondsToHHMMSS(seconds) {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -245,7 +249,7 @@ class DeviceObject {
         this.name = getName(device);
         this.row = document.createElement("tr");
         this.button = document.createElement("td");
-        this.row.id = device.replace(/\./g, "_");
+        this.row.id = device_id_html_safe(device);
         this.row.className = "device_row";
         if (device_json["state"] === null) device_json["state"] = {"on": null};
         if (device_json["health"] === null) device_json["health"] = {"online": false, "fault": false};
@@ -326,7 +330,7 @@ function update_table(data) {
     for (let device in devices) {
         try {
             // Strip any periods from the device name
-            let device_object = device_table.find("#" + device.replace(/\./g, "_"));
+            let device_object = device_table.find("#" + device_id_html_safe(device));
             if (device_object.length === 0) {
                 if (devices[device]["type"] !== last_type) {
                     last_type = devices[device]["type"];
