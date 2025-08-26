@@ -1,6 +1,7 @@
 import asyncio
 import multiprocessing
 import sys
+import traceback
 
 from loguru import logger as logging
 import sqlite3
@@ -121,8 +122,22 @@ class RoomController:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)
 
-    def slow_callback(self, callback, duration):
-        logging.warning(f"Slow callback detected: {callback} took {duration:.4f} seconds")
+    def slow_callback(self, task_name, duration):
+        # Get the task from the task name
+        task_name = task_name.split('\'')[1].split('\'')[0]
+        all_tasks = asyncio.all_tasks()
+        callback = None
+        for task in all_tasks:
+            if task.get_name() == task_name:
+                callback = task
+                break
+        if callback is None:
+            logging.warning(f"Slow callback detected: {task_name} took {duration:.4f} seconds, no stack trace available")
+        else:
+            # Get the stack trace of the callback
+            stack = callback.get_stack()
+            formatted_stack = ''.join(traceback.format_list(traceback.extract_stack(stack[-1])))
+            logging.warning(f"Slow callback detected: {task_name} took {duration:.4f} seconds\nStack trace:\n{formatted_stack}")
 
     @background
     def backup_database(self, db_path: str = "room_data.db"):

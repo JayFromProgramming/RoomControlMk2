@@ -44,10 +44,9 @@ def get_host_names():
     return interfaces
 
 
-IP_BLACKLIST = ["83.97"]
+IP_BLACKLIST = ["83.97", "104.237"]
 
 lock = asyncio.Lock()
-
 
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
