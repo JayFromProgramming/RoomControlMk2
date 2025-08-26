@@ -1,11 +1,7 @@
 import asyncio
-import datetime
-import json
-import functools
 import os
 import random
 import sys
-import threading
 import time
 
 import netifaces
@@ -17,13 +13,13 @@ from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.API.name_handler import NameHandler
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
-from Modules.RoomControl.Decorators import background
 
 from Modules.RoomControl.API.SchemaBuilder import SchemaBuilder
 
 from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
+
 
 # I really want too break this module up into smaller modules, but I just haven't had the time yet.
 
@@ -73,9 +69,10 @@ async def on_prepare(request, response):
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     response.headers["Access-Control-Max-Age"] = "3600"
-
     if request.method == "OPTIONS":
         return web.Response(status=200)
+
+
 
 
 class NetAPI(RoomModule):

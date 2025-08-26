@@ -14,6 +14,7 @@ from Modules.RoomControl.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 
+import aiodebug.hang_inspection
 import aiodebug.log_slow_callbacks
 
 for module in os.listdir("Modules/RoomControl"):
@@ -92,6 +93,7 @@ class RoomController:
             self.is_not_main = True
             return
         aiodebug.log_slow_callbacks.enable(1.5, on_slow_callback=self.slow_callback)
+        aiodebug.hang_inspection.start('/debug', interval=1)
 
         logging.info("Starting RoomController")
         self.database = Database(db_path)
