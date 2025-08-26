@@ -19,7 +19,7 @@ class TPLinkAPI(RoomModule):
 
     async def start(self):
         logging.info("Starting TPLinkAPI event loop")
-        await self.begin_device_discovery()
+        asyncio.create_task(self.begin_device_discovery())
         await self.start_device_command_queue_handlers()
         await self.refresh_device_data()
 
