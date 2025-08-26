@@ -265,7 +265,7 @@ class WeatherRelay(RoomModule):
             logging.exception(e)
 
     def rebuild_forecast(self):
-        # When received the forecase is formatted as a dictionary of lists with each list containing a datapoint for that
+        # When received the forecast is formatted as a dictionary of lists with each list containing a datapoint for that
         # hour. This function will rebuild the forecast into a dictionary of dictionaries with each dictionary containing 1 hour
         # of forecast data
         forecast = {}
