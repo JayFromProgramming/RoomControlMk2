@@ -1,26 +1,20 @@
-import json
 import multiprocessing
-import re
-import socket
-import subprocess
 import sys
 
-import netifaces as netifaces
 from loguru import logger as logging
 import sqlite3
-import threading
 import os
 import time
 
 from ConcurrentDatabase.Database import Database
-# from Modules.RoomControl import MagicHueAPI, VeSyncAPI, VoiceMonkeyAPI
-# from Modules.RoomControl.API.net_api import NetAPI
 from Modules.RoomControl.Decorators import background
 
 # Auto import modules that are in Modules/RoomControl that have a class that inherits RoomModule
 # This is done to make sure that all modules are dynamically loaded
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
+
+import aiodebug.log_slow_callbacks
 
 for module in os.listdir("Modules/RoomControl"):
     if module.endswith(".py") and module != "__init__.py":
@@ -97,6 +91,8 @@ class RoomController:
             logging.info("Not the main process, aborting")
             self.is_not_main = True
             return
+        aiodebug.log_slow_callbacks.enable(0.1, on_slow_callback=self.slow_callback)
+
         logging.info("Starting RoomController")
         self.database = Database(db_path)
         # self.backup_database(db_path)
@@ -125,6 +121,9 @@ class RoomController:
             except Exception as e:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)
+
+    def slow_callback(self, callback, duration):
+        logging.warning(f"Slow callback detected: {callback} took {duration:.4f} seconds")
 
     @background
     def backup_database(self, db_path: str = "room_data.db"):
