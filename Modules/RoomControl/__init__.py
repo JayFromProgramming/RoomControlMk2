@@ -91,7 +91,7 @@ class RoomController:
                         module_name = module_file.replace(".py", "")
                         logging.info(f"Importing {module_name} from {module}")
                         __import__(f"Modules.RoomControl.{module}.{module_name}", fromlist=[module_name])
-        aiodebug.log_slow_callbacks.enable(0.01, on_slow_callback=self.slow_callback)
+        aiodebug.log_slow_callbacks.enable(1.5, on_slow_callback=self.slow_callback)
 
         logging.info("Starting RoomController")
         self.database = Database(db_path)

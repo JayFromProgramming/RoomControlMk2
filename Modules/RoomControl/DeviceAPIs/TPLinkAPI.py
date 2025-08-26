@@ -19,11 +19,11 @@ class TPLinkAPI(RoomModule):
 
     async def start(self):
         logging.info("Starting TPLinkAPI event loop")
-        asyncio.create_task(self.begin_device_discovery())
-        await self.start_device_command_queue_handlers()
+        asyncio.create_task(self.begin_device_discovery(), name="TPLink Device Discovery")
         await self.refresh_device_data()
 
     async def begin_device_discovery(self):
+        logging.info("Beginning periodic TPLink device discovery")
         while True:
             await self.discover_devices()
             await asyncio.sleep(300)
@@ -36,6 +36,7 @@ class TPLinkAPI(RoomModule):
             for addr, dev in devices.items():
                 if not any(d.device_id == dev.mac for d in self.devices):
                     self.devices.append(TPLinkDevice(dev, self.room_controller))
+                    asyncio.create_task(self.devices[-1].send_commands(), name=f"TPLink Command Sender {dev.alias}")
                 else:
                     already_discovered += 1
             logging.info(f"Discovered {len(devices) - already_discovered} new TPLink devices,"
@@ -43,14 +44,6 @@ class TPLinkAPI(RoomModule):
         except Exception as e:
             logging.error(f"Error discovering TPLink devices: {e}")
             logging.exception(e)
-
-    async def start_device_command_queue_handlers(self):
-        """
-        Starts an asyncio task for each device to listen for commands in the device_command_queue
-        :return:
-        """
-        for device in self.devices:
-            asyncio.create_task(device.send_commands())
 
     async def refresh_device_data(self):
         while True:
@@ -62,6 +55,7 @@ class TPLinkAPI(RoomModule):
                     logging.exception(e)
                 finally:
                     await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
 
 class TPLinkDevice(RoomObject, AbstractRGB):
