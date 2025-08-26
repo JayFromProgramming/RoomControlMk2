@@ -91,7 +91,7 @@ class RoomController:
             logging.info("Not the main process, aborting")
             self.is_not_main = True
             return
-        aiodebug.log_slow_callbacks.enable(0.1, on_slow_callback=self.slow_callback)
+        aiodebug.log_slow_callbacks.enable(1.5, on_slow_callback=self.slow_callback)
 
         logging.info("Starting RoomController")
         self.database = Database(db_path)
