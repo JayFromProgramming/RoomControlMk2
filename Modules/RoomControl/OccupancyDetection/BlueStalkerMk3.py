@@ -23,7 +23,6 @@ multiprocessing.set_start_method("spawn", force=True)
 
 
 class BlueStalkerMk3(RoomModule):
-    requires_async = True
 
     def __init__(self, room_controller):
         super().__init__(room_controller)

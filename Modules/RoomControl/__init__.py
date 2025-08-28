@@ -61,7 +61,7 @@ class ObjectPointer:
 
 class RoomController:
     # Debugging variables to exclude or only load certain modules on the test server
-    exclude_modules = ["VoiceMonkeyAPI"]
+    exclude_modules = ["VoiceMonkeyAPI", "BluetoothDetector"]
     only_modules = ["SatelliteInterface", "SystemMonitor", "PyNutAPI", "TPLinkAPI"]
     # only_modules = []
 

@@ -174,6 +174,7 @@ class WeatherRelay(RoomModule):
         time.sleep(0.5)
 
     def fetch_radar_imagery(self):
+
         radar_data = requests.get(radar_index_url).json()
         host = radar_data["host"]
         past = radar_data["radar"]["past"]
@@ -268,6 +269,7 @@ class WeatherRelay(RoomModule):
         # When received the forecast is formatted as a dictionary of lists with each list containing a datapoint for that
         # hour. This function will rebuild the forecast into a dictionary of dictionaries with each dictionary containing 1 hour
         # of forecast data
+        logging.info("Rebuilding forecast data structure")
         forecast = {}
         data_lists = []  # list of lists of forecast data
         for key in self.forecast['hourly']:

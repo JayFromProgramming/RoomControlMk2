@@ -72,8 +72,6 @@ async def on_prepare(request, response):
         return web.Response(status=200)
 
 
-
-
 class NetAPI(RoomModule):
     """Used to control VoiceMonkey Devices and set automatic mode for other devices"""
 
