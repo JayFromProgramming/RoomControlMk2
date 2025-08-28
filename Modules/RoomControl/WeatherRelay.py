@@ -147,7 +147,7 @@ class WeatherRelay(RoomModule):
         # Check if we already have saved this timestamp in the database
         result = self.database.run("SELECT * FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                                    (timestamp, x, y, color)).fetchone()
-        time.sleep(0)  # Force a context switch to prevent starvation of other threads
+        time.sleep(0.1)  # Force a context switch to prevent starvation of other threads
         if result and is_nowcast:
             # Check if this nowcast was fetched within the last 10 minutes and skip if it was
             if time.time() - float(result[4]) < 600:
@@ -157,6 +157,7 @@ class WeatherRelay(RoomModule):
             # Delete the old tile from the database
             self.database.run("DELETE FROM radar_tiles WHERE timestamp = ? AND x = ? AND y = ? AND color = ?",
                               (timestamp, x, y, color))
+            time.sleep(0.1)
         elif result:  # Check if we already have this tile
             if result[4] is not None:
                 # logging.info(f"Replacing old tile {timestamp} {x} {y} {color}")
@@ -167,14 +168,13 @@ class WeatherRelay(RoomModule):
         tile_url = radar_base_url.format(host=host, path=path, size=512, x=x, y=y,
                                          color=color, options="0_0")
         tile = requests.get(tile_url).content
-        time.sleep(0)
+        time.sleep(0.1)
         # Add tile saving duplication for debugging a full database
         self.database.run("INSERT INTO radar_tiles (timestamp, x, y, color, image, options) VALUES (?, ?, ?, ?, ?, ?)",
                           (timestamp, x, y, color, tile, time.time() if is_nowcast else None))
         time.sleep(0.5)
 
     def fetch_radar_imagery(self):
-
         radar_data = requests.get(radar_index_url).json()
         host = radar_data["host"]
         past = radar_data["radar"]["past"]
