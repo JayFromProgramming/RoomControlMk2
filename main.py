@@ -48,7 +48,8 @@ async def webserver_runner():
         #     module.wait_for_ready()
         # Collect any aiohttp servers and run use asyncio.gather to run them all at once
 
-        if hasattr(module, "is_webserver") and getattr(module, "get_site", None) is not None:
+        if (hasattr(module, "is_webserver") and module.is_webserver is True
+                and getattr(module, "get_site", None) is not None):
             try:
                 logging.info(f"Found web server {module}")
                 site = await module.get_site()
@@ -57,7 +58,8 @@ async def webserver_runner():
                 logging.error(f"Error starting web server: {e}")
                 logging.exception(e)
 
-        if hasattr(module, "requires_async") and getattr(module, "start", None) is not None:
+        if (hasattr(module, "requires_async") and module.requires_async is True
+                and getattr(module, "start", None) is not None):
             try:
                 logging.info(f"Found async module {module}")
                 async_tasks.append(module.start())

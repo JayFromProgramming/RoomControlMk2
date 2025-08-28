@@ -548,12 +548,13 @@ class NetAPI(RoomModule):
             raise web.HTTPUnauthorized()
         logging.debug("Received GET_SCENES request")
 
-        if self.room_controller.get_module("SceneController") is None:
-            msg = APIMessageTX(error="Scene controller not found")
+        if self.room_controller.get_module("RoutineController") is None:
+            msg = APIMessageTX(error="RoutineController not found")
+            return web.Response(text=msg.__str__(), status=503)
         else:
             value = request.match_info['value']
             target = request.match_info['target']
-            msg = APIMessageTX(result=self.room_controller.get_module("SceneController").execute_get(value, target))
+            msg = APIMessageTX(result=self.room_controller.get_module("RoutineController").execute_get(value, target))
 
         return web.Response(text=msg.__str__())
 
@@ -562,13 +563,14 @@ class NetAPI(RoomModule):
             raise web.HTTPUnauthorized()
         logging.info("Received SET_SCENE request")
 
-        if self.room_controller.get_module("SceneController") is None:
-            msg = APIMessageTX(error="Scene controller not found")
+        if self.room_controller.get_module("RoutineController") is None:
+            msg = APIMessageTX(error="RoutineController not found")
+            return web.Response(text=msg.__str__(), status=503)
         else:
             command = request.match_info['action']
             scene_id = request.match_info['scene_id']
             payload = await request.json()
-            result = self.room_controller.get_module("SceneController"). \
+            result = self.room_controller.get_module("RoutineController"). \
                 execute_command(command, scene_id, payload)
             msg = APIMessageTX(result=result)
 
@@ -602,7 +604,7 @@ class NetAPI(RoomModule):
         device_id = request.match_info['device_id']
         device_name = self.get_device_display_name(device_id)
         if device_name is False:
-            return web.Response(text="Device not found", status=404)
+            return web.Response(text="Device Not Found", status=404)
         return web.Response(text=device_name)
 
     async def set_name(self, request):

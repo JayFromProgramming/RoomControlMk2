@@ -1,29 +1,31 @@
-import time
-import datetime
-
-import ConcurrentDatabase
 from Modules.RoomControl.API.datagrams import APIMessageRX
 from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
 
-from Modules.RoomControl.SceneTriggerTypes.SceneTrigger import SceneTrigger
+from Modules.RoomControl.RoutineControllers.SceneTriggerTypes.SceneTrigger import SceneTrigger
 from Modules.RoomModule import RoomModule
 import os
 
+from Modules.RoomObject import RoomObject
+
 # Auto import all files in the SceneTriggerTypes directory
-for module in os.listdir("Modules/RoomControl/SceneTriggerTypes"):
+for module in os.listdir("Modules/RoomControl/RoutineControllers/SceneTriggerTypes"):
     if module.endswith(".py") and module != "__init__.py":
         module_name = module.replace(".py", "")
         logging.info(f"Importing {module_name}")
-        __import__(f"Modules.RoomControl.SceneTriggerTypes.{module_name}", fromlist=[module_name])
+        __import__(f"Modules.RoomControl.RoutineControllers.SceneTriggerTypes.{module_name}", fromlist=[module_name])
 
 
-class SceneController(RoomModule):
+class RoutineController(RoomModule, RoomObject):
+
+    requires_async = False
+    supported_actions = ["execute_routine", "enable_routine", "disable_routine"]
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
-        logging.info("Initializing SceneController instance")
+        RoomObject.__init__(self, "RoutineController", "RoutineController")
+        logging.info("Initializing RoutineController instance")
         self.database = room_controller.database
         self._init_database()
 
@@ -35,6 +37,10 @@ class SceneController(RoomModule):
         self.trigger_tasks = []
         self._load_scenes()
         self._load_triggers()
+        room_controller.attach_object(self)
+
+    def get_type(self):
+        return "RoutineController"
 
     def _create_trigger(self, scene_id, trigger_id, trigger_type, trigger_subtype, trigger_value, active):
         """Create a new trigger"""
@@ -45,7 +51,7 @@ class SceneController(RoomModule):
                 break
         if trigger is None:
             logging.error(f"Invalid trigger type {trigger_type}")
-            return
+            return None
         self.triggers[trigger_id] = trigger
         return trigger
 
@@ -94,7 +100,21 @@ class SceneController(RoomModule):
                 "parent": scene[5 + offset],
             }
 
+    def _load_triggers(self):
+        logging.info("SceneController: Loading triggers...")
+        for trigger in self.triggers.values():
+            trigger.stopped = True
+            del trigger
+        self.triggers = {}
+        table = self.database.run("SELECT * FROM scene_triggers")
+        triggers = table.fetchall()
+        for trigger in triggers:
+            self._create_trigger(trigger[0], trigger[1], trigger[2], trigger[3], trigger[4], trigger[5])
+        for trigger in self.triggers.values():
+            trigger.run()
+
     def _update_triggers(self, scene_id, triggers):
+
         db_triggers = self.database.run("SELECT * FROM scene_triggers WHERE scene_id=?", (scene_id,))
         db_triggers = db_triggers.fetchall()
         for db_trigger in db_triggers:
@@ -150,7 +170,7 @@ class SceneController(RoomModule):
             if scene_id not in self.scenes and not new_scene_override:
                 return "Scene does not exist"
             # The json payload will contain the triggers and the scene data
-            triggers = json_payload.get("triggers", [])  # implement later
+            triggers = json_payload.get("triggers", [])
             scene_data = json_payload.get("scene_data", "{}")
             scene_name = json_payload.get("scene_name", "")
             scene_description = json_payload.get("scene_description", None)
@@ -192,6 +212,28 @@ class SceneController(RoomModule):
         command = APIMessageRX(scene_data)
         logging.info("Executing scene {}".format(scene_id))
         self.run_scene(command)
+        return "success"
+
+    def enable_scene(self, scene_id):
+        if scene_id not in self.scenes:
+            logging.error("Scene {} does not exist".format(scene_id))
+            return False
+        for trigger in self.triggers.values():
+            if trigger.scene_id == scene_id:
+                trigger.enabled = True
+        trigger_dict = [trigger.info() for trigger in self.triggers.values() if trigger.scene_id == scene_id]
+        self._update_triggers(scene_id, trigger_dict)
+        return "success"
+
+    def disable_scene(self, scene_id):
+        if scene_id not in self.scenes:
+            logging.error("Scene {} does not exist".format(scene_id))
+            return False
+        for trigger in self.triggers.values():
+            if trigger.scene_id == scene_id:
+                trigger.enabled = False
+        trigger_dict = [trigger.info() for trigger in self.triggers.values() if trigger.scene_id == scene_id]
+        self._update_triggers(scene_id, trigger_dict)
         return "success"
 
     def run_scene(self, command):
@@ -244,9 +286,10 @@ class SceneController(RoomModule):
             case "triggers":
                 return self.get_triggers(target)
             case "scene":
-                pass
+                return None
             case _:
                 logging.error(f"Invalid get value {value}")
+                return None
 
     def execute_command(self, command, scene_id, payload):
         match command:
@@ -260,19 +303,8 @@ class SceneController(RoomModule):
                 return self.execute_scene(scene_id)
             case "test_scene":
                 return self.run_scene(payload)
-
-    def _load_triggers(self):
-        logging.info("SceneController: Loading triggers...")
-        for trigger in self.triggers.values():
-            trigger.stopped = True
-            del trigger
-        self.triggers = {}
-        table = self.database.run("SELECT * FROM scene_triggers")
-        triggers = table.fetchall()
-        for trigger in triggers:
-            self._create_trigger(trigger[0], trigger[1], trigger[2], trigger[3], trigger[4], trigger[5])
-        for trigger in self.triggers.values():
-            trigger.run()
+        logging.error(f"Invalid command {command}")
+        return None
 
     @background
     def execute_commands(self, device, command):

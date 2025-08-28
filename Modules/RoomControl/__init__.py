@@ -65,7 +65,7 @@ class RoomController:
     only_modules = ["SatelliteInterface", "SystemMonitor", "PyNutAPI", "TPLinkAPI"]
     # only_modules = []
 
-    required_modules = ["NetAPI", "SceneController"]
+    required_modules = ["NetAPI", "RoutineController"]
 
     def __init__(self, db_path: str = "room_data.db"):
         self.is_not_main = False
@@ -121,6 +121,11 @@ class RoomController:
             except Exception as e:
                 logging.error(f"Error creating instance of {room_module.__name__}: {e}")
                 logging.exception(e)
+        # Make sure that all required modules are loaded
+        for required_module in self.required_modules:
+            if not any([x for x in self.controllers if x.__class__.__name__ == required_module]):
+                logging.error(f"Required module {required_module} not loaded, aborting")
+                raise RuntimeError(f"Required module {required_module} not loaded, aborting")
 
     def slow_callback(self, task_name, duration):
         # Get the task from the task name

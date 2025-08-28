@@ -3,7 +3,7 @@ import time
 
 from loguru import logger as logging
 
-from Modules.RoomControl.SceneTriggerTypes.SceneTrigger import SceneTrigger
+from Modules.RoomControl.RoutineControllers.SceneTriggerTypes.SceneTrigger import SceneTrigger
 
 
 class IntervalTrigger(SceneTrigger):
