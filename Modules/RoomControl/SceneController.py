@@ -325,6 +325,8 @@ class SceneController(RoomModule):
             case "brightness":
                 return "{name} brightness {value}".format(name=f"[{device.name()}]", value=value)
             case "color":
+                if len(value) != 3:
+                    return "{name} color to invalid value".format(name=f"[{device.name()}]")
                 r, g, b = value
                 color = f"({r}, {g}, {b})"
                 return "{name} color to {value}".format(name=f"[{device.name()}]", value=color)

@@ -140,6 +140,7 @@ class SatelliteLinkHandler:
         except asyncio.CancelledError:
             # Handle cancellation of the task
             logging.info("Uplink handler task cancelled")
+            # Cancel the downlink task as well
             return
         finally:
             if self.closed:
@@ -230,6 +231,7 @@ class SatelliteLinkHandler:
             self.uplink_lock.release()
         self.socket_writer = None
         self.socket_reader = None
+
         logging.info("Satellite connection handler destroyed")
 
     @property
