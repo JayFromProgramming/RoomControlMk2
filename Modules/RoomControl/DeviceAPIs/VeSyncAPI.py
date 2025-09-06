@@ -90,6 +90,7 @@ class VeSyncPlug(RoomObject, AbstractToggleDevice):
         self.get_bounds()
         self.room_controller = room_controller
         self.auto = False
+        self.device_info_cache = {}
         self.room_controller.attach_object(self)
 
     def get_bounds(self):
@@ -118,6 +119,14 @@ class VeSyncPlug(RoomObject, AbstractToggleDevice):
 
     def refresh_info(self):
         logging.debug(f"Refreshing {self.device_name} info")
+        try:
+            self.device.get_details()
+            self.device.update()
+            self.device.update_energy()
+        except Exception as e:
+            logging.warning(f"VeSyncAPI ({self.device_name}): Error getting device details: {e}")
+            self.online = False
+            self.offline_reason = f"API Error"
         if self.upper_bounds and self.lower_bounds:
             state = self.get_info()
             if state["active_time"] < 2:  # If the device has been on for less than 2 minutes
@@ -139,15 +148,6 @@ class VeSyncPlug(RoomObject, AbstractToggleDevice):
         #     logging.warning(f"VeSyncAPI ({self.device_name}): Device has not updated in 1 minute")
 
     def get_info(self):
-        try:
-            self.device.get_details()
-            self.device.update()
-            self.device.update_energy()
-        except Exception as e:
-            logging.warning(f"VeSyncAPI ({self.device_name}): Error getting device details: {e}")
-            self.online = False
-            self.offline_reason = f"API Error"
-            return self.cached_details
         if len(self.device.details) > 1:
             # Check if the data is different from the last time we got it
             self.cached_details = self.device.details
