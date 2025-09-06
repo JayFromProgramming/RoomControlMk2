@@ -52,18 +52,17 @@ request_list = []  # Keep track of how many request are being processed for debu
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
         global request_list, lock
-        # await lock.acquire()
         request.task.set_name(f"{request.remote}-[{request.path}]-{random.randint(0,1000)}")
         request_list.append(request)
         if len(request_list) > 40:
             logging.warning(f"High number of concurrent requests: {len(request_list)}")
-        await asyncio.sleep(random.random() * 0.25)  # Add variable delay to response to show off lazy loading
+        else:
+            await asyncio.sleep(random.random() * 0.25)  # Add variable delay to response to show off lazy loading
         for ip in IP_BLACKLIST:
             if request.remote.startswith(ip):
                 logging.debug(f"Blacklisted IP {request.remote} attempted to access the API")
-                # lock.release()
+                request_list.remove(request)
                 return web.Response(status=403)  # Forbidden
-        # lock.release()
         return await handler(request)
 
     return middleware_handler
