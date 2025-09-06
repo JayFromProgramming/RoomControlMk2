@@ -34,9 +34,11 @@ class UPSTrigger(SceneTrigger):
                 time.sleep(60)
                 continue
             return ups_device, trigger
-        return None
+        return None, None
 
     def exec(self):
+        if self.stopped:
+            return
         ups_device, trigger = self._prep_UPS_trigger(self.trigger_subtype, self.trigger_value)
         if ups_device is None:
             return
