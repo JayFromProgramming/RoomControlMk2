@@ -54,8 +54,10 @@ async def blacklist_middleware(app, handler):
         global request_list, lock
         request.task.set_name(f"{request.remote}-[{request.path}]-{random.randint(0,1000)}")
         request_list.append(request)
-        if len(request_list) > 40:
+        if len(request_list) > 50:
             logging.warning(f"High number of concurrent requests: {len(request_list)}")
+        elif len(request_list) > 25:
+            pass
         else:
             await asyncio.sleep(random.random() * 0.25)  # Add variable delay to response to show off lazy loading
         for ip in IP_BLACKLIST:
