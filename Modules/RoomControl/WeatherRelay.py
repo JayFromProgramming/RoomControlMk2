@@ -251,6 +251,7 @@ class WeatherRelay(RoomModule):
             clouds = self.current_weather.clouds or 0
             updated = self.current_weather.reference_time()
             probability = self.current_weather.precipitation_probability
+            start_time = time.time()
             table = self.database.get_table("weather_records")
             table.add(timestamp=updated, weather_code=weather_code,
                       temperature=temp['temp'], feels=temp['feels_like'], humidity=humidity,
@@ -258,7 +259,7 @@ class WeatherRelay(RoomModule):
                       status=status, chance=probability,
                       secondary_status=secondary_status, visibility=visibility, rain=rain, snow=snow,
                       clouds=clouds)
-            logging.info(f"Saved weather record for {self.current_weather.reference_time()}")
+            logging.info(f"Saved weather record for {self.current_weather.reference_time()}: Executed in {time.time() - start_time:.2f}s")
         except ValueError:
             pass
         except Exception as e:
