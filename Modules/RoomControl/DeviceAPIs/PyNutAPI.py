@@ -333,3 +333,9 @@ class PyNutDevice(RoomObject):
             case "silence_alarm":
                 self.nut_server.execute_command(self.ups_name, "beeper.mute")
         logging.info(f"Action '{action}' completed on device {self.device_name}")
+
+    @property
+    def on_battery(self):
+        if not self.device_info:
+            return False
+        return "On Battery" in self.device_info["status"]
