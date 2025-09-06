@@ -19,8 +19,8 @@ class TPLinkAPI(RoomModule):
 
     async def start(self):
         logging.info("Starting TPLinkAPI event loop")
-        asyncio.create_task(self.begin_device_discovery(), name="TPLink Device Discovery")
-        await self.refresh_device_data()
+        asyncio.create_task(self.begin_device_discovery(), name="TPLinkDeviceDiscovery")
+        asyncio.create_task(self.refresh_device_data(), name="TPLinkDataRefresher")
 
     async def begin_device_discovery(self):
         logging.info("Beginning periodic TPLink device discovery")
@@ -78,7 +78,11 @@ class TPLinkDevice(RoomObject, AbstractRGB):
 
     async def refresh_info(self):
         try:
+            start_time = asyncio.get_event_loop().time()
             await self.device.update()
+            end_time = asyncio.get_event_loop().time()
+            if end_time - start_time > 1.5:
+                logging.warning(f"TPLink device {self.device_name} took {end_time - start_time:.2f} seconds to respond")
         except Exception as e:
             logging.error(f"Error refreshing TPLink device {self.device_name}: {e}")
             # logging.exception(e)
