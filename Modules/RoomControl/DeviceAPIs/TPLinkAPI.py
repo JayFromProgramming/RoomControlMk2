@@ -34,9 +34,19 @@ class TPLinkAPI(RoomModule):
             devices = await Discover.discover()
             already_discovered = 0
             for addr, dev in devices.items():
-                if not any(d.device_id == dev.mac for d in self.devices):
+                if not any(d.mac == dev.mac and d.host == dev.host for d in self.devices):
                     self.devices.append(TPLinkDevice(dev, self.room_controller))
                     asyncio.create_task(self.devices[-1].send_commands(), name=f"TPLink Command Sender {dev.alias}")
+                elif any(d.mac == dev.mac and d.host != dev.host for d in self.devices):
+                    # Device has a new IP address, update it
+                    for d in self.devices:
+                        if d.mac == dev.mac and d.host != dev.host:
+                            logging.info(f"TPLink device {d.device_name} has new IP address {dev.host} (was {d.device.host})")
+                            d.device.host = dev.host
+                            d.device_id = dev.mac
+                            d.device_name = dev.alias
+                            d.device_type = "TPLinkDevice"
+                            break
                 else:
                     already_discovered += 1
             logging.info(f"Discovered {len(devices) - already_discovered} new TPLink devices,"
