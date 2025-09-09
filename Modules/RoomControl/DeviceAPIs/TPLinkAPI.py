@@ -32,24 +32,23 @@ class TPLinkAPI(RoomModule):
         try:
             logging.info("Starting discovery for TPLink devices")
             devices = await Discover.discover()
-            already_discovered = 0
+            already_discovered, new_addresses = 0, 0
             for addr, dev in devices.items():
-                if not any(d.mac == dev.mac and d.host == dev.host for d in self.devices):
-                    self.devices.append(TPLinkDevice(dev, self.room_controller))
-                    asyncio.create_task(self.devices[-1].send_commands(), name=f"TPLink Command Sender {dev.alias}")
-                elif any(d.mac == dev.mac and d.host != dev.host for d in self.devices):
-                    # Device has a new IP address, update it
-                    for d in self.devices:
-                        if d.mac == dev.mac and d.host != dev.host:
-                            logging.info(f"TPLink device {d.device_name} has new IP address {dev.host} (was {d.device.host})")
-                            d.device.host = dev.host
-                            d.device_id = dev.mac
-                            d.device_name = dev.alias
-                            d.device_type = "TPLinkDevice"
-                            break
+                for device in self.devices:
+                    if device.device.host == addr and device.device_id == dev.mac:
+                        already_discovered += 1
+                        break
+                    elif device.device_id == dev.mac and device.device.host != addr:
+                        logging.info(f"TPLink device {device.device_name} changed address from {device.host} to {addr}")
+                        device.device.host = addr
+                        new_addresses += 1
+                        break
                 else:
-                    already_discovered += 1
-            logging.info(f"Discovered {len(devices) - already_discovered} new TPLink devices,"
+                    self.devices.append(TPLinkDevice(dev, self.room_controller))
+                    asyncio.create_task(self.devices[-1].send_commands(), name=f"TPLinkCommandSender-{dev.alias}")
+                    logging.info(f"Discovered new TPLink device {dev.alias} at {addr}")
+            logging.info(f"Discovered {len(devices) - already_discovered - new_addresses} new TPLink devices"
+                         f" and updated {new_addresses} addresses,"
                          f" {already_discovered} already known")
         except Exception as e:
             logging.error(f"Error discovering TPLink devices: {e}")
