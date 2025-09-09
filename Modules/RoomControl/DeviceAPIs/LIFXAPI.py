@@ -75,9 +75,6 @@ class LIFXAPI(RoomModule):
         self.name = "LIFXAPI"
         self.room_controller = room_controller
         self.database = room_controller.database
-        # secrets = self.database.get_table("secrets")
-        # self.lifx = pifx.PIFX(secrets.get_row(secret_name="lifx_key")["secret_value"])
-        # print(self.lifx.list_lights())
         self.lifx = LifxLAN()
         self.room_objects = []
         logging.info("LIFXAPI Started, starting device scan")
@@ -99,7 +96,7 @@ class LIFXAPI(RoomModule):
                 logging.error(f"Error scanning for LIFX devices: {e}")
             finally:
                 # logging.info("Finished scanning for LIFX devices")
-                time.sleep(60)
+                time.sleep(300)
 
 
 class LIFXDevice(RoomObject, AbstractRGB):
