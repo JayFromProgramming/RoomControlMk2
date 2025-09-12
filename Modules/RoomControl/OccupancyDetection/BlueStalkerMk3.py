@@ -104,6 +104,9 @@ class BlueStalkerMk3Object(RoomObject):
             "reason": None
         }
 
+    def get_type(self):
+        return "bluetooth_occupancy_scanner"
+
 
 class BlueStalkerMk3Process(multiprocessing.Process):
 
