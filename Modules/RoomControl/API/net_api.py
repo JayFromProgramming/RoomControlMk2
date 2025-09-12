@@ -6,6 +6,7 @@ import time
 
 import netifaces
 from aiohttp import web
+import ssl
 import hashlib
 
 # from Modules.RoomControl.API import page_builder
@@ -105,6 +106,8 @@ class NetAPI(RoomModule):
         self.name_handler = NameHandler(room_controller)
 
         self.init_database()
+
+        # self.ssl_context =
 
         self.app = web.Application(middlewares=[blacklist_middleware])
         self.app.on_response_prepare.append(on_prepare)
