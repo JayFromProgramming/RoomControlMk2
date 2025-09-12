@@ -6,6 +6,7 @@ import time
 
 import netifaces
 from aiohttp import web
+import ssl
 import hashlib
 
 # from Modules.RoomControl.API import page_builder
@@ -106,6 +107,18 @@ class NetAPI(RoomModule):
 
         self.init_database()
 
+        if sys.platform == "linux":
+            logging.info("Using Let's Encrypt certificate for SSL")
+            self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            self.ssl_context.load_cert_chain(f"/etc/letsencrypt/live/moldy.mug.loafclan.org/fullchain.pem",
+                                             f"/etc/letsencrypt/live/moldy.mug.loafclan.org/privkey.pem")
+        else:
+            logging.warning("Using self-signed certificate for SSL!")
+            self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            self.ssl_context.load_cert_chain(f"cert.pem",
+                                             f"key.pem")
+
+
         self.app = web.Application(middlewares=[blacklist_middleware])
         self.app.on_response_prepare.append(on_prepare)
         self.app.add_routes(  # Yes this could be done with a loop, but this is easier for me to keep track of
@@ -146,7 +159,7 @@ class NetAPI(RoomModule):
 
         # Set webserver address and port
         self.webserver_address = get_host_names()
-        self.webserver_port = 80
+        self.webserver_port = 443
 
         # List of cookies that are authorized to access the API
         results = self.database.get("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))
@@ -172,7 +185,7 @@ class NetAPI(RoomModule):
             logging.warning("NetAPI has not finished initializing yet")
             await asyncio.sleep(15)
         await self.runner.setup()
-        site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
+        site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port, ssl_context=self.ssl_context)
         return site
 
     def init_database(self):
