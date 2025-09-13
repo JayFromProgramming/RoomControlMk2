@@ -169,7 +169,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         return {
             "on": self.current_power > 0,
             "brightness": self.get_brightness(),
-            "color": self.current_color,
+            "color": [0, 0, 0],
             "cold_white": 0,
             "warm_white": self.get_white(),
             "white_enabled": True,
@@ -219,7 +219,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         while True:
             try:
                 self.current_power = self.device.get_power()
-                self.current_color = [0, 0, 0]
+                self.current_color = self.device.get_color()
                 self.current_ip = self.device.get_ip_addr()
             except Exception as e:
                 self.online = False
