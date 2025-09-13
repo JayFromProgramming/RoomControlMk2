@@ -125,7 +125,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         self.current_color = color
 
     def get_color(self) -> list:
-        return self.device.get_color()
+        return [0, 0, 0]
 
     def set_brightness(self, brightness: int):
         self.set_white(brightness)
