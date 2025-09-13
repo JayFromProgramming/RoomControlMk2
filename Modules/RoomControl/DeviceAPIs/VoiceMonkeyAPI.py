@@ -148,6 +148,7 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
     @background
     def run_monkey(self, monkey, state_after=None):
         govee = self.room_controller.get_module("GoveeAPI")
+        device_host = None
         if govee is not None:
             device_host = govee.get_device(self.govee_host)
             if device_host is None:
