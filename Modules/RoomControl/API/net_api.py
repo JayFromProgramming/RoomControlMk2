@@ -22,12 +22,8 @@ from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
 
-
-# I really want too break this module up into smaller modules, but I just haven't had the time yet.
-
 def login_redirect():
     return web.HTTPFound("/login")
-
 
 def get_host_names():
     """
