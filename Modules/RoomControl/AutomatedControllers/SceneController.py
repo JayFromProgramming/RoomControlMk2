@@ -2,7 +2,11 @@ import time
 import datetime
 
 import ConcurrentDatabase
-from Modules.RoomControl.API.datagrams import APIMessageRX
+from aiohttp import web
+from aiohttp.web_routedef import RouteDef
+
+from Modules.APIModule import APIModule
+from Modules.RoomControl.API.datagrams import APIMessageRX, APIMessageTX
 from Modules.RoomControl.Decorators import background
 
 from loguru import logger as logging
@@ -19,7 +23,7 @@ for module in os.listdir("Modules/RoomControl/SceneTriggerTypes"):
         __import__(f"Modules.RoomControl.SceneTriggerTypes.{module_name}", fromlist=[module_name])
 
 
-class SceneController(RoomModule):
+class SceneController(RoomModule, APIModule):
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
@@ -36,6 +40,40 @@ class SceneController(RoomModule):
         self._load_scenes()
         self._load_triggers()
 
+    def get_routes(self) -> list[RouteDef]:
+        return [web.get('/scene_get/{value}/{target}', self.handle_get_scenes),
+                web.post('/scene_action/{command}/{scene_id}', self.handle_scene_command)]
+
+    async def handle_get_scenes(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.debug("Received GET_SCENES request")
+
+        if self.room_controller.get_module("SceneController") is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            value = request.match_info['value']
+            target = request.match_info['target']
+            msg = APIMessageTX(result=self.execute_get(value, target))
+
+        return web.Response(text=msg.__str__())
+
+    async def handle_scene_command(self, request):
+        if not self.check_auth(request):
+            raise web.HTTPUnauthorized()
+        logging.info("Received SET_SCENE request")
+
+        if self.room_controller.get_module("SceneController") is None:
+            msg = APIMessageTX(error="Scene controller not found")
+        else:
+            command = request.match_info['action']
+            scene_id = request.match_info['scene_id']
+            payload = await request.json()
+            result = self.execute_command(command, scene_id, payload)
+            msg = APIMessageTX(result=result)
+
+        return web.Response(text=msg.__str__())
+
     def _create_trigger(self, scene_id, trigger_id, trigger_type, trigger_subtype, trigger_value, active):
         """Create a new trigger"""
         trigger = None
@@ -45,7 +83,7 @@ class SceneController(RoomModule):
                 break
         if trigger is None:
             logging.error(f"Invalid trigger type {trigger_type}")
-            return
+            return None
         self.triggers[trigger_id] = trigger
         return trigger
 
