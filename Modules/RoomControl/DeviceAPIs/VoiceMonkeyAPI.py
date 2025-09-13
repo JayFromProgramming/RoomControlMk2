@@ -150,18 +150,16 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
         govee = self.room_controller.get_module("GoveeAPI")
         if govee is not None:
             device_host = govee.get_device(self.govee_host)
-        else:
-            device_host = None
-        if device_host is None:
-            # logging.error(f"VoiceMonkey ({monkey}): Could not find Govee device {self.govee_host}")
-            self.online = False
-            self.offline_reason = "Govee Device Not Found"
-            return
-        else:
-            self.online = device_host.online if device_host.initialized else True
-            self.offline_reason = "Plug Offline" if not device_host.online else "Unknown"
-            if not device_host.online:
+            if device_host is None:
+                # logging.error(f"VoiceMonkey ({monkey}): Could not find Govee device {self.govee_host}")
+                self.online = False
+                self.offline_reason = "Govee Device Not Found"
                 return
+            else:
+                self.online = device_host.online if device_host.initialized else True
+                self.offline_reason = "Plug Offline" if not device_host.online else "Unknown"
+                if not device_host.online:
+                    return
 
         url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
         logging.debug(f"Running monkey {monkey}")
