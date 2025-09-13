@@ -6,7 +6,7 @@ from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, AbstractToggle
 
 from loguru import logger as logging
 
-from Modules.RoomControl.EnvironmentController import EnvironmentController
+from Modules.RoomControl.AutomatedControllers.EnvironmentController import EnvironmentController
 
 
 def process_device_command(device:

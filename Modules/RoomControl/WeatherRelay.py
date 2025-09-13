@@ -4,9 +4,13 @@ import os
 import time
 
 from pyowm.owm import OWM
-from openmeteopy import OpenMeteo
-from openmeteopy.hourly import HourlyForecast
-from openmeteopy.options import ForecastOptions
+try:
+    from openmeteopy import OpenMeteo
+    from openmeteopy.hourly import HourlyForecast
+    from openmeteopy.options import ForecastOptions
+    has_openmeteo = True
+except ImportError:
+    has_openmeteo = False
 from threading import Thread
 import geocoder
 
@@ -56,6 +60,11 @@ class WeatherRelay(RoomModule):
         logging.info(f"Location: {self.location_address} {self.location_latlong}")
         self.last_update = 0
         self.parsed_forecast = None
+        self.radar_fetch_background()
+        self.update_current_weather()
+        if not has_openmeteo:
+            logging.error("OpenMeteo failed to import, forecast functionality will be disabled")
+            return
         self.hourly_forecast = HourlyForecast()
         self.forecast_options = ForecastOptions(self.location_latlong[0], self.location_latlong[1])
         self.openmeteo = OpenMeteo(self.forecast_options, self.hourly_forecast.all())
@@ -74,9 +83,6 @@ class WeatherRelay(RoomModule):
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
             # self.forecast.last_update = time.time()
-
-        self.radar_fetch_background()
-        self.update_current_weather()
         self.update_forecast()
         self.parsed_forecast = self.rebuild_forecast()
 
