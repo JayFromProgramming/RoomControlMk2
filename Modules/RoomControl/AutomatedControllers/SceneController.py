@@ -42,7 +42,7 @@ class SceneController(RoomModule, APIModule):
 
     def get_routes(self) -> list[RouteDef]:
         return [web.get('/scene_get/{value}/{target}', self.handle_get_scenes),
-                web.post('/scene_action/{command}/{scene_id}', self.handle_scene_command)]
+                web.post('/scene_action/{action}/{scene_id}', self.handle_scene_command)]
 
     async def handle_get_scenes(self, request):
         if not self.check_auth(request):
