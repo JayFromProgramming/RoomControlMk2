@@ -1,7 +1,7 @@
 import datetime
 import time
 
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.Decorators import background
 from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule

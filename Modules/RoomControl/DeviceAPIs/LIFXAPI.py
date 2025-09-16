@@ -1,9 +1,9 @@
 import time
 from socket import timeout
-from lifxlan import LifxLAN, Light, Acknowledgement, BROADCAST_MAC, DEFAULT_TIMEOUT, DEFAULT_ATTEMPTS, UDP_BROADCAST_IP_ADDRS, UDP_BROADCAST_PORT, \
+from lifxlan import LifxLAN, Acknowledgement, BROADCAST_MAC, DEFAULT_TIMEOUT, DEFAULT_ATTEMPTS, UDP_BROADCAST_IP_ADDRS, UDP_BROADCAST_PORT, \
     unpack_lifx_message
-from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.AbstractSmartDevices import AbstractRGB
+from Modules.RoomControl.CoreModules.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 from loguru import logger as logging

@@ -96,7 +96,6 @@ class NetAPI(RoomModule):
         self.api_modules = []
         self.database = room_controller.database
         self.occupancy_detector = room_controller.get_module("OccupancyDetector")
-        self.schema_builder = SchemaBuilder(room_controller)
 
         # self.data_logger = datalogger  # type: # DataLoggerHost
         self.name_handler = NameHandler(room_controller)

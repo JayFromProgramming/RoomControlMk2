@@ -9,7 +9,7 @@ import os
 import time
 
 from ConcurrentDatabase.Database import Database
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.Decorators import background
 
 # Auto import modules that are in Modules/RoomControl that have a class that inherits RoomModule
 # This is done to make sure that all modules are dynamically loaded

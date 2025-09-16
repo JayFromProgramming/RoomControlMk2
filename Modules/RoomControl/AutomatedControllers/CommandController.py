@@ -2,7 +2,7 @@ from loguru import logger as logging
 import os
 import time
 
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.Decorators import background
 
 
 class CommandController:

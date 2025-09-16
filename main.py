@@ -6,7 +6,7 @@ import os
 
 from Modules import RoomControl
 import asyncio
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.Decorators import background
 
 # Create a logs folder if it doesn't exist and make sure its permissions are correct
 if not os.path.exists("logs"):

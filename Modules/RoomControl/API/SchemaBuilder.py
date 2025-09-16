@@ -3,17 +3,20 @@ import json
 from loguru import logger as logging
 from aiohttp import web
 
-class SchemaBuilder:
+from Modules.APIModule import APIModule
+
+
+class SchemaBuilder(APIModule):
 
     def __init__(self, room_controller):
+        super().__init__()
         self.room_controller = room_controller
         self.database = room_controller.database
         self.init_database()
-        # self.import_from_old_schema("testing")
-        self._routes = [web.get('/get_schema', self.handle_get_schema)]
+        self.import_from_old_schema("testing")
 
     def get_routes(self):
-        return self._routes
+        return [web.get('/get_schema', self.handle_get_schema)]
 
     def init_database(self):
         self.database.create_table("interface_schemas_devices", {
@@ -50,7 +53,14 @@ class SchemaBuilder:
         return schema
 
     def import_from_old_schema(self, target_interface):
-        logging.info("Importing old schema for testing")
+        logging.info("Checking if target schema has already been imported")
+        # Check if the schema already exists in the database
+        schema_devices_table = self.database.get_table("interface_schemas_devices")
+        existing_schema = schema_devices_table.get_rows(interface_name=target_interface)
+        if existing_schema:
+            logging.info(f"Schema for interface {target_interface} already exists, skipping import")
+            return
+        logging.info(f"Importing old schema for interface {target_interface}")
         with open("Modules/RoomControl/Configs/new_schema.json", "r") as f:
             old_schema = json.load(f)
 

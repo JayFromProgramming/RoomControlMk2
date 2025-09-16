@@ -1,10 +1,9 @@
 import datetime
-import random
 import time
 from copy import copy
 
 from Modules.RoomControl import background
-from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
+from Modules.RoomControl.CoreModules.AbstractSmartDevices import AbstractToggleDevice
 from Modules.RoomModule import RoomModule
 from loguru import logger as logging
 

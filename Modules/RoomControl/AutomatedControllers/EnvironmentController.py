@@ -2,8 +2,8 @@ import time
 from loguru import logger as logging
 
 import ConcurrentDatabase
-from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.AbstractSmartDevices import AbstractToggleDevice
+from Modules.RoomControl.CoreModules.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 
