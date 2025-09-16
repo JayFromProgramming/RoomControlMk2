@@ -16,8 +16,6 @@ from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.API.name_handler import NameHandler
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
 
-from Modules.RoomControl.API.SchemaBuilder import SchemaBuilder
-
 from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
@@ -152,7 +150,6 @@ class NetAPI(RoomModule):
             + [web.get('/get_type/{name}', self.handle_get_type)]
             + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
             + [web.get('/get_all', self.handle_get_all)]
-            + [web.get('/get_schema', self.handle_schema)]
             + [web.get('/sys_info', self.handle_sys_info)]
             + [web.get('/get_system_monitors', self.handle_system_monitors)]
             + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
