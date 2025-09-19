@@ -55,6 +55,7 @@ class SatelliteLinkHandler:
         self.uplink_queue: asyncio.Queue = asyncio.Queue()
         self.uplink_lock: asyncio.Lock = asyncio.Lock()
         self.link_create_time = time.time()
+        self.last_downlink = time.time()
         self.downlink_handler = None
         self.closed = False
 
@@ -79,7 +80,7 @@ class SatelliteLinkHandler:
         while True:
             try:
                 # Read data from the socket
-                data = await self.socket_reader.readuntil(b'\0')
+                data = await asyncio.wait_for(self.socket_reader.readuntil(b'\0'), timeout=45)
                 data = data[:-1]  # Remove the null byte
                 if not data:
                     logging.info("Connection closed by satellite")
@@ -88,9 +89,13 @@ class SatelliteLinkHandler:
                 # logging.info(f"Received data from satellite: {data}")
                 # Process the message
                 if self.downlink_handler is not None:
+                    self.last_downlink = time.time()
                     await self.downlink_handler(message)
                 else:
                     logging.warning("No downlink handler set, cannot process message")
+            except asyncio.TimeoutError:
+                logging.warning("No data received from satellite in 45 seconds, terminating connection")
+                break
             except asyncio.IncompleteReadError:
                 # Handle the case where the connection is closed unexpectedly
                 logging.warning("Buffer overflow or connection closed unexpectedly")
