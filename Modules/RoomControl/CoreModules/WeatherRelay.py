@@ -63,9 +63,6 @@ class WeatherRelay(RoomModule, APIModule):
         self.parsed_forecast = None
         self.radar_fetch_background()
         self.update_current_weather()
-        if not has_openmeteo:
-            logging.error("OpenMeteo failed to import, forecast functionality will be disabled")
-            return
         self.hourly_forecast = HourlyForecast()
         self.forecast_options = ForecastOptions(self.location_latlong[0], self.location_latlong[1])
         self.openmeteo = OpenMeteo(self.forecast_options, self.hourly_forecast.all())
