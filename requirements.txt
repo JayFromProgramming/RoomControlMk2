@@ -1,4 +1,4 @@
-django-os-geocoder
+geocoder
 python-kasa
 aiodebug
 telnetlib3
