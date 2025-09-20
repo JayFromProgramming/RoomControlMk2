@@ -1,5 +1,6 @@
 python-kasa
-nut2 @git+https://github.com/JayFromProgramming/python-nut2@main
+aiodebug
+telnetlib3
 certifi==2024.7.4
 charset-normalizer==3.2.0
 idna==3.7
@@ -20,9 +21,11 @@ pyparsing==3.1.1
 loguru~=0.7.0
 netifaces~=0.11.0
 ConcurrentDatabase==0.0.10
+ConcurrentDatabase==0.0.10
 pyowm~=3.3.0
 lifxlan~=1.2.8
 geocoder~=1.38.1
 bleak~=0.22.2
 python-kasa==0.7.7
+nut2 @git+https://github.com/JayFromProgramming/python-nut2@main
 open-meteo~=0.2.1
