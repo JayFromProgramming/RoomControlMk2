@@ -1,5 +1,5 @@
-kasa
-nut2
+python-kasa
+nut2 @git+https://github.com/JayFromProgramming/python-nut2@main
 certifi==2024.7.4
 charset-normalizer==3.2.0
 idna==3.7
