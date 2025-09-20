@@ -13,7 +13,7 @@ from Modules.RoomControl.API.datagrams import APIMessageTX
 from openmeteopy import OpenMeteo
 from openmeteopy.hourly import HourlyForecast
 from openmeteopy.options import ForecastOptions
-import geocoder
+import geocoder.api as geocoder
 
 import requests
 
