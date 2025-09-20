@@ -10,14 +10,9 @@ from pyowm.owm import OWM
 from Modules.APIModule import APIModule
 from Modules.RoomControl.API.datagrams import APIMessageTX
 
-try:
-    from openmeteopy import OpenMeteo
-    from openmeteopy.hourly import HourlyForecast
-    from openmeteopy.options import ForecastOptions
-    has_openmeteo = True
-except ImportError:
-    has_openmeteo = False
-from threading import Thread
+from openmeteopy import OpenMeteo
+from openmeteopy.hourly import HourlyForecast
+from openmeteopy.options import ForecastOptions
 import geocoder
 
 import requests
