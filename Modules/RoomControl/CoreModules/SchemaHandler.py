@@ -125,6 +125,29 @@ class SchemaHandler(RoomModule, APIModule):
             return group_row["group_priority"]
         return None
 
+    async def handle_update_schema(self, request):
+        profile_name = request.query.get("interface_name", None)
+        if profile_name is None:
+            logging.error("interface_name query parameter is required")
+            return web.json_response({"error": "interface_name query parameter is required"}, status=400)
+        profile_table = self.database.get_table("interface_schema_profiles")
+        profile = profile_table.get_row(interface_name=profile_name)
+        if not profile:
+            logging.error(f"No profile found for interface {profile_name}")
+            return web.json_response({"error": f"No profile found for interface {profile_name}"}, status=400)
+        profile_id = profile["profile_id"]
+        # When updating the schema it happens one device per request, with the json data containing one devices info
+        try:
+            data = await request.json()
+        except Exception as e:
+            logging.error(f"Error parsing JSON data: {e}")
+            return web.json_response({"error": "Error parsing JSON data"}, status=400)
+        if len(data) != 1:
+            logging.error("Only one device can be updated at a time")
+            return web.json_response({"error": "Only one device can be updated at a time"}, status=400)
+        device_name = list(data.keys())[0]
+        device_info = data[device_name]
+
     async def handle_get_schema(self, request):
         """
         Schema example

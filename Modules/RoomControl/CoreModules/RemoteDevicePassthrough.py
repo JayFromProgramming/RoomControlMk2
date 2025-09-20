@@ -12,14 +12,17 @@ class RemoteDevicePassthrough(RoomModule):
         self.room_controller = room_controller
         self.database = room_controller.database
 
-        self.radiator_temp_sensor = self.room_controller.get_object("RadiatorSensor")
-        self.radiator = self.room_controller.get_object("Radiator")
+        self.radiator_temp_sensor = self.room_controller.get_object("Radiator-Sensor.Sensor")
+        self.radiator = self.room_controller.get_object("Radiator-Controller.Radiator")
         self.pass_temp()
 
     @background
     def pass_temp(self):
         logging.info("Starting radiator temp pass through")
         while True:
-            temp = self.radiator_temp_sensor.get_value('temperature')
-            self.radiator.emit_event('radiator_temp_update', temp)
+            try:
+                temp = self.radiator_temp_sensor.get_value('temperature')
+                self.radiator.emit_event('radiator_temp_update', temp)
+            except Exception as e:
+                logging.error(f"Error passing radiator temp: {e}")
             time.sleep(15)
