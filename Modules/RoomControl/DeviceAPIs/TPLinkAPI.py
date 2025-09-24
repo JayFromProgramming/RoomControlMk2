@@ -1,9 +1,7 @@
 import asyncio
-from kasa import Discover, Device
-from pycparser.c_ast import While
+from kasa import Discover
 
-from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.AbstractSmartDevices import AbstractRGB
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 from loguru import logger as logging
@@ -87,14 +85,10 @@ class TPLinkDevice(RoomObject, AbstractRGB):
 
     async def refresh_info(self):
         try:
-            start_time = asyncio.get_event_loop().time()
             await self.device.update()
-            end_time = asyncio.get_event_loop().time()
-            if end_time - start_time > 1.5:
-                logging.warning(f"TPLink device {self.device_name} took {end_time - start_time:.2f} seconds to respond")
         except Exception as e:
             logging.error(f"Error refreshing TPLink device {self.device_name}: {e}")
-            # logging.exception(e)
+            logging.exception(e)
             self.device_state_cache = {
                 "on": False,
                 "brightness": 0,

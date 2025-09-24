@@ -1,7 +1,7 @@
 import time
 
 from loguru import logger as logging
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 import multiprocessing

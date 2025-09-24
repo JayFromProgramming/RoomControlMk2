@@ -217,6 +217,9 @@ class PyNutServer:
             return ups in avail_ups
         except PyNUTError:
             return False
+        except Exception as e:
+            logging.error(f"Error checking UPS online status for {ups}: {e}")
+            return False
 
 
 class PyNutDevice(RoomObject):

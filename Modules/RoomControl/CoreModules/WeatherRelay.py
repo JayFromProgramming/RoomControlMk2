@@ -3,12 +3,17 @@ import math
 import os
 import time
 
+from aiohttp import web
+from aiohttp.web_routedef import RouteDef
 from pyowm.owm import OWM
+
+from Modules.APIModule import APIModule
+from Modules.RoomControl.API.datagrams import APIMessageTX
+
 from openmeteopy import OpenMeteo
 from openmeteopy.hourly import HourlyForecast
 from openmeteopy.options import ForecastOptions
-from threading import Thread
-import geocoder
+import geocoder.api as geocoder
 
 import requests
 
@@ -35,7 +40,7 @@ radar_base_url = "{host}/{path}/{size}/6/{x}/{y}/{color}/{options}.png"
 radar_tiles = [(x, y) for x in range(13, 21) for y in range(21, 25)]
 
 
-class WeatherRelay(RoomModule):
+class WeatherRelay(RoomModule, APIModule):
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
@@ -56,6 +61,8 @@ class WeatherRelay(RoomModule):
         logging.info(f"Location: {self.location_address} {self.location_latlong}")
         self.last_update = 0
         self.parsed_forecast = None
+        self.radar_fetch_background()
+        self.update_current_weather()
         self.hourly_forecast = HourlyForecast()
         self.forecast_options = ForecastOptions(self.location_latlong[0], self.location_latlong[1])
         self.openmeteo = OpenMeteo(self.forecast_options, self.hourly_forecast.all())
@@ -74,11 +81,16 @@ class WeatherRelay(RoomModule):
             os.makedirs("Cache", exist_ok=True)
             pickle.dump(self.forecast, open("Cache/forecast.pkl", "wb"))
             # self.forecast.last_update = time.time()
-
-        self.radar_fetch_background()
-        self.update_current_weather()
         self.update_forecast()
         self.parsed_forecast = self.rebuild_forecast()
+
+    def get_routes(self) -> list[RouteDef]:
+        return [web.get('/weather/now', self.handle_weather_now),
+                web.get('/weather/available_forecast', self.handle_weather_forecast_list),
+                web.get('/weather/forecast/{time}', self.handle_weather_forecast),
+                web.get('/weather/past/{from_time}/{to_time}', self.handle_weather_past),
+                web.get('/weather/available_radars', self.handle_radar_list),
+                web.get('/weather/radar/{timestamp}/{x}/{y}/{color}', self.handle_radar)]
 
     @background
     def update_forecast(self):
@@ -310,3 +322,51 @@ class WeatherRelay(RoomModule):
                 return forecast
         logging.error(f"Forecast not found for {forecast_time}")
         return None
+
+    async def handle_weather_now(self, request):
+        weather = self.current_weather.to_dict()
+        weather["wanted_location"] = self.location_latlong
+        weather["actual_location"] = str(self.actual_location)
+        return web.json_response(weather)
+
+    async def handle_weather_forecast_list(self, request):
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_FORECAST_LIST request")
+        if self.room_controller.get_module("WeatherRelay") is None:
+            return web.Response(text="Weather module not found", status=503)
+        data = self.get_available_forecast()
+        msg = APIMessageTX(weather_forecast_list=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_weather_forecast(self, request):
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_FORECAST request")
+        data = self.get_forecast(request.match_info['time'])
+        msg = APIMessageTX(weather_forecast=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_weather_past(self, request):
+        # if not self.check_auth(request):
+        #     raise web.HTTPUnauthorized()
+        # logging.info("Received WEATHER_PAST request")
+        return web.Response(text="Past weather data not implemented", status=501)
+        data = self.get_past()
+        msg = APIMessageTX(weather_past=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_radar_list(self, request):
+        data = self.get_available_radar()
+        msg = APIMessageTX(weather_radar_list=data)
+        return web.Response(text=msg.__str__())
+
+    async def handle_radar(self, request):
+        timestamp = request.match_info['timestamp']
+        x = request.match_info['x']
+        y = request.match_info['y']
+        color = request.match_info['color']
+        data = self.get_radar_tile(timestamp, x, y, color)
+        if data is None:
+            return web.Response(status=404)
+        return web.Response(body=data, content_type="image/png")

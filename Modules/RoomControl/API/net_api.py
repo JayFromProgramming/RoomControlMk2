@@ -9,24 +9,19 @@ from aiohttp import web
 import ssl
 import hashlib
 
+from Modules.APIModule import APIModule
 # from Modules.RoomControl.API import page_builder
 from Modules.RoomControl.API.action_handler import process_device_command
 from Modules.RoomControl.API.datagrams import APIMessageTX, APIMessageRX
 from Modules.RoomControl.API.name_handler import NameHandler
 from Modules.RoomControl.API.sys_info_generator import generate_sys_info
 
-from Modules.RoomControl.API.SchemaBuilder import SchemaBuilder
-
 from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
 
-
-# I really want too break this module up into smaller modules, but I just haven't had the time yet.
-
 def login_redirect():
     return web.HTTPFound("/login")
-
 
 def get_host_names():
     """
@@ -96,60 +91,29 @@ class NetAPI(RoomModule):
         super().__init__(room_controller)
         self.runner = None
         self.room_controller = room_controller
+        self.api_modules = []
         self.database = room_controller.database
         self.occupancy_detector = room_controller.get_module("OccupancyDetector")
-        self.schema_builder = SchemaBuilder(room_controller)
 
-        self.scene_controller = room_controller.get_module("SceneController")
-        self.command_controller = room_controller.get_module("CommandController")
         # self.data_logger = datalogger  # type: # DataLoggerHost
         self.name_handler = NameHandler(room_controller)
 
         self.init_database()
 
-        # self.ssl_context =
-
-        self.app = web.Application(middlewares=[blacklist_middleware])
-        self.app.on_response_prepare.append(on_prepare)
-        self.app.add_routes(  # Yes this could be done with a loop, but this is easier for me to keep track of
-            [web.get('', self.handle_web)]
-            + [web.get("/page/{page}", self.handle_page)]
-            + [web.get('/login', self.handle_login)]
-            + [web.post('/login_auth', self.handle_login_auth)]
-            + [web.get('/auth/{api_key}', self.handle_auth)]
-            + [web.get('/set/{name}', self.handle_set)]
-            + [web.get('/get/{name}', self.handle_get)]
-            + [web.get('/get_type/{name}', self.handle_get_type)]
-            + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
-            + [web.get('/get_all', self.handle_get_all)]
-            + [web.get('/get_schema', self.handle_schema)]
-            + [web.get('/scene_get/{value}/{target}', self.handle_get_scenes)]
-            + [web.post('/scene_action/{action}/{scene_id}', self.handle_scene_command)]
-            + [web.get('/run_command/{name}', self.handle_run_command)]
-            + [web.get('/sys_info', self.handle_sys_info)]
-            + [web.get('/get_system_monitors', self.handle_system_monitors)]
-            + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
-            + [web.post('/set/{name}', self.handle_set_post)]
-            + [web.get('/page/css/{file}', self.handle_css)]
-            + [web.get('/page/js/{file}', self.handle_js)]
-            + [web.get('/page/img/{file}', self.handle_img)]
-            + [web.get('/name/{device_id}', self.handle_name)]
-            + [web.get('/set_name/{device_id}/{new_name}', self.set_name)]
-            + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
-            + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
-            + [web.get('/weather/now', self.handle_weather_now)]
-            + [web.get('/weather/available_forecast', self.handle_weather_forecast_list)]
-            + [web.get('/weather/forecast/{time}', self.handle_weather_forecast)]
-            + [web.get('/weather/past/{from_time}/{to_time}', self.handle_weather_past)]
-            + [web.get('/weather/available_radars', self.handle_radar_list)]
-            + [web.get('/weather/radar/{timestamp}/{x}/{y}/{color}', self.handle_radar)]
-            + [web.post('/satellite_firmware_upload', self.handle_satellite_firmware_upload)]
-            # + self.schema_builder.get_routes()
-        )
+        if sys.platform == "linux":
+            logging.info("Using Let's Encrypt certificate for SSL")
+            self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            self.ssl_context.load_cert_chain(f"/etc/letsencrypt/live/moldy.mug.loafclan.org/fullchain.pem",
+                                             f"/etc/letsencrypt/live/moldy.mug.loafclan.org/privkey.pem")
+        else:
+            logging.warning("Using self-signed certificate for SSL!")
+            self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            self.ssl_context.load_cert_chain(f"cert.pem",
+                                             f"key.pem")
 
         # Set webserver address and port
         self.webserver_address = get_host_names()
-        self.webserver_port = 80
+        self.webserver_port = 443
 
         # List of cookies that are authorized to access the API
         results = self.database.get("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))
@@ -162,20 +126,48 @@ class NetAPI(RoomModule):
         logging.info(f"Loaded {len(self.authorized_cookies)} authorized cookies")
         logging.info(f"Loaded {len(self.login_lockouts)} login lockouts")
 
-        # Load the schema
-        # with open("Modules/RoomControl/Configs/schema.json") as f:
-        #     self.schema = json.load(f)
-        logging.info("Loaded schema")
-        # self.app.logger = None
-        self.runner = web.AppRunner(self.app, access_log=None)
-        logging.info("Created runner")
 
     async def get_site(self):
-        if self.runner is None:
-            logging.warning("NetAPI has not finished initializing yet")
-            await asyncio.sleep(15)
-        await self.runner.setup()
-        site = web.TCPSite(self.runner, self.webserver_address, self.webserver_port)
+
+        all_room_modules = self.room_controller.get_modules()
+        # Filter to all modules that are a subclass of APIModule
+        self.api_modules = [module for module in all_room_modules if issubclass(module.__class__, APIModule)]
+        for module in self.api_modules:
+            module.pass_network_api(self)
+        api_routes = [route for module in self.api_modules for route in module.get_routes()]
+        logging.info(f"Found {len(self.api_modules)} other API modules with a total of {len(api_routes)} routes")
+
+        app = web.Application(middlewares=[blacklist_middleware])
+        app.on_response_prepare.append(on_prepare)
+        app.add_routes(
+            [web.get('', self.handle_web)]
+            + [web.get("/page/{page}", self.handle_page)]
+            + [web.get('/login', self.handle_login)]
+            + [web.post('/login_auth', self.handle_login_auth)]
+            + [web.get('/auth/{api_key}', self.handle_auth)]
+            + [web.get('/set/{name}', self.handle_set)]
+            + [web.get('/get/{name}', self.handle_get)]
+            + [web.get('/get_type/{name}', self.handle_get_type)]
+            + [web.post('/set/device_ping_update/{name}', self.handle_device_ping_update)]
+            + [web.get('/get_all', self.handle_get_all)]
+            + [web.get('/sys_info', self.handle_sys_info)]
+            + [web.get('/get_system_monitors', self.handle_system_monitors)]
+            + [web.get('/db_write', self.db_writer)]  # Allows you to write to the database
+            + [web.post('/set/{name}', self.handle_set_post)]
+            + [web.get('/page/css/{file}', self.handle_css)]
+            + [web.get('/page/js/{file}', self.handle_js)]
+            + [web.get('/page/img/{file}', self.handle_img)]
+            + [web.get('/name/{device_id}', self.handle_name)]
+            + [web.get('/set_name/{device_id}/{new_name}', self.set_name)]
+            + [web.get('/get_data_log_sources', self.handle_data_log_sources)]
+            + [web.get('/get_data_log/{log_name}/{start}/{end}', self.handle_data_log_get)]
+            + [web.post('/satellite_firmware_upload', self.handle_satellite_firmware_upload)]
+            + api_routes
+        )
+
+        runner = web.AppRunner(app, access_log=None)
+        await runner.setup()
+        site = web.TCPSite(runner, self.webserver_address, self.webserver_port, ssl_context=self.ssl_context)
         return site
 
     def init_database(self):
@@ -558,51 +550,6 @@ class NetAPI(RoomModule):
         else:
             return web.HTTPNotFound()
 
-    async def handle_get_scenes(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        logging.debug("Received GET_SCENES request")
-
-        if self.room_controller.get_module("SceneController") is None:
-            msg = APIMessageTX(error="Scene controller not found")
-        else:
-            value = request.match_info['value']
-            target = request.match_info['target']
-            msg = APIMessageTX(result=self.room_controller.get_module("SceneController").execute_get(value, target))
-
-        return web.Response(text=msg.__str__())
-
-    async def handle_scene_command(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        logging.info("Received SET_SCENE request")
-
-        if self.room_controller.get_module("SceneController") is None:
-            msg = APIMessageTX(error="Scene controller not found")
-        else:
-            command = request.match_info['action']
-            scene_id = request.match_info['scene_id']
-            payload = await request.json()
-            result = self.room_controller.get_module("SceneController"). \
-                execute_command(command, scene_id, payload)
-            msg = APIMessageTX(result=result)
-
-        return web.Response(text=msg.__str__())
-
-    async def handle_run_command(self, request):
-        if not self.check_auth(request):
-            raise web.HTTPUnauthorized()
-        logging.info("Received RUN_COMMAND request")
-
-        if self.command_controller is None:
-            msg = APIMessageTX(error="Scene controller not found")
-        else:
-            command_name = request.match_info['name']
-            self.command_controller.run_command(command_name)
-            msg = APIMessageTX()
-
-        return web.Response(text=msg.__str__())
-
     async def handle_sys_info(self, request):
         if not self.check_auth(request):
             raise web.HTTPUnauthorized()
@@ -647,62 +594,6 @@ class NetAPI(RoomModule):
         data = self.room_controller.get_module("DataLoggingHost").get_data(source, start, end)
         msg = APIMessageTX(data_log=data, source=source)
         return web.Response(text=msg.__str__())
-
-    async def handle_weather_now(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
-        # logging.info("Received WEATHER_NOW request")
-        if self.room_controller.get_module("WeatherRelay") is None:
-            return web.Response(text="Weather module not found", status=503)
-        if self.room_controller.get_module("WeatherRelay").current_weather is None:
-            return web.Response(text="Weather data not found", status=503)
-        weather = self.room_controller.get_module("WeatherRelay").current_weather.to_dict()
-        weather["wanted_location"] = self.room_controller.get_module("WeatherRelay").location_latlong
-        weather["actual_location"] = str(self.room_controller.get_module("WeatherRelay").actual_location)
-        return web.json_response(weather)
-
-    async def handle_weather_forecast_list(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
-        # logging.info("Received WEATHER_FORECAST_LIST request")
-        if self.room_controller.get_module("WeatherRelay") is None:
-            return web.Response(text="Weather module not found", status=503)
-        data = self.room_controller.get_module("WeatherRelay").get_available_forecast()
-        msg = APIMessageTX(weather_forecast_list=data)
-        return web.Response(text=msg.__str__())
-
-    async def handle_weather_forecast(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
-        # logging.info("Received WEATHER_FORECAST request")
-        data = self.room_controller.get_module("WeatherRelay").get_forecast(request.match_info['time'])
-        msg = APIMessageTX(weather_forecast=data)
-        return web.Response(text=msg.__str__())
-
-    async def handle_weather_past(self, request):
-        # if not self.check_auth(request):
-        #     raise web.HTTPUnauthorized()
-        # logging.info("Received WEATHER_PAST request")
-        data = self.room_controller.get_module("WeatherRelay").get_past()
-        msg = APIMessageTX(weather_past=data)
-        return web.Response(text=msg.__str__())
-
-    async def handle_radar_list(self, request):
-        if self.room_controller.get_module("WeatherRelay") is None:
-            return web.Response(text="Weather module not found", status=503)
-        data = self.room_controller.get_module("WeatherRelay").get_available_radar()
-        msg = APIMessageTX(weather_radar_list=data)
-        return web.Response(text=msg.__str__())
-
-    async def handle_radar(self, request):
-        timestamp = request.match_info['timestamp']
-        x = request.match_info['x']
-        y = request.match_info['y']
-        color = request.match_info['color']
-        data = self.room_controller.get_module("WeatherRelay").get_radar_tile(timestamp, x, y, color)
-        if data is None:
-            return web.Response(status=404)
-        return web.Response(body=data, content_type="image/png")
 
     async def handle_device_ping_update(self, request):
         if not self.check_auth(request):

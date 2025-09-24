@@ -1,14 +1,11 @@
-import asyncio
 import random
 import time
 
-import aiohttp
 import requests
 
-import ConcurrentDatabase
-from Modules.RoomControl.AbstractSmartDevices import AbstractToggleDevice
+from Modules.RoomControl.CoreModules.AbstractSmartDevices import AbstractToggleDevice
 
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.Decorators import background
 
 from loguru import logger as logging
 
@@ -147,18 +144,20 @@ class VoiceMonkeyDevice(RoomObject, AbstractToggleDevice):
 
     @background
     def run_monkey(self, monkey, state_after=None):
-
-        device_host = self.room_controller.get_module("GoveeAPI").get_device(self.govee_host)
-        if device_host is None:
-            # logging.error(f"VoiceMonkey ({monkey}): Could not find Govee device {self.govee_host}")
-            self.online = False
-            self.offline_reason = "Govee Device Not Found"
-            return
-        else:
-            self.online = device_host.online if device_host.initialized else True
-            self.offline_reason = "Plug Offline" if not device_host.online else "Unknown"
-            if not device_host.online:
+        govee = self.room_controller.get_module("GoveeAPI")
+        device_host = None
+        if govee is not None:
+            device_host = govee.get_device(self.govee_host)
+            if device_host is None:
+                # logging.error(f"VoiceMonkey ({monkey}): Could not find Govee device {self.govee_host}")
+                self.online = False
+                self.offline_reason = "Govee Device Not Found"
                 return
+            else:
+                self.online = device_host.online if device_host.initialized else True
+                self.offline_reason = "Plug Offline" if not device_host.online else "Unknown"
+                if not device_host.online:
+                    return
 
         url = template.format(token=self.monkey_token, secret=self.monkey_secret, monkey=monkey)
         logging.debug(f"Running monkey {monkey}")

@@ -1,9 +1,9 @@
 import time
 from socket import timeout
-from lifxlan import LifxLAN, Light, Acknowledgement, BROADCAST_MAC, DEFAULT_TIMEOUT, DEFAULT_ATTEMPTS, UDP_BROADCAST_IP_ADDRS, UDP_BROADCAST_PORT, \
+from lifxlan import LifxLAN, Acknowledgement, BROADCAST_MAC, DEFAULT_TIMEOUT, DEFAULT_ATTEMPTS, UDP_BROADCAST_IP_ADDRS, UDP_BROADCAST_PORT, \
     unpack_lifx_message
-from Modules.RoomControl.AbstractSmartDevices import AbstractRGB
-from Modules.RoomControl.Decorators import background
+from Modules.RoomControl.CoreModules.AbstractSmartDevices import AbstractRGB
+from Modules.RoomControl.CoreModules.Decorators import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 from loguru import logger as logging
@@ -125,7 +125,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         self.current_color = color
 
     def get_color(self) -> list:
-        return self.device.get_color()
+        return self.current_color
 
     def set_brightness(self, brightness: int):
         self.set_white(brightness)
@@ -169,7 +169,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
         return {
             "on": self.current_power > 0,
             "brightness": self.get_brightness(),
-            "color": self.current_color,
+            "color": [0, 0, 0],
             "cold_white": 0,
             "warm_white": self.get_white(),
             "white_enabled": True,

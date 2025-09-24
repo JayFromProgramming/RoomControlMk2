@@ -2,11 +2,11 @@ import traceback
 import typing
 
 from Modules.RoomControl.API.datagrams import APIMessageRX, APIMessageTX
-from Modules.RoomControl.AbstractSmartDevices import AbstractRGB, AbstractToggleDevice
+from Modules.RoomControl.CoreModules.AbstractSmartDevices import AbstractRGB, AbstractToggleDevice
 
 from loguru import logger as logging
 
-from Modules.RoomControl.EnvironmentController import EnvironmentController
+from Modules.RoomControl.AutomatedControllers.EnvironmentController import EnvironmentController
 
 
 def process_device_command(device:
