@@ -1,6 +1,6 @@
 {
   "B4E842D7A9F8": {
-    "group": "Kitchen",
+    "group": "Living Room",
     "starred": true
   },
   "18B905D086A5": {
@@ -48,7 +48,7 @@
     "starred": false
   },
   "plug_2": {
-    "group": "Kitchen",
+    "group": "Living Room",
     "starred": true
   },
   "temperature_control": {
@@ -96,7 +96,7 @@
     "starred": false
   },
   "3c:52:a1:4c:f9:03": {
-    "group": null,
+    "group": "Kitchen",
     "starred": false
   }
 }
