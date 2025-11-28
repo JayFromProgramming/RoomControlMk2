@@ -143,9 +143,10 @@ class DataLogger:
         if self.attribute is not None:
             # Check if the source is a promise object
             if self.source.is_promise is True:
+                logging.warning(f"DataLogger ({self.name}): Source is a promise object, skipping log")
                 return  # Can't log promise objects
-            if self.source.is_ready() is False:
-                logging.error(f"DataLogger ({self.name}): Source not ready")
+            # if self.source.is_ready() is False:
+            #     logging.error(f"DataLogger ({self.name}): Source not ready")
                 return
             if self.attribute.startswith(";"):
                 value = self.source.get_value(self.attribute[1:])
