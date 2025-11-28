@@ -142,14 +142,17 @@ class DataLogger:
         """Log the current value of the data source"""
         if self.attribute is not None:
             # Check if the source is a promise object
-            if self.source.is_promise is True:
-                logging.warning(f"DataLogger ({self.name}): Source is a promise object, skipping log")
-                return  # Can't log promise objects
+            # if self.source.is_promise is True:
+            #     logging.warning(f"DataLogger ({self.name}): Source is a promise object, skipping log")
+            #     return  # Can't log promise objects
             # if self.source.is_ready() is False:
             #     logging.error(f"DataLogger ({self.name}): Source not ready")
-                return
+            #     return
             if self.attribute.startswith(";"):
+                # TODO: Find a better way to do this
                 value = self.source.get_value(self.attribute[1:])
+                if value == 0:
+                    return
             elif hasattr(self.source, self.attribute):
                 if callable(getattr(self.source, self.attribute)):
                     value = getattr(self.source, self.attribute)()
