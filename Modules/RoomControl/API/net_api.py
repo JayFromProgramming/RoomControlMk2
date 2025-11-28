@@ -20,8 +20,10 @@ from loguru import logger as logging
 
 from Modules.RoomModule import RoomModule
 
+
 def login_redirect():
     return web.HTTPFound("/login")
+
 
 def get_host_names():
     """
@@ -45,10 +47,11 @@ IP_BLACKLIST = ["83.97", "104.237"]
 lock = asyncio.Lock()
 request_list = []  # Keep track of how many request are being processed for debugging purposes
 
+
 async def blacklist_middleware(app, handler):
     async def middleware_handler(request):
         global request_list, lock
-        request.task.set_name(f"{request.remote}-[{request.path}]-{random.randint(0,1000)}")
+        request.task.set_name(f"{request.remote}-[{request.path}]-{random.randint(0, 1000)}")
         request_list.append(request)
         if len(request_list) > 50:
             logging.warning(f"High number of concurrent requests: {len(request_list)}")
@@ -99,15 +102,19 @@ class NetAPI(RoomModule):
         self.name_handler = NameHandler(room_controller)
 
         self.init_database()
+        self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 
         if sys.platform == "linux":
             logging.info("Using Let's Encrypt certificate for SSL")
-            self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
             self.ssl_context.load_cert_chain(f"/etc/letsencrypt/live/moldy.mug.loafclan.org/fullchain.pem",
                                              f"/etc/letsencrypt/live/moldy.mug.loafclan.org/privkey.pem")
         else:
             logging.warning("Using self-signed certificate for SSL!")
-            self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            if not os.path.isfile("cert.pem") or not os.path.isfile("key.pem"):
+                # Run openssl to create a self-signed certificate
+                logging.info("Generating self-signed certificate for SSL")
+                os.system("openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout key.pem "
+                            "-subj \"/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost\"")
             self.ssl_context.load_cert_chain(f"cert.pem",
                                              f"key.pem")
 
@@ -125,7 +132,6 @@ class NetAPI(RoomModule):
                                results}  # type: dict
         logging.info(f"Loaded {len(self.authorized_cookies)} authorized cookies")
         logging.info(f"Loaded {len(self.login_lockouts)} login lockouts")
-
 
     async def get_site(self):
 

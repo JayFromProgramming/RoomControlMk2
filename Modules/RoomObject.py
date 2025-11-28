@@ -20,6 +20,9 @@ class RoomObject:
     def name(self):
         return self.object_name or self.object_type
 
+    def is_ready(self) -> bool:
+        return False  # This method is used by the DataLogger to determine if the object is ready for logging
+
     # def get_type(self):
     #     return self.object_type
 

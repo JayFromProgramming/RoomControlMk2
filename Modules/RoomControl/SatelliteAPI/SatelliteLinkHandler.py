@@ -12,7 +12,7 @@ class SatelliteLinkHandler:
     Handles the connection to the satellite API.
     """
 
-    NULL_TERM_ESCAPE  = 0x08  # Escape character for null termination in uplink messages
+    NULL_TERM_ESCAPE = 0x08  # Escape character for null termination in uplink messages
     NULL_TERM_REPLACE = 0x01  # Replacement character for null termination in uplink messages
     NULL_TERM_ESCAPE_REPLACE = 0x02  # Replacement character for escaped null termination in uplink messages
 
@@ -43,12 +43,11 @@ class SatelliteLinkHandler:
             logging.warning("Message contains null bytes, which should not happen")
         return filtered_message
 
-
     def __init__(self, socket_reader: asyncio.StreamReader, socket_writer: asyncio.StreamWriter):
         """
         Initialize the connection handler with the websocket connection and room controller.
         """
-        self.socket_writer : asyncio.StreamWriter = socket_writer
+        self.socket_writer: asyncio.StreamWriter = socket_writer
         self.socket_reader: asyncio.StreamReader = socket_reader
         self.uplink_task: Optional[asyncio.Task] = None
         self.downlink_task: Optional[asyncio.Task] = None
