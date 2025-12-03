@@ -16,7 +16,6 @@ except ImportError:
     PyNUTClient = None
     PyNUTError = None
 
-
 status_lookup = {
     "ALARM": "ALARM",
     "BOOST": "Boosting",
@@ -36,6 +35,7 @@ status_lookup = {
     "TEST": "Under Test",
     "TRIM": "Trim Active"
 }
+
 
 class PyNutAPI(RoomModule):
     """
@@ -71,7 +71,6 @@ class PyNutAPI(RoomModule):
             else:
                 logging.warning(f"NUT server {row['ups_server']} not found for device {row['ups_name']}")
 
-
     def init_database(self):
         """
         Initialize the database for PyNutAPI.
@@ -91,6 +90,7 @@ class PyNutAPI(RoomModule):
 
     def wait_for_ready(self):
         pass
+
 
 class PyNutServer:
 
@@ -135,6 +135,7 @@ class PyNutServer:
                     if "BEGIN LIST UPS" in str(e):
                         self._connect()
                         continue
+
         return wrapper
 
     @nut_func
@@ -152,7 +153,6 @@ class PyNutServer:
         for status in status_list:
             final_status += status_lookup.get(status, status) + ", "
         return final_status[:-2]  # Remove trailing comma and space
-
 
     def get_max_output(self, ups):
         return int(self.get_ups_data(ups).get("ups.realpower.nominal", 0))
@@ -223,7 +223,6 @@ class PyNutServer:
 
 
 class PyNutDevice(RoomObject):
-
     supported_actions = ["self_test_quick", "self_test_extended", "self_test_cancel", "shutdown", "silence_alarm"]
 
     """
@@ -310,6 +309,11 @@ class PyNutDevice(RoomObject):
             "max_output": self.device_info["max_output"],
             "input_nominal": self.device_info["input_nominal"],
         }
+
+    def get_value(self, key):
+        if not self.device_info:
+            return None
+        return self.device_info.get(key, None)
 
     def get_type(self):
         return "UPSDevice"

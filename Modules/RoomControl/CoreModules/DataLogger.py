@@ -52,6 +52,7 @@ class DataLoggingHost(RoomModule):
             data_source = self.get_source(source['source_name'])
             self.loggers[source['name']] = DataLogger(source['name'], self.database, source=data_source,
                                                       logging_interval=source['logging_interval'],
+                                                      filter_zero=source['source_name'] == "Radiator-Controller.LivingRoomSensor",  # TODO: Remove hack
                                                       enabled=source['enabled'], unit=source['unit'],
                                                       attribute=source['attribute'], uuid=source['uuid'])
         logging.info("DataLoggingHost: All loggers initialized")
@@ -112,10 +113,11 @@ class DataLoggingHost(RoomModule):
 
 class DataLogger:
 
-    def __init__(self, name, database, source, logging_interval=30,
+    def __init__(self, name, database, source, logging_interval=30, filter_zero=False,
                  enabled=True, unit="", attribute=None, uuid=None):
         logging.info(f"DataLogger ({name}): Initializing")
         self.name = name
+        self.filter_zero = filter_zero
         self.database = database
         self.table = self.database.get_table("data_logging")
         self.source = source
@@ -141,10 +143,17 @@ class DataLogger:
     def log(self):
         """Log the current value of the data source"""
         if self.attribute is not None:
+            # Check if the source is a promise object
+            # if self.source.is_promise is True:
+            #     logging.warning(f"DataLogger ({self.name}): Source is a promise object, skipping log")
+            #     return  # Can't log promise objects
+            # if self.source.is_ready() is False:
+            #     logging.error(f"DataLogger ({self.name}): Source not ready")
+            #     return
             if self.attribute.startswith(";"):
+                # TODO: Find a better way to do this
                 value = self.source.get_value(self.attribute[1:])
-                if value == 0:
-                    logging.error(f"DataLogger ({self.name}): Attribute {self.attribute[1:]} not initialized")
+                if value == 0 and self.filter_zero is True:
                     return
             elif hasattr(self.source, self.attribute):
                 if callable(getattr(self.source, self.attribute)):

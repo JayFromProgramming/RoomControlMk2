@@ -5,6 +5,7 @@ from loguru import logger as logging
 
 from Modules.RoomObject import RoomObject
 
+
 class SatelliteDevice(RoomObject):
     is_promise = False
     is_satellite = True
@@ -26,6 +27,7 @@ class SatelliteDevice(RoomObject):
         asyncio.create_task(self.heartbeat())
         super().__init__(self.device_id, device_type)
         self.room_controller.attach_object(self)
+        self._ready = False
 
     def set_value(self, key, value):
         """
@@ -36,6 +38,9 @@ class SatelliteDevice(RoomObject):
         if self._values.get(key, None) != value:
             self.emit_event(f"on_{key}_update", value, dont_repeat=True)
         self._values[key] = value
+
+    def is_ready(self):
+        return self._ready
 
     def get_state(self):
         return self.get_values()
@@ -59,7 +64,7 @@ class SatelliteDevice(RoomObject):
     def get_health(self):
         online = self.satellite_handler.online() and self._health.get("online", False)
         fault = self._health.get("fault", False)
-        reason = self._health.get("reason", "") if self.satellite_handler.online() else\
+        reason = self._health.get("reason", "") if self.satellite_handler.online() else \
             f"Satellite [{self.satellite_handler.satellite_id}] is offline"
         return {
             "online": online,

@@ -137,6 +137,7 @@ class SatelliteHandler:
                 if sub_device:
                     # logging.info(f"Updating sub-device {sub_device.device_id} with data: {device_data}")
                     for key, value in device_data.items():
+                        sub_device._is_ready = True
                         if key == "state":
                             for state_key, state_value in value.items():
                                 sub_device.set_value(state_key, state_value)
