@@ -55,7 +55,8 @@ class SchemaHandler(RoomModule, APIModule):
             }
         return devices
 
-    def make_default_schema(self, devices):
+    @staticmethod
+    def make_default_schema(devices):
         schema = {}
         for device_name in devices:
             schema[device_name] = {
@@ -73,7 +74,6 @@ class SchemaHandler(RoomModule, APIModule):
             logging.info(f"Schema for interface {target_interface} already exists, skipping import")
             return
 
-
         logging.info(f"Importing old schema for interface {target_interface}")
         with open("Modules/RoomControl/Configs/new_schema.json", "r") as f:
             old_schema = json.load(f)
@@ -81,7 +81,6 @@ class SchemaHandler(RoomModule, APIModule):
         # Create a new profile for the target interface
         profile_entry = profile_table.add(interface_name=target_interface)
         profile_id = profile_entry["profile_id"]
-
 
         group_number = 1
         for device_name, device_info in old_schema.items():
