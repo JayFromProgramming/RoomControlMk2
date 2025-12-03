@@ -104,6 +104,7 @@ class LIFXDevice(RoomObject, AbstractRGB):
     supported_actions = ["on", "brightness", "fade", "white"]
 
     def __init__(self, device, room_controller):
+        AbstractRGB.__init__(self)
         super().__init__(device.get_mac_addr(), "LIFXDevice")
         self.fault = None
         logging.info(f"Creating LIFXDevice {device.get_label()}: {device.get_mac_addr()}@{device.get_ip_addr()}")

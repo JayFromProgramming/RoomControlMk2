@@ -69,7 +69,8 @@ class TPLinkDevice(RoomObject, AbstractRGB):
     supported_actions = ["on", "brightness", "fade", "white"]
 
     def __init__(self, device, room_controller):
-        super().__init__(device.mac, "TPLinkDevice")
+        AbstractRGB.__init__(self)
+        RoomObject.__init__(self, device.mac, "TPLinkDevice")
         self.device = device
         self.device_name = device.alias
         self.device_id = device.mac
@@ -80,6 +81,17 @@ class TPLinkDevice(RoomObject, AbstractRGB):
         self.device_state_cache = {}
 
         self.last_brightness_command = -1
+
+        self.device_state_cache = {
+            "on": False,
+            "brightness": 0,
+            "color": [0, 0, 0],
+            "white": 0,
+            "rssi": 0,
+            "online": False,
+            "reason": "Not yet updated",
+            "last_updated": None,
+        }
 
         room_controller.attach_object(self)
 
@@ -95,9 +107,10 @@ class TPLinkDevice(RoomObject, AbstractRGB):
                 "color": [0, 0, 0],
                 "white": 0,
                 "rssi": 0,
-                "online": False,
-                "reason": str(e)
+                "reason": str(e),
+                "last_updated": None,
             }
+            self.online = False
             return
         on = self.device.is_on
         brightness = self.device.brightness / 100 * 255
@@ -111,13 +124,15 @@ class TPLinkDevice(RoomObject, AbstractRGB):
             else:
                 self.last_brightness_command = -1
         rssi = self.device.rssi
+        self.online = True
         self.device_state_cache = {
             "on": on,
             "brightness": brightness,
             "color": [0, 0, 0],
             "white": brightness,
             "rssi": rssi,
-            "online": True,
+            "last_updated": asyncio.get_event_loop().time(),
+            "reason": "OK"
         }
 
     async def send_commands(self):
@@ -155,40 +170,41 @@ class TPLinkDevice(RoomObject, AbstractRGB):
         self.device_command_queue.put_nowait(("set_brightness", round(brightness / 255 * 100)))
 
     def get_brightness(self) -> int:
-        return self.device_state_cache.get("brightness", 0)
+        return self.device_state_cache.get("brightness", -1)
 
     def set_white(self, white: int):
         self.set_brightness(white)
 
     def get_white(self) -> int:
-        return self.device_state_cache.get("white", 0)
+        return self.device_state_cache.get("white", -1)
 
     def set_on(self, on: bool):
         self.device_command_queue.put_nowait(("set_on", on))
 
     def get_on(self) -> bool:
-        return self.device_state_cache.get("on", None)
+        return self.device_state_cache.get("on", False)
 
     def get_status(self):
         return {
             "on": self.device_state_cache.get("on", False),
-            "brightness": self.device_state_cache.get("brightness", 0),
+            "brightness": self.device_state_cache.get("brightness", -1),
             "color": self.device_state_cache.get("color", [0, 0, 0]),
             "cold_white": 0,
-            "warm_white": self.device_state_cache.get("white", 0),
-            "white_enabled": False,
-            "fade_active": False,
+            "warm_white": self.device_state_cache.get("white", -1),
+            "white_enabled": True if self.device_state_cache.get("white", -1) > 0 else False,
+            "fade_active": self.fading
         }
 
     def get_health(self) -> dict:
         return {
-            "online": self.device_state_cache.get("online", False),
+            "online": self.online,
             "reason": self.device_state_cache.get("reason", "Unknown")
         }
 
     def get_info(self) -> dict:
         return {
             "rssi": self.device_state_cache.get("rssi", 0),
+            "last_updated": self.device_state_cache.get("last_updated", None)
         }
 
 

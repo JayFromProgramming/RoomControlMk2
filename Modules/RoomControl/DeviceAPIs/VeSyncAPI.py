@@ -73,7 +73,6 @@ class VeSyncPlug(RoomObject, AbstractToggleDevice):
 
     def __init__(self, device, room_controller):
         super(VeSyncPlug, self).__init__(device.device_name, "VeSyncPlug")
-
         self.device = device
         self.device_name = device.device_name
         self.cached_details = {}

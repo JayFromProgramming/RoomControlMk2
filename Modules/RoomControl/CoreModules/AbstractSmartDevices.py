@@ -1,4 +1,5 @@
 import functools
+import random
 import threading
 import time
 
@@ -11,9 +12,12 @@ class AbstractRGB:
         self.online = None
         self.is_auto = False
         self.fading = False
-        self.fade_thread = None
+        self.fade_thread = None  # type: threading.Thread | None
         self.auto_mode = "Unknown"
         self.offline_reason = "Unknown"
+
+        self._fade_lock = threading.Lock()
+        self._fade_cancel_event = threading.Event()
 
     def set_auto(self, auto: bool, mode: str):
         self.is_auto = auto
@@ -39,14 +43,19 @@ class AbstractRGB:
     def color(self, color: tuple):
         if color is None:
             return
-        self.fading = False
+        with self._fade_lock:
+            if self.fading:
+                self.fading = False
+                self._fade_cancel_event.set()
+                if self.fade_thread is not None:
+                    self.fade_thread.join()
         self.set_color(color)
 
     def set_brightness(self, brightness: int):
         raise NotImplementedError
 
     def get_brightness(self) -> int:
-        return 0
+        raise NotImplementedError
 
     @property
     def brightness(self) -> int:
@@ -72,7 +81,12 @@ class AbstractRGB:
 
     @on.setter
     def on(self, on: bool):
-        self.fading = False
+        with self._fade_lock:
+            if self.fading:
+                self.fading = False
+                self._fade_cancel_event.set()
+                if self.fade_thread is not None:
+                    self.fade_thread.join()
         self.set_on(on)
 
     def set_white(self, white: int):
@@ -91,59 +105,98 @@ class AbstractRGB:
 
     def _fade_process(self, target: tuple, fade_time: int):
         """
-        :param target: [red, green, blue, warm_white] if warm_white is not null color is ignored
-        :param fade_time: The time in seconds that the fade should take
-        :return: No return
+        Optimized fade loop:
+        - Uses monotonic clock for timing.
+        - Computes step_count based on largest channel change (or white).
+        - Uses float accumulation and rounds only when calling device setters.
+        - Checks a cancel event to abort promptly.
         """
         try:
-            start_color, start_white = self.get_color(), self.get_white() if self.on else 0
-            end_color, end_white = target, target[3] if len(target) == 4 else None
-            # Calculate how many steps will be needed to take to get to the end color
-            color_diff, white_diff = [end_color[i] - start_color[i] for i in range(3)], end_white - start_white
-            color_steps, white_steps = max([abs(color_diff[i]) for i in range(3)]), abs(white_diff)
-            step_count = white_steps if white_diff != 0 else color_steps
-            # print(f"Step count: {step_count}, color_diff: {start_color} -> {end_color} = {color_diff}, "
-            #       f"white_diff: {start_white} -> {end_white} = {white_diff}")
-            if step_count == 0:
+            start_monotonic = time.monotonic()
+            start_color = self.get_color() if self.on else [0, 0, 0]
+            start_white = self.get_white() if self.on else 0
+
+            # Normalize target
+            if target is None:
+                logging.info("Fade target is None, aborting")
                 return
+            end_color = list(target[:3])
+            end_white = target[3] if len(target) == 4 else None
+
+            color_diff = [end_color[i] - start_color[i] for i in range(3)]
+            white_diff = (end_white - start_white) if end_white is not None else 0
+
+            # Number of steps is the maximum absolute change to ensure smooth increments
+            step_count = max([abs(d) for d in color_diff] + ([abs(white_diff)] if end_white is not None else [0])) or 0
+            if step_count == 0 or fade_time <= 0:
+                # Direct set if no stepping needed or invalid time
+                if end_white is None:
+                    self.set_color(tuple(int(round(c)) for c in end_color))
+                else:
+                    self.set_white(int(round(end_white)))
+                return
+
             step_time = fade_time / step_count
-            step_exceedance = 0
-            for i in range(step_count):
-                if step_exceedance > step_time:
-                    logging.warning(f"Skipping step {i} due to step time overrun")
-                    step_exceedance = 0
-                    continue
-                step_start = time.time()
-                if not self.fading:
-                    logging.info("Fade aborted")
+
+            # Add a slight start delay which is some random fraction of step_time to avoid all devices updating simultaneously
+            initial_delay = step_time * random.uniform(0, 1)
+            time.sleep(initial_delay)
+            start_monotonic += initial_delay  # Adjust start time to account for initial delay
+
+            logging.info(f"Fading over {fade_time}s in {step_count} steps, step time {step_time:.4f}s")
+
+            # Use floats for internal progression to avoid cumulative rounding error
+            for step in range(1, int(step_count) + 1):
+                if self._fade_cancel_event.is_set():
+                    logging.info("Fade cancelled")
                     return
-                if white_diff == 0:
-                    color = [start_color[j] + (color_diff[j] / step_count) * i for j in range(3)]
-                    color = [int(color[j]) for j in range(3)]
-                    self.set_color(tuple(color))
+
+                progress = step / step_count
+
+                if end_white is None:
+                    next_color = [
+                        start_color[i] + color_diff[i] * progress
+                        for i in range(3)
+                    ]
+                    self.set_color(tuple(int(round(c)) for c in next_color))
                 else:
-                    white = start_white + (white_diff / step_count) * i
-                    self.set_white(int(white))
-                step_remaining = step_time - (time.time() - step_start)
-                if step_remaining > 0:
-                    time.sleep(step_remaining)
-                else:
-                    step_exceedance += abs(step_remaining)
-            self.fading = False
+                    next_white = start_white + white_diff * progress
+                    self.set_white(int(round(next_white)))
+
+                # Sleep until the next target time (use absolute scheduling to avoid drift)
+                target_time = start_monotonic + step * step_time
+                now = time.monotonic()
+                to_sleep = target_time - now
+                if to_sleep > 0:
+                    time.sleep(to_sleep)
+
             logging.info("Fade complete")
         except Exception as e:
             logging.error(f"Error fading: {e}")
             logging.exception(e)
+        finally:
+            # Clear flags and event regardless of exit mode
+            self.fading = False
+            self._fade_cancel_event.clear()
+            self.fade_thread = None
 
     def _fade(self, args: dict):
         target = args.get("target")
         fade_time = args.get("time")
-        if self.fading is True:
-            self.fading = False
-            self.fade_thread.join()
-        self.fading = True
-        self.fade_thread = threading.Thread(target=functools.partial(self._fade_process, target, fade_time))
-        self.fade_thread.start()
+
+        with self._fade_lock:
+            if self.fading:
+                logging.info("Cancelling previous fade")
+                self.fading = False
+                self._fade_cancel_event.set()
+                if self.fade_thread is not None:
+                    self.fade_thread.join(timeout=1)
+
+            logging.info(f"Starting fade to {target} over {fade_time} seconds")
+            self.fading = True
+            self._fade_cancel_event.clear()
+            self.fade_thread = threading.Thread(target=self._fade_process, args=(target, fade_time), daemon=True)
+            self.fade_thread.start()
 
     @property
     def fade(self):

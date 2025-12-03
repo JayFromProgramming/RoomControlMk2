@@ -138,6 +138,7 @@ class MagicDevice(RoomObject, AbstractRGB):
     supported_actions = ["on", "color", "brightness", "white", "fade"]
 
     def __init__(self, api, macaddr, room_controller, local_ip=None):
+        AbstractRGB.__init__(self)
         super().__init__(macaddr, "MagicDevice")
         self.room_controller = room_controller
         database = room_controller.database
