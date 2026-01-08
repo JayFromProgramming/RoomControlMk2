@@ -114,23 +114,31 @@ class PyNutServer:
         self.client = None
         self._connect()
         logging.info(f"Initialized NUT server {self.server_name} at {self.server_host}:{self.server_port}")
-        self.available_ups = self.get_available_ups_list()
-
+        # self.available_ups = self.get_available_ups_list()
         self.ups_data = {}
+        self.reconnect_loop()
 
     def _connect(self):
-        while self.client is None:
-            try:
-                self.client = PyNUTClient(self.server_host, self.server_port,
-                                          self.server_username, self.server_password)
-                self.client._connect()
-                logging.info(f"Connected to NUT server {self.server_name} at {self.server_host}:{self.server_port}")
-            except PyNUTError as e:
-                logging.error(f"Error connecting to NUT server {self.server_name}: {e}")
-                self.client = None
-                time.sleep(5)
+        try:
+            self.client = PyNUTClient(self.server_host, self.server_port,
+                                      self.server_username, self.server_password)
+            self.client._connect()
+            logging.info(f"Connected to NUT server {self.server_name} at {self.server_host}:{self.server_port}")
+        except PyNUTError as e:
+            logging.error(f"Error connecting to NUT server {self.server_name}: {e}")
+            self.client = None
+
+    @background
+    def reconnect_loop(self):
+        while True:
+            if self.client is None:
+                self._connect()
+                self.available_ups = self.get_available_ups_list()
+            time.sleep(60)
 
     def get_available_ups_list(self):
+        if self.client is None:
+            return []
         return self.client.list_ups()
 
     @staticmethod
