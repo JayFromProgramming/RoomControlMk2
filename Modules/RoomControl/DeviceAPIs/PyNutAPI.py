@@ -119,14 +119,16 @@ class PyNutServer:
         self.ups_data = {}
 
     def _connect(self):
-        try:
-            self.client = PyNUTClient(self.server_host, self.server_port,
-                                      self.server_username, self.server_password)
-            self.client._connect()
-            logging.info(f"Connected to NUT server {self.server_name} at {self.server_host}:{self.server_port}")
-        except PyNUTError as e:
-            logging.error(f"Error connecting to NUT server {self.server_name}: {e}")
-            self.client = None
+        while self.client is None:
+            try:
+                self.client = PyNUTClient(self.server_host, self.server_port,
+                                          self.server_username, self.server_password)
+                self.client._connect()
+                logging.info(f"Connected to NUT server {self.server_name} at {self.server_host}:{self.server_port}")
+            except PyNUTError as e:
+                logging.error(f"Error connecting to NUT server {self.server_name}: {e}")
+                self.client = None
+                time.sleep(5)
 
     def get_available_ups_list(self):
         return self.client.list_ups()
