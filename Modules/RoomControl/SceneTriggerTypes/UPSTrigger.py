@@ -30,7 +30,7 @@ class UPSTrigger(SceneTrigger):
                 time.sleep(60)
                 continue
             if ups_device.get_type() != "UPSDevice":
-                logging.error(f"UPSTrigger[{self.trigger_id}] for Scene ({self.scene_id}) found device ({ups_name}) but it is not a UPSDevice")
+                # logging.error(f"UPSTrigger[{self.trigger_id}] for Scene ({self.scene_id}) found device ({ups_name}) but it is not a UPSDevice")
                 time.sleep(60)
                 continue
             return ups_device, trigger
