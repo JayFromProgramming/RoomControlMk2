@@ -7,6 +7,17 @@ from Modules.RoomControl import background
 from Modules.RoomModule import RoomModule
 from Modules.RoomObject import RoomObject
 
+import socket as _socket
+
+try:
+    import telnetlib3 as _telnetlib3
+except ImportError:
+    _telnetlib3 = None
+
+if _telnetlib3 is not None and not hasattr(_telnetlib3, "socket"):
+    # Provide stdlib socket for libraries that expect telnetlib3.socket
+    _telnetlib3.socket = _socket
+
 try:
     from nut2 import PyNUTClient, PyNUTError
 except ImportError:

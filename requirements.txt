@@ -1,7 +1,6 @@
 geocoder
 python-kasa
 aiodebug
-telnetlib3
 certifi==2024.7.4
 charset-normalizer==3.2.0
 idna==3.7
