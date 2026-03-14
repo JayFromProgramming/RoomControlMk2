@@ -55,7 +55,7 @@ class DataLoggingHost(RoomModule):
     def load_logger(self, name):
         logging.info(f"DataLoggingHost: Loading logger {name}")
         table = self.database.get_table("data_sources")
-        source = table.get(name=name)
+        source = table.get_row(name=name)
         if source is None:
             logging.error(f"DataLoggingHost: Source {name} not found in database")
             return
