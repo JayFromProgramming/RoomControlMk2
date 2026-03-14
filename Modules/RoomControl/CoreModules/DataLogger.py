@@ -49,13 +49,27 @@ class DataLoggingHost(RoomModule):
         sources = table.get_all()
 
         for source in sources:
+            self.load_logger(source['name'])
+        logging.info("DataLoggingHost: All loggers initialized")
+
+    def load_logger(self, name):
+        logging.info(f"DataLoggingHost: Loading logger {name}")
+        table = self.database.get_table("data_sources")
+        source = table.get(name=name)
+        if source is None:
+            logging.error(f"DataLoggingHost: Source {name} not found in database")
+            return
+        try:
             data_source = self.get_source(source['source_name'])
             self.loggers[source['name']] = DataLogger(source['name'], self.database, source=data_source,
                                                       logging_interval=source['logging_interval'],
                                                       filter_zero=source['source_name'] == "Radiator-Controller.LivingRoomSensor",  # TODO: Remove hack
                                                       enabled=source['enabled'], unit=source['unit'],
                                                       attribute=source['attribute'], uuid=source['uuid'])
-        logging.info("DataLoggingHost: All loggers initialized")
+            logging.info(f"DataLoggingHost: Logger for {source['name']} loaded")
+        except Exception as e:
+            logging.error(f"DataLoggingHost: Error loading logger for {source['name']}: {e}")
+            logging.exception(e)
 
     def get_source(self, source_name):
         return self.room_controller.get_object(source_name)
@@ -74,6 +88,9 @@ class DataLoggingHost(RoomModule):
                 data.append((row[0], row[1]))
             return data
         else:
+            if source not in self.loggers:
+                # Attempt to load the logger if it isn't already loaded
+                self.load_logger(source)
             cursor = self.loggers[source].get_logs(start_time, end_time)
             data = []
             for row in cursor:
