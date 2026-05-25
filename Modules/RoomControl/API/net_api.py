@@ -104,10 +104,15 @@ class NetAPI(RoomModule):
         self.init_database()
         self.ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 
-        if sys.platform == "linux":
+        # Set webserver address and port
+        self.webserver_address = get_host_names()
+
+        # Check if we are running on raspbian then use the letsencrypt certificate, otherwise use a self-signed certificate
+        if "raspbian" in sys.platform:
             logging.info("Using Let's Encrypt certificate for SSL")
             self.ssl_context.load_cert_chain(f"/etc/letsencrypt/live/moldy.mug.loafclan.org/fullchain.pem",
                                              f"/etc/letsencrypt/live/moldy.mug.loafclan.org/privkey.pem")
+            self.webserver_port = 443
         else:
             logging.warning("Using self-signed certificate for SSL!")
             if not os.path.isfile("cert.pem") or not os.path.isfile("key.pem"):
@@ -117,10 +122,7 @@ class NetAPI(RoomModule):
                             "-subj \"/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost\"")
             self.ssl_context.load_cert_chain(f"cert.pem",
                                              f"key.pem")
-
-        # Set webserver address and port
-        self.webserver_address = get_host_names()
-        self.webserver_port = 443
+            self.webserver_port = 8443
 
         # List of cookies that are authorized to access the API
         results = self.database.get("SELECT current_cookie FROM login_auth_relations WHERE expires > ?", (time.time(),))

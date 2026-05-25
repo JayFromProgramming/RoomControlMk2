@@ -16,12 +16,12 @@ class VeSyncAPI(RoomModule):
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
-
+        self.devices = []
         self.database = room_controller.database
         secretes_table = self.database.get_table("secrets")
         email = secretes_table.get_row(secret_name='VesyncUsername')
         password = secretes_table.get_row(secret_name='VesyncPassword')
-        self.manager = VeSync(email['secret_value'], password['secret_value'], time_zone='America/New_York')
+        self.manager = VeSync(email['secret_value'], password['secret_value'], time_zone="America/Los_Angeles")
 
         try:
             self.manager.login()
@@ -31,7 +31,7 @@ class VeSyncAPI(RoomModule):
 
         self.manager.update()  # Populate the devices list
 
-        self.devices = []
+
         for device in self.manager.outlets:
             self.devices.append(VeSyncPlug(device, self.room_controller))
 

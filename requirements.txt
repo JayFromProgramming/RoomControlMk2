@@ -25,7 +25,8 @@ ConcurrentDatabase==0.0.10
 pyowm~=3.3.0
 lifxlan~=1.2.8
 geocoder~=1.38.1
-bleak~=0.22.2
-python-kasa==0.7.7
-nut2 @git+https://github.com/JayFromProgramming/python-nut2@main
+# bleak~=0.22.2
+python-kasa~=0.7.7
+#nut2 @git+https://github.com/JayFromProgramming/python-nut2@main
 openmeteopy @git+https://github.com/m0rp43us/openmeteopy
+midea-beautiful-air

@@ -178,6 +178,7 @@ class LightController(RoomObject):
 
     @background
     def set_state(self, state_val, state=None):
+        return
         prev_state = self.current_state
         if self.attempts > 3:
             return

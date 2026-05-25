@@ -1,15 +1,19 @@
 {
-  "B4E842D7A9F8": {
+  "ac72dde4d252": {
     "group": "Living Room",
     "starred": true
+  },
+  "B4E842D7A9F8": {
+    "group": "Living Room",
+    "starred": false
   },
   "18B905D086A5": {
     "group": null,
     "starred": false
   },
   "Radiator-Controller.Radiator": {
-    "group": "Living Room",
-    "starred": true,
+    "group": null,
+    "starred": false,
     "priority": 1
   },
   "B4E842136DA6": {
@@ -17,18 +21,18 @@
     "starred": false
   },
   "bed_fan": {
-    "group": "Living Room",
-    "starred": true,
+    "group": null,
+    "starred": false,
     "priority": 1
   },
   "big_humid": {
-    "group": "Living Room",
+    "group": null,
     "starred": false,
     "priority": 1
   },
   "50:91:e3:fd:f1:6a": {
     "group": "Living Room",
-    "starred": true,
+    "starred": false,
     "priority": 2
   },
   "rad_fan": {
@@ -48,16 +52,16 @@
     "starred": false
   },
   "plug_2": {
-    "group": "Living Room",
-    "starred": true
+    "group": null,
+    "starred": false
   },
   "temperature_control": {
     "group": "Automatic Controllers",
-    "starred": true
+    "starred": false
   },
   "humidity_control": {
     "group": "Automatic Controllers",
-    "starred": true
+    "starred": false
   },
   "room_light_controller": {
     "group": "Automatic Controllers",
@@ -84,19 +88,19 @@
     "starred": false
   },
   "plug_1": {
-    "group": "Bathroom",
-    "starred": true
+    "group": null,
+    "starred": false
   },
   "d0:73:d5:5d:0e:7c": {
-    "group": "Entryway",
+    "group": null,
     "starred": true
   },
   "3c:52:a1:4c:fc:d0": {
     "group": "The Pitt",
-    "starred": false
+    "starred": true
   },
   "3c:52:a1:4c:f9:03": {
     "group": "Kitchen",
-    "starred": false
+    "starred": true
   }
 }
