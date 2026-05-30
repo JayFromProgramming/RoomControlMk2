@@ -27,12 +27,31 @@ class MideaAPI(RoomModule):
     @background
     def find_appliances(self):
         logging.info("MideaAPI: Finding appliances...")
+        while len(self.devices) == 0:
+            try:
+                appliances = self.discover_devices()
+                if len(appliances) == 0:
+                    logging.info("MideaAPI: No appliances found, retrying in 30 seconds...")
+                    time.sleep(30)
+                else:
+                    for appliance in appliances:
+                        logging.info(
+                            f"MideaAPI: Creating device for appliance {appliance.model} at {appliance.address}")
+                        self.create_device(appliance)
+                    break
+            except Exception as e:
+                logging.error(f"MideaAPI: Error discovering appliances: {e}")
+                logging.exception(e)
+                time.sleep(30)
+        logging.info(f"MideaAPI: Finished finding appliances, found {len(self.devices)} devices")
+
+    def discover_devices(self) -> list[LanDevice]:
         secretes_table = self.database.get_table("secrets")
         email = secretes_table.get_row(secret_name='MideaUsername')
         password = secretes_table.get_row(secret_name='MideaPassword')
-
         all_addresses = all_addresses_in_subnet("192.168.1.0/24")
-        logging.info(f"MideaAPI: Scanning for appliances in subnet with addresses: {all_addresses[0]} - {all_addresses[-1]} (len={len(all_addresses)})")
+        logging.info(
+            f"MideaAPI: Scanning for appliances in subnet with addresses: {all_addresses[0]} - {all_addresses[-1]} (len={len(all_addresses)})")
 
         appliances = find_appliances(
             account=email['secret_value'],
@@ -40,9 +59,9 @@ class MideaAPI(RoomModule):
             addresses=all_addresses,  # Look for all appliances in the subnet due to broadcast issues
             timeout=0.1
         )
-        logging.info(f"MideaAPI: Found {len(appliances)} appliances.")
-        for appliance in appliances:
-            self.create_device(appliance)
+        valid_appliances = [appliance for appliance in appliances if appliance.token and appliance.key]
+        logging.info(f"MideaAPI: Found {len(valid_appliances)}/{len(appliances)} appliances with valid credentials")
+        return valid_appliances
 
     def create_device(self, appliance_object):
         device = MideaDevice(appliance_object, self.room_controller)
@@ -210,6 +229,21 @@ class MideaDevice(RoomObject):
             self.appliance.set_state(eco_mode=bool(value))
         except Exception as e:
             logging.error(f"Error setting Midea appliance {self.object_name} eco_mode={value}: {e}")
+            logging.exception(e)
+
+    @property
+    def swing(self):
+        return {
+            "vertical": self.appliance.state.vertical_swing,
+            "horizontal": self.appliance.state.horizontal_swing,
+        }
+
+    @swing.setter
+    def swing(self, value):
+        try:
+            self.appliance.set_state(vertical_swing=bool(value), horizontal_swing=bool(value))
+        except Exception as e:
+            logging.error(f"Error setting Midea appliance {self.object_name} vent_swing={value}: {e}")
             logging.exception(e)
 
 

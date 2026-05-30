@@ -18,7 +18,10 @@ class SchemaHandler(RoomModule, APIModule):
         self.import_from_old_schema("testing")
 
     def get_routes(self):
-        return [web.get('/get_schema', self.handle_get_schema)]
+        return [web.get('/get_schema', self.handle_get_schema),
+                web.post('/update_device_schema', self.handle_update_schema),
+                web.post('/update_group_schema', self.handle_update_group_schema),
+                web.delete('/delete_group_schema', self.handle_delete_group_schema)]
 
     def init_database(self):
         self.database.run("""
@@ -125,6 +128,16 @@ class SchemaHandler(RoomModule, APIModule):
         return None
 
     async def handle_update_schema(self, request):
+        """
+        Device schema update example
+        {
+            "device_id": {
+                "group": "Group Name",
+                "starred": true | false,
+                "priority": 1 [optional]
+            }
+        }
+        """
         profile_name = request.query.get("interface_name", None)
         if profile_name is None:
             logging.error("interface_name query parameter is required")
@@ -144,8 +157,103 @@ class SchemaHandler(RoomModule, APIModule):
         if len(data) != 1:
             logging.error("Only one device can be updated at a time")
             return web.json_response({"error": "Only one device can be updated at a time"}, status=400)
-        device_name = list(data.keys())[0]
-        device_info = data[device_name]
+        device_id = list(data.keys())[0]
+        device_info = data[device_id]
+        group_name = device_info.get("group", None)
+        starred = device_info.get("starred", False)
+        priority = device_info.get("priority", None)
+        device_table = self.database.get_table("interface_schemas_devices")
+        group_table = self.database.get_table("interface_schemas_groups")
+        if group_name is not None:
+            group_row = group_table.get_row(group_name=group_name, profile_id=profile_id)
+            if not group_row:
+                # If the group doesn't exist, create it with the lowest priority
+                lowest_priority_group = group_table.get_rows(profile_id=profile_id, order_by="group_priority DESC", limit=1)
+                if lowest_priority_group and lowest_priority_group[0]["group_priority"] is not None:
+                    new_group_priority = lowest_priority_group[0]["group_priority"] + 1
+                else:
+                    new_group_priority = 1
+                group_row = group_table.add(profile_id=profile_id, group_name=group_name, group_priority=new_group_priority)
+            group_id = group_row["group_id"]
+        else:
+            group_id = None
+        device_row = device_table.get_row(profile_id=profile_id, device_id=device_id)
+        if device_row:
+            device_row["group_id"] = group_id
+            device_row["starred"] = starred
+            device_row["priority"] = priority
+            device_table.update(device_row)
+        else:
+            device_table.add(profile_id=profile_id, device_id=device_id, group_id=group_id, starred=starred, priority=priority)
+        logging.info(f"Updated schema for device {device_id} in profile {profile_name}")
+        return web.json_response({"message": f"Updated schema for device {device_id} in profile {profile_name}"})
+
+    async def handle_update_group_schema(self, request):
+        """
+        Group schema update example
+        {
+            "group_name": "Group Name",
+            "group_priority": 1
+        }
+        """
+        profile_name = request.query.get("interface_name", None)
+        if profile_name is None:
+            logging.error("interface_name query parameter is required")
+            return web.json_response({"error": "interface_name query parameter is required"}, status=400)
+        profile_table = self.database.get_table("interface_schema_profiles")
+        profile = profile_table.get_row(interface_name=profile_name)
+        if not profile:
+            logging.error(f"No profile found for interface {profile_name}")
+            return web.json_response({"error": f"No profile found for interface {profile_name}"}, status=400)
+        profile_id = profile["profile_id"]
+        try:
+            data = await request.json()
+        except Exception as e:
+            logging.error(f"Error parsing JSON data: {e}")
+            return web.json_response({"error": "Error parsing JSON data"}, status=400)
+        group_name = data.get("group_name", None)
+        group_priority = data.get("group_priority", None)
+        if group_name is None or group_priority is None:
+            logging.error("group_name and group_priority are required in the JSON body")
+            return web.json_response({"error": "group_name and group_priority are required in the JSON body"}, status=400)
+        group_table = self.database.get_table("interface_schemas_groups")
+        group_row = group_table.get_row(group_name=group_name, profile_id=profile_id)
+        if not group_row:
+            logging.error(f"No group found with name {group_name} in profile {profile_name}")
+            return web.json_response({"error": f"No group found with name {group_name} in profile {profile_name}"}, status=400)
+        group_row["group_priority"] = group_priority
+        group_table.update(group_row)
+        logging.info(f"Updated schema for group {group_name} in profile {profile_name}")
+        return web.json_response({"message": f"Updated schema for group {group_name} in profile {profile_name}"})
+
+    async def handle_delete_group_schema(self, request):
+        profile_name = request.query.get("interface_name", None)
+        if profile_name is None:
+            logging.error("interface_name query parameter is required")
+            return web.json_response({"error": "interface_name query parameter is required"}, status=400)
+        profile_table = self.database.get_table("interface_schema_profiles")
+        profile = profile_table.get_row(interface_name=profile_name)
+        if not profile:
+            logging.error(f"No profile found for interface {profile_name}")
+            return web.json_response({"error": f"No profile found for interface {profile_name}"}, status=400)
+        profile_id = profile["profile_id"]
+        try:
+            data = await request.json()
+        except Exception as e:
+            logging.error(f"Error parsing JSON data: {e}")
+            return web.json_response({"error": "Error parsing JSON data"}, status=400)
+        group_name = data.get("group_name", None)
+        if group_name is None:
+            logging.error("group_name is required in the JSON body")
+            return web.json_response({"error": "group_name is required in the JSON body"}, status=400)
+        group_table = self.database.get_table("interface_schemas_groups")
+        group_row = group_table.get_row(group_name=group_name, profile_id=profile_id)
+        if not group_row:
+            logging.error(f"No group found with name {group_name} in profile {profile_name}")
+            return web.json_response({"error": f"No group found with name {group_name} in profile {profile_name}"}, status=400)
+        group_table.delete(group_row["group_id"])
+        logging.info(f"Deleted group {group_name} from profile {profile_name}")
+        return web.json_response({"message": f"Deleted group {group_name} from profile {profile_name}"})
 
     async def handle_get_schema(self, request):
         """
