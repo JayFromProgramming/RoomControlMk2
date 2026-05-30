@@ -107,6 +107,7 @@ class RoomController:
         for room_module in RoomModule.__subclasses__():
             logging.info(f"Creating instance of {room_module.__name__}")
             if "raspbian" not in sys.platform:
+                logging.info(f"Running on non-raspbian platform, skipping module filtering")
                 if (len(self.only_modules) > 0 and room_module.__name__ not in self.only_modules
                         and room_module.__name__ not in self.required_modules):
                     logging.info(f"Skipping {room_module.__name__} because it is not in only_modules")
