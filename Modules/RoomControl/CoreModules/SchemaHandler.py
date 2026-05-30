@@ -168,7 +168,8 @@ class SchemaHandler(RoomModule, APIModule):
             group_row = group_table.get_row(group_name=group_name, profile_id=profile_id)
             if not group_row:
                 # If the group doesn't exist, create it with the lowest priority
-                lowest_priority_group = group_table.get_rows(profile_id=profile_id, order_by="group_priority DESC", limit=1)
+                lowest_priority_group = group_table.get_rows(profile_id=profile_id)
+                lowest_priority_group = sorted(lowest_priority_group, key=lambda x: x["group_priority"] if x["group_priority"] is not None else float('inf'))
                 if lowest_priority_group and lowest_priority_group[0]["group_priority"] is not None:
                     new_group_priority = lowest_priority_group[0]["group_priority"] + 1
                 else:
@@ -177,14 +178,11 @@ class SchemaHandler(RoomModule, APIModule):
             group_id = group_row["group_id"]
         else:
             group_id = None
-        device_row = device_table.get_row(profile_id=profile_id, device_id=device_id)
+        device_row = device_table.get_row(device_id=device_id, profile_id=profile_id)
         if device_row:
-            device_row["group_id"] = group_id
-            device_row["starred"] = starred
-            device_row["priority"] = priority
-            device_table.update(device_row)
+            device_row.set(starred=starred, priority=priority, group_id=group_id)
         else:
-            device_table.add(profile_id=profile_id, device_id=device_id, group_id=group_id, starred=starred, priority=priority)
+            device_table.add(profile_id=profile_id, device_id=device_id, starred=starred, priority=priority, group_id=group_id)
         logging.info(f"Updated schema for device {device_id} in profile {profile_name}")
         return web.json_response({"message": f"Updated schema for device {device_id} in profile {profile_name}"})
 
@@ -193,6 +191,7 @@ class SchemaHandler(RoomModule, APIModule):
         Group schema update example
         {
             "group_name": "Group Name",
+            "new_group_name": "New Group Name" [optional],
             "group_priority": 1
         }
         """
@@ -211,20 +210,77 @@ class SchemaHandler(RoomModule, APIModule):
         except Exception as e:
             logging.error(f"Error parsing JSON data: {e}")
             return web.json_response({"error": "Error parsing JSON data"}, status=400)
+
         group_name = data.get("group_name", None)
+        if group_name is None:
+            logging.error("group_name is required in the JSON body")
+            return web.json_response({"error": "group_name is required in the JSON body"}, status=400)
+
+        new_group_name = data.get("new_group_name", None)
         group_priority = data.get("group_priority", None)
-        if group_name is None or group_priority is None:
-            logging.error("group_name and group_priority are required in the JSON body")
-            return web.json_response({"error": "group_name and group_priority are required in the JSON body"}, status=400)
+
         group_table = self.database.get_table("interface_schemas_groups")
         group_row = group_table.get_row(group_name=group_name, profile_id=profile_id)
         if not group_row:
             logging.error(f"No group found with name {group_name} in profile {profile_name}")
             return web.json_response({"error": f"No group found with name {group_name} in profile {profile_name}"}, status=400)
-        group_row["group_priority"] = group_priority
-        group_table.update(group_row)
-        logging.info(f"Updated schema for group {group_name} in profile {profile_name}")
-        return web.json_response({"message": f"Updated schema for group {group_name} in profile {profile_name}"})
+
+        # Rename group if requested
+        if new_group_name is not None and new_group_name != group_name:
+            # Ensure new name doesn't already exist for this profile
+            existing = group_table.get_row(group_name=new_group_name, profile_id=profile_id)
+            if existing:
+                # Check if the existing group actually has any devices in it, if not we can reuse it
+                device_table = self.database.get_table("interface_schemas_devices")
+                devices_in_existing_group = device_table.get_rows(group_id=existing["group_id"])
+                if devices_in_existing_group:
+                    logging.error(f"A group with name {new_group_name} already exists in profile {profile_name}")
+                    return web.json_response({"error": f"A group with name {new_group_name} already exists in profile {profile_name}"}, status=400)
+                # If the existing group has no devices, we can delete it and reuse the name
+                group_table.delete(group_id=existing["group_id"])
+            try:
+                group_row.set(group_name=new_group_name)
+                logging.info(f"Renamed group {group_name} -> {new_group_name} in profile {profile_name}")
+            except Exception as e:
+                logging.error(f"Failed to rename group: {e}")
+                return web.json_response({"error": f"Failed to rename group: {e}"}, status=500)
+
+        # Reorder priorities if requested
+        if group_priority is not None:
+            try:
+                desired = int(group_priority)
+            except Exception:
+                logging.error("group_priority must be an integer")
+                return web.json_response({"error": "group_priority must be an integer"}, status=400)
+            if desired < 1:
+                logging.error("group_priority must be >= 1")
+                return web.json_response({"error": "group_priority must be >= 1"}, status=400)
+
+            # Load all groups for this profile except the one being moved
+            all_groups = group_table.get_rows(profile_id=profile_id)
+            # Convert to list of entries
+            other_groups = [g for g in all_groups if g["group_id"] != group_row["group_id"]]
+            # Sort by existing priority (None -> inf)
+            other_groups = sorted(other_groups, key=lambda x: x["group_priority"] if x["group_priority"] is not None else float('inf'))
+
+            # Clamp desired index
+            insert_index = min(desired - 1, len(other_groups))
+
+            # Build new ordered list with the moved group in place
+            new_order = other_groups[:insert_index] + [group_row] + other_groups[insert_index:]
+
+            # Reassign sequential priorities starting at 1
+            try:
+                for idx, grp in enumerate(new_order, start=1):
+                    # Only set if different to avoid unnecessary DB writes
+                    if grp["group_priority"] != idx:
+                        grp.set(group_priority=idx)
+                logging.info(f"Reordered groups for profile {profile_name}")
+            except Exception as e:
+                logging.error(f"Failed to reorder groups: {e}")
+                return web.json_response({"error": f"Failed to reorder groups: {e}"}, status=500)
+
+        return web.json_response({"message": f"Updated group {group_name} in profile {profile_name}"})
 
     async def handle_delete_group_schema(self, request):
         profile_name = request.query.get("interface_name", None)
@@ -251,7 +307,7 @@ class SchemaHandler(RoomModule, APIModule):
         if not group_row:
             logging.error(f"No group found with name {group_name} in profile {profile_name}")
             return web.json_response({"error": f"No group found with name {group_name} in profile {profile_name}"}, status=400)
-        group_table.delete(group_row["group_id"])
+        group_table.delete(group_id=group_row["group_id"])
         logging.info(f"Deleted group {group_name} from profile {profile_name}")
         return web.json_response({"message": f"Deleted group {group_name} from profile {profile_name}"})
 
