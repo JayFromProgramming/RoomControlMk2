@@ -108,7 +108,7 @@ class NetAPI(RoomModule):
         self.webserver_address = get_host_names()
 
         # Check if we are running on raspbian then use the letsencrypt certificate, otherwise use a self-signed certificate
-        if "raspbian" in sys.platform:
+        if sys.platform == "linux" and os.path.isdir("/etc/letsencrypt/live/moldy.mug.loafclan.org"):
             logging.info("Using Let's Encrypt certificate for SSL")
             self.ssl_context.load_cert_chain(f"/etc/letsencrypt/live/moldy.mug.loafclan.org/fullchain.pem",
                                              f"/etc/letsencrypt/live/moldy.mug.loafclan.org/privkey.pem")
