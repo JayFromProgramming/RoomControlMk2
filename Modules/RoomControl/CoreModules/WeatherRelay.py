@@ -37,7 +37,7 @@ import pickle
 
 radar_index_url = "https://api.rainviewer.com/public/weather-maps.json"
 radar_base_url = "{host}/{path}/{size}/6/{x}/{y}/{color}/{options}.png"
-radar_tiles = [(x, y) for x in range(13, 21) for y in range(21, 25)]
+radar_tiles = [(x, y) for x in range(7, 21) for y in range(20, 26)]
 
 
 class WeatherRelay(RoomModule, APIModule):
