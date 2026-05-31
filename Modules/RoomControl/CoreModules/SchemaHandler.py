@@ -370,7 +370,7 @@ class SchemaHandler(RoomModule, APIModule):
             for device_name in all_devices:
                 if device_name not in schema:
                     schema[device_name] = {
-                        "group": "Unschemaed",
+                        "group": None,
                         "starred": False
                     }
 
