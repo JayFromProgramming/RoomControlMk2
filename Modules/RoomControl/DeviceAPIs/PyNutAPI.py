@@ -56,6 +56,7 @@ class PyNutAPI(RoomModule):
 
     def __init__(self, room_controller):
         super().__init__(room_controller)
+        return
         self.room_controller = room_controller
         self.database = room_controller.database
         self.init_database()
