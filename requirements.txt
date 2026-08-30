@@ -23,7 +23,7 @@ netifaces~=0.11.0
 ConcurrentDatabase==0.0.10
 ConcurrentDatabase==0.0.10
 pyowm~=3.3.0
-lifxlan~=1.2.8
+lifxlan~=1.2.9
 geocoder~=1.38.1
 # bleak~=0.22.2
 python-kasa~=0.7.7

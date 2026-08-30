@@ -84,18 +84,22 @@ class LIFXAPI(RoomModule):
     def periodic_device_scan(self):
         while True:
             try:
-                # logging.info("Scanning for LIFX devices")
+                logging.info("Scanning for LIFX devices")
                 self.lifx.discover_devices()
                 api_devices = self.lifx.get_lights()
+                if not api_devices:
+                    logging.warning("No LIFX devices found")
                 for device in api_devices:
                     if not [x for x in self.room_objects if x.object_name == device.get_mac_addr()]:
                         self.room_objects.append(LIFXDevice(device, self.room_controller))
                         logging.info(f"Found new LIFX device {device.get_label()}")
+                    else:
+                        logging.info(f"Found existing LIFX device {device.get_label()}")
             except Exception as e:
                 logging.exception(e)
                 logging.error(f"Error scanning for LIFX devices: {e}")
             finally:
-                # logging.info("Finished scanning for LIFX devices")
+                logging.info("Finished scanning for LIFX devices")
                 time.sleep(300)
 
 
@@ -112,6 +116,9 @@ class LIFXDevice(RoomObject, AbstractRGB):
         self.current_power = 0
         self.current_color = None
         self.current_ip = None
+        self.firmware_version = None
+        self.wifi_info = None
+        self.misc_info = None
         self.info_refresh()
         room_controller.attach_object(self)
 
@@ -182,9 +189,9 @@ class LIFXDevice(RoomObject, AbstractRGB):
         try:
             return {
                 "ip": self.current_ip,
-                # "firmware": self.device.get_host_firmware_version(),
-                # "wifi": self.device.get_wifi_info_tuple(),
-                # "misc": self.device.get_info_tuple()
+                "firmware": self.firmware_version,
+                "wifi": self.wifi_info,
+                "misc": self.misc_info
             }
         except Exception:
             return {
@@ -222,6 +229,9 @@ class LIFXDevice(RoomObject, AbstractRGB):
                 self.current_power = self.device.get_power()
                 self.current_color = self.device.get_color()
                 self.current_ip = self.device.get_ip_addr()
+                self.firmware_version = self.device.get_host_firmware_version()
+                self.wifi_info = self.device.get_wifi_info_tuple()
+                self.misc_info = self.device.get_info_tuple()
             except Exception as e:
                 self.online = False
                 self.fault = True
