@@ -93,8 +93,9 @@ class LIFXAPI(RoomModule):
                     if not [x for x in self.room_objects if x.object_name == device.get_mac_addr()]:
                         self.room_objects.append(LIFXDevice(device, self.room_controller))
                         logging.info(f"Found new LIFX device {device.get_label()}")
-                    else:
-                        logging.info(f"Found existing LIFX device {device.get_label()}")
+                    elif [x for x in self.room_objects if x.object_name == device.get_mac_addr() and x.current_ip != device.get_ip_addr()]:
+                        logging.warning(f"LIFX device {device.get_label()} changed IP address from "
+                                        f"{[x.device.get_ip_addr() for x in self.room_objects if x.object_name == device.get_mac_addr()][0]} to {device.get_ip_addr()}")
             except Exception as e:
                 logging.exception(e)
                 logging.error(f"Error scanning for LIFX devices: {e}")
