@@ -96,6 +96,7 @@ class LIFXAPI(RoomModule):
                     elif [x for x in self.room_objects if x.object_name == device.get_mac_addr() and x.current_ip != device.get_ip_addr()]:
                         logging.warning(f"LIFX device {device.get_label()} changed IP address from "
                                         f"{[x.device.get_ip_addr() for x in self.room_objects if x.object_name == device.get_mac_addr()][0]} to {device.get_ip_addr()}")
+                        [x.update_ip(device) for x in self.room_objects if x.object_name == device.get_mac_addr()]
             except Exception as e:
                 logging.exception(e)
                 logging.error(f"Error scanning for LIFX devices: {e}")
@@ -122,6 +123,10 @@ class LIFXDevice(RoomObject, AbstractRGB):
         self.misc_info = None
         self.info_refresh()
         room_controller.attach_object(self)
+
+    def update_ip(self, new_device):
+        self.device = new_device
+        self.current_ip = new_device.get_ip_addr()
 
     def name(self):
         return self.object_name
